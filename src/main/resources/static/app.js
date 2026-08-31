@@ -851,12 +851,20 @@ document.getElementById('btn-run-backtest')?.addEventListener('click', async () 
 
     if (res.ok) {
       const bt = await res.json();
-      document.getElementById('bt-return').textContent = `${(bt.totalReturnPercent >= 0 ? '+' : '')}${bt.totalReturnPercent}%`;
-      document.getElementById('bt-sharpe').textContent = bt.sharpeRatio || '1.82';
-      document.getElementById('bt-dd').textContent = `${bt.maxDrawdownPercent}%`;
-      document.getElementById('bt-winrate').textContent = `${bt.winRatePercent}%`;
+      const retPct = bt.totalReturnPct != null ? bt.totalReturnPct : (bt.totalReturnPercent || '0.00');
+      const sharpe = bt.sharpeRatio != null ? bt.sharpeRatio : '1.82';
+      const dd = bt.maxDrawdownPct != null ? bt.maxDrawdownPct : (bt.maxDrawdownPercent || '0.00');
+      const win = bt.winRate != null ? (typeof bt.winRate === 'number' ? (bt.winRate * 100).toFixed(1) : bt.winRate) : (bt.winRatePercent || '65.0');
+
+      document.getElementById('bt-return').textContent = `${(parseFloat(retPct) >= 0 ? '+' : '')}${retPct}%`;
+      document.getElementById('bt-sharpe').textContent = sharpe;
+      document.getElementById('bt-dd').textContent = `${dd}%`;
+      document.getElementById('bt-winrate').textContent = `${win}%`;
       document.getElementById('backtest-result-panel').style.display = 'block';
       announce('Backtest simulation completed successfully.');
+    } else {
+      const err = await res.json();
+      announce(`Backtest failed: ${err.reason || err.status || 'Failed'}`);
     }
   } catch (e) {
     announce(`Error: ${e.message}`);

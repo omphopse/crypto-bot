@@ -6,6 +6,8 @@ import io.algopilot.backtest.model.Candle;
 import io.algopilot.backtest.model.WalkForwardRequest;
 import io.algopilot.backtest.model.WalkForwardResult;
 import io.algopilot.backtest.service.BacktestService;
+import io.algopilot.strategy.StrategyStore;
+import io.algopilot.strategy.StrategyVersion;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/backtests")
 public class BacktestController {
   private final BacktestService backtestService;
+  private final StrategyStore strategyStore;
 
   public record BacktestPayload(
       UUID strategyVersionId,
@@ -51,14 +54,25 @@ public class BacktestController {
       List<Candle> candleData
   ) {}
 
-  public BacktestController(BacktestService backtestService) {
+  @org.springframework.beans.factory.annotation.Autowired
+  public BacktestController(BacktestService backtestService, StrategyStore strategyStore) {
     this.backtestService = backtestService;
+    this.strategyStore = strategyStore;
+  }
+
+  public BacktestController(BacktestService backtestService) {
+    this(backtestService, null);
   }
 
   @PostMapping("/run")
-  public ResponseEntity<BacktestResult> runBacktest(@RequestBody BacktestPayload payload) {
+  public ResponseEntity<BacktestResult> runBacktest(@RequestBody(required = false) BacktestPayload payload) {
+    if (payload == null) {
+      payload = new BacktestPayload(null, null, null, null, null, null, null, null, null);
+    }
+    UUID stratVerId = resolveStrategyVersionId(payload.strategyVersionId());
+
     BacktestRequest request = new BacktestRequest(
-        payload.strategyVersionId(),
+        stratVerId,
         payload.symbol() != null ? payload.symbol() : "BTC/USD",
         payload.timeframe() != null ? payload.timeframe() : "1h",
         payload.startTime() != null ? payload.startTime() : Instant.now().minus(30, ChronoUnit.DAYS),
@@ -89,9 +103,14 @@ public class BacktestController {
   }
 
   @PostMapping("/walk-forward")
-  public ResponseEntity<WalkForwardResult> runWalkForward(@RequestBody WalkForwardPayload payload) {
+  public ResponseEntity<WalkForwardResult> runWalkForward(@RequestBody(required = false) WalkForwardPayload payload) {
+    if (payload == null) {
+      payload = new WalkForwardPayload(null, null, null, 0, 0, 0, null, null);
+    }
+    UUID stratVerId = resolveStrategyVersionId(payload.strategyVersionId());
+
     WalkForwardRequest request = new WalkForwardRequest(
-        payload.strategyVersionId(),
+        stratVerId,
         payload.symbol() != null ? payload.symbol() : "BTC/USD",
         payload.timeframe() != null ? payload.timeframe() : "1h",
         payload.windowCount() > 0 ? payload.windowCount() : 5,
@@ -115,9 +134,18 @@ public class BacktestController {
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
-  @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<?> handleBadRequest(IllegalArgumentException e) {
-    return ResponseEntity.unprocessableEntity().body(Map.of("status", "REJECTED", "reason", e.getMessage()));
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<?> handleBadRequest(Exception e) {
+    return ResponseEntity.unprocessableEntity().body(Map.of("status", "REJECTED", "reason", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+  }
+
+  private UUID resolveStrategyVersionId(UUID versionId) {
+    if (versionId != null) return versionId;
+    if (strategyStore != null) {
+      var versions = strategyStore.findAllVersions();
+      if (!versions.isEmpty()) return versions.get(0).id();
+    }
+    return UUID.randomUUID();
   }
 
   private List<Candle> generateSyntheticCandles(String symbol, String timeframe, int count) {
