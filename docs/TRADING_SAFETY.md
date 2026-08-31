@@ -7,6 +7,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 - Bybit: `DEMO` only (`https://api-demo.bybit.com`)
 - `LIVE`: Strictly disabled and rejected at all configuration and execution boundaries.
 
+## Cross-Asset Portfolio Allocation & Risk Parity Invariants
+1. **Advisory Weighting**: Target weights calculated by `RiskParityAllocator` represent capital targets. Any resulting rebalancing orders must individually pass through `RiskEngine`.
+2. **Strict Sum-to-One Normalization**: Target capital weights are normalized such that $\sum w_i = 1.0000$ using exact `BigDecimal` precision.
+3. **VaR/CVaR Exposure Monitoring**: Parametric VaR (95%) and CVaR (95%) metrics monitor cross-asset tail risk to protect against simultaneous correlated market drawdowns.
+
 ## Autonomous Strategy Synthesis & Research Safety Invariants
 1. **Zero Execution Authority**: Research agents and factor engines operate exclusively as analytical tools. They cannot create live orders or access exchange credentials.
 2. **Deterministic Validation Gating**: Candidate strategies synthesized by research agents cannot be deployed directly. They require backtest Sharpe verification and positive Walk-Forward Efficiency (WFE) validation.

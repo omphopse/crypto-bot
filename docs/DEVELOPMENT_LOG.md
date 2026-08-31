@@ -294,6 +294,43 @@
 - **Remaining Limitations:** Advanced portfolio cross-sectional risk parity and multi-asset position optimization belong to the next phase.
 - **Next Recommended Phase:** Advanced Portfolio Risk Management & Cross-Asset Allocation Engine.
 
+## 2026-08-31 — Cross-Asset Portfolio Allocation & Correlation-Aware Risk Parity Engine
+
+- **Phase:** Cross-Asset Portfolio Allocation & Correlation-Aware Risk Parity Engine
+- **Objective:** Implement cross-asset return calculation, covariance & Pearson correlation matrix estimation, inverse-volatility risk-parity capital allocation, portfolio VaR 95% / CVaR 95% analytics, and rebalancing plan persistence.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V11__portfolio_allocation.sql`
+  - `src/main/java/io/algopilot/portfolio/allocation/CorrelationMatrixCalculator.java`
+  - `src/main/java/io/algopilot/portfolio/allocation/RiskParityAllocator.java`
+  - `src/main/java/io/algopilot/portfolio/allocation/PortfolioRiskCalculator.java`
+  - `src/main/java/io/algopilot/portfolio/allocation/model/AllocationWeight.java`
+  - `src/main/java/io/algopilot/portfolio/allocation/model/PortfolioAllocationPlan.java`
+  - `src/main/java/io/algopilot/portfolio/allocation/persistence/PortfolioAllocationStore.java`
+  - `src/main/java/io/algopilot/portfolio/allocation/persistence/JdbcPortfolioAllocationStore.java`
+  - `src/main/java/io/algopilot/portfolio/allocation/service/PortfolioAllocationService.java`
+  - `src/main/java/io/algopilot/portfolio/allocation/controller/PortfolioAllocationController.java`
+  - `src/test/java/io/algopilot/portfolio/allocation/CorrelationMatrixCalculatorTest.java`
+  - `src/test/java/io/algopilot/portfolio/allocation/RiskParityAllocatorTest.java`
+  - `src/test/java/io/algopilot/portfolio/allocation/PortfolioRiskCalculatorTest.java`
+  - `src/test/java/io/algopilot/portfolio/allocation/service/PortfolioAllocationServiceTest.java`
+  - `src/test/java/io/algopilot/portfolio/allocation/controller/PortfolioAllocationControllerTest.java`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `docs/SECURITY.md`
+- **Database Migrations:** `V11__portfolio_allocation.sql` creating `portfolio_allocation_plans`.
+- **Implementation Summary:** Built `CorrelationMatrixCalculator` to compute pairwise asset returns, sample variance, covariance, and Pearson correlation coefficients. Built `RiskParityAllocator` calculating normalized inverse-volatility weights with strict sum-to-1.0000 invariant. Built `PortfolioRiskCalculator` computing aggregate portfolio volatility, parametric Value at Risk (VaR 95%), and Conditional Value at Risk (Expected Shortfall / CVaR 95%). Built `PortfolioAllocationService` generating structured `PortfolioAllocationPlan` records with rebalance deltas, saving to PostgreSQL with append-only audit events.
+- **Tests Executed:** 114 automated tests (7 dedicated new tests covering correlation math, risk parity allocation, portfolio risk metrics, service persistence, and REST endpoints).
+- **Test Results:** 114 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven compilation and test suite succeeded with exit code 0.
+- **Security Review:** Portfolio allocation engine produces advisory rebalancing weights only; actual execution remains strictly gated through `RiskEngine` and `ExecutionGateway`.
+- **Remaining Limitations:** Automated rebalancing order dispatch and schedule execution belong to production operations.
+- **Next Recommended Phase:** Automated Portfolio Rebalancing & Order Execution Orchestration.
+
+
 
 
 

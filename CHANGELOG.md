@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0 — 2026-08-31
+
+- Added quantitative multi-asset covariance and Pearson correlation matrix engine (`CorrelationMatrixCalculator`).
+- Added deterministic inverse-volatility and risk-parity capital allocation engine (`RiskParityAllocator`) enforcing sum-to-1.0000 invariant.
+- Added parametric Value at Risk (VaR 95%) and Expected Shortfall (CVaR 95%) quantitative risk analytics (`PortfolioRiskCalculator`).
+- Added application service (`PortfolioAllocationService`) computing portfolio allocation plans, rebalancing deltas, and audit records.
+- Added Flyway migration `V11__portfolio_allocation.sql` and PostgreSQL persistence (`JdbcPortfolioAllocationStore`) for `portfolio_allocation_plans`.
+- Added REST APIs under `/api/portfolio/allocation` (`/allocate`, `/latest`, `/{id}`, `/history`).
+- Added 7 unit and integration tests covering correlation matrix math, risk-parity allocation, portfolio VaR/CVaR, service orchestration, and REST endpoints (114 total passing tests).
+
 ## 0.6.0 — 2026-08-31
 
 - Added quantitative multi-factor modeling engine (`FactorEngine`) computing standardized factor scores for Momentum (EMA divergence), Mean Reversion (RSI extremes), Volatility Breakout (ATR expansion), Volume Imbalance (volume spikes), and Trend Strength, with composite alpha weighting.

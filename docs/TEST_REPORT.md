@@ -1,35 +1,42 @@
 # Test report
 
-## 2026-08-31 — Autonomous Multi-Factor Strategy & Research Agent Engine Milestone
+## 2026-08-31 — Cross-Asset Portfolio Allocation & Risk Parity Engine Milestone
 
 Command: `mvn test -q`
 
-Result: passed (107 tests executed across 35 test classes, 0 failures, 0 errors, 0 skipped).
+Result: passed (114 tests executed across 40 test classes, 0 failures, 0 errors, 0 skipped).
 
-### Covered Multi-Factor Research & Strategy Synthesis Scenarios:
+### Covered Portfolio Allocation & Risk Parity Scenarios:
 
-1. **Factor Engine (`FactorEngine`):**
-   - Momentum factor calculation (Fast vs Slow EMA rate of change).
-   - Mean Reversion factor calculation (RSI overbought/oversold extremes).
-   - Volatility Breakout factor calculation (High/Low range vs ATR multiplier).
-   - Volume Imbalance factor calculation (Volume spikes vs 20-period average volume).
-   - Trend Strength factor calculation (Price distance to moving average).
-   - Composite Alpha Score weighted combination bounded strictly between `[-1.0000, +1.0000]`.
-   - Empty/undersized candle dataset safety.
+1. **Correlation & Covariance Engine (`CorrelationMatrixCalculator`):**
+   - Percentage returns extraction from price candles.
+   - Sample mean, variance, standard deviation calculations.
+   - Pairwise covariance calculation.
+   - Pearson correlation coefficients bounded strictly between `[-1.0000, +1.0000]`.
+   - Complete cross-asset correlation matrix construction.
 
-2. **Research Agent Application Service (`ResearchAgentService`):**
-   - Alpha hypothesis generation with transparent factor attribution summaries.
-   - Strategy synthesis with parameterized versioned strategy definitions.
-   - Validation qualification gating: deterministic evaluation of Backtest Sharpe ratio, max drawdown, and Walk-Forward Efficiency (WFE) ratio.
-   - Automated candidate classification (`APPROVED_CANDIDATE` vs `REJECTED_CANDIDATE`).
-   - Append-only audit trail generation.
+2. **Risk Parity Allocator (`RiskParityAllocator`):**
+   - Inverse-volatility weighting assigning lower weights to high-volatility assets.
+   - Exact sum-to-1.0000 normalization invariant.
+   - Handling of uniform/zero volatility fallback.
 
-3. **Research REST Controller (`ResearchController`):**
-   - Factor evaluation endpoint (`/api/research/evaluate-factors`).
-   - Strategy synthesis endpoint (`/api/research/synthesize-strategy`).
-   - Querying recent hypotheses (`/api/research/hypotheses`) and strategy candidates (`/api/research/candidates`).
+3. **Portfolio Risk Calculator (`PortfolioRiskCalculator`):**
+   - Portfolio variance $\sigma_p^2 = \sum_i \sum_j w_i w_j \sigma_i \sigma_j \rho_{ij}$ and portfolio volatility $\sigma_p$.
+   - 1-day 95% Parametric Value at Risk (VaR 95%).
+   - 1-day 95% Conditional Value at Risk (Expected Shortfall / CVaR 95%).
+
+4. **Portfolio Allocation Service (`PortfolioAllocationService`):**
+   - End-to-end plan generation with rebalancing delta calculations.
+   - Validation against empty symbol lists.
+   - PostgreSQL persistence and append-only audit trail logging.
+
+5. **Portfolio Allocation REST Controller (`PortfolioAllocationController`):**
+   - Endpoint `/api/portfolio/allocation/allocate` generating plans.
+   - Endpoint `/api/portfolio/allocation/latest` and `/{id}` with 404 handling.
+   - Endpoint `/api/portfolio/allocation/history`.
 
 ### Earlier Verified Milestone Suites (All Passing):
+- Autonomous Multi-Factor Strategy & Research Agent Engine (6 tests).
 - Real-Time WebSocket Streaming & Market Data Feeds (12 tests).
 - Event-Driven Backtesting & Walk-Forward Validation Engine (14 tests).
 - Exchange Adapters (Alpaca Paper & Bybit Demo) and Execution Gateway (21 tests).
