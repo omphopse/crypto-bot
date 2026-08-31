@@ -139,7 +139,6 @@ public class PortfolioRebalanceService {
     );
   }
 
-  @Transactional
   public RebalanceRun executeRebalance(
       UUID planId,
       UUID botId,

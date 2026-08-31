@@ -15,8 +15,9 @@ public class OrderService {
   private final RiskDecisionService risk; private final OrderStore orders; private final AuditEventWriter audit; private final Clock clock;
   @org.springframework.beans.factory.annotation.Autowired
   public OrderService(RiskDecisionService risk, OrderStore orders, AuditEventWriter audit) { this(risk, orders, audit, Clock.systemUTC()); }
-  OrderService(RiskDecisionService risk, OrderStore orders, AuditEventWriter audit, Clock clock) { this.risk = risk; this.orders = orders; this.audit = audit; this.clock = clock; }
-  @Transactional public OrderRecord create(RiskDecisionRequest command) {
+  public OrderService(RiskDecisionService risk, OrderStore orders, AuditEventWriter audit, Clock clock) { this.risk = risk; this.orders = orders; this.audit = audit; this.clock = clock; }
+  @Transactional(noRollbackFor = OrderRejectedException.class)
+  public OrderRecord create(RiskDecisionRequest command) {
     var existing = orders.findByClientOrderId(command.clientOrderId());
     if (existing.isPresent()) return existing.get(); // idempotent retry: do not evaluate or create a second order
     RiskDecision decision = risk.evaluate(command);
