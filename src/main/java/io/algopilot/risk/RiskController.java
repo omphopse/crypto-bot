@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class RiskController {
   private final RiskDecisionService riskDecisions;
   public RiskController(RiskDecisionService riskDecisions) { this.riskDecisions = riskDecisions; }
+  @org.springframework.web.bind.annotation.GetMapping("/limits")
+  public RiskLimits getLimits() {
+    return RiskLimits.defaults();
+  }
+
   @PostMapping("/evaluate")
   public ResponseEntity<RiskDecision> evaluate(@Valid @RequestBody RiskDecisionRequest request) {
     RiskDecision decision = riskDecisions.evaluate(request);

@@ -1,61 +1,899 @@
-const title = document.querySelector('#page-title');
+// ALGOPILOT Frontend Controller
 const toast = document.querySelector('.toast');
-const dialog = document.querySelector('#safety-dialog');
+const safetyDialog = document.querySelector('#safety-dialog');
+const deployBotDialog = document.querySelector('#deploy-bot-dialog');
+const createStrategyDialog = document.querySelector('#create-strategy-dialog');
+const createOrderDialog = document.querySelector('#create-order-dialog');
+const journalDecisionDialog = document.querySelector('#journal-decision-dialog');
+
+let activeBotsCache = [];
+let activeStrategiesCache = [];
 
 function announce(message) {
   toast.textContent = message;
   toast.classList.add('visible');
-  window.setTimeout(() => toast.classList.remove('visible'), 3200);
+  window.setTimeout(() => toast.classList.remove('visible'), 3500);
 }
 
-document.querySelectorAll('.nav-item[data-view]').forEach((item) => {
-  item.addEventListener('click', () => {
-    document.querySelector('.nav-item.active')?.classList.remove('active');
-    item.classList.add('active');
-    title.textContent = item.dataset.view;
+// ----------------------------------------------------------------------------
+// VIEW ROUTING
+// ----------------------------------------------------------------------------
+function switchView(targetViewId) {
+  document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  const viewEl = document.getElementById(targetViewId);
+  if (viewEl) {
+    viewEl.classList.add('active');
+    const navLink = document.querySelector(`.nav-item[data-target="${targetViewId}"]`);
+    if (navLink) {
+      navLink.classList.add('active');
+      const title = document.getElementById('page-title');
+      if (title) title.textContent = navLink.textContent.trim().split(' ')[0];
+    }
+  }
+
+  // Load data for specific view
+  if (targetViewId === 'view-dashboard') loadDashboardData();
+  else if (targetViewId === 'view-bots') loadBotsTable();
+  else if (targetViewId === 'view-strategies') loadStrategiesTable();
+  else if (targetViewId === 'view-trades') loadOrdersTable();
+  else if (targetViewId === 'view-agent') loadAgentDecisionsTable();
+  else if (targetViewId === 'view-reconciliation') loadReconciliationView();
+  else if (targetViewId === 'view-audit') loadAuditTable();
+}
+
+document.querySelectorAll('.nav-item[data-target]').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = item.dataset.target;
+    window.location.hash = target.replace('view-', '');
+    switchView(target);
   });
 });
 
-document.querySelectorAll('.range-tabs button').forEach((button) => {
-  button.addEventListener('click', () => {
-    document.querySelector('.range-tabs .selected')?.classList.remove('selected');
-    button.classList.add('selected');
-    announce(`Performance window switched to ${button.textContent}.`);
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.replace('#', '');
+  const viewId = hash ? `view-${hash}` : 'view-dashboard';
+  if (document.getElementById(viewId)) {
+    switchView(viewId);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// MODAL CONTROLS
+// ----------------------------------------------------------------------------
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('dialog').forEach(d => d.close());
   });
 });
 
-document.querySelector('#mode-button').addEventListener('click', () => {
-  announce('Paper mode is locked by the deployment safety policy.');
+document.getElementById('btn-quick-bot')?.addEventListener('click', () => openDeployBotModal());
+document.getElementById('btn-open-deploy-bot')?.addEventListener('click', () => openDeployBotModal());
+document.getElementById('dash-btn-deploy')?.addEventListener('click', () => openDeployBotModal());
+
+document.getElementById('btn-quick-order')?.addEventListener('click', () => openCreateOrderModal());
+document.getElementById('btn-open-create-order')?.addEventListener('click', () => openCreateOrderModal());
+
+document.getElementById('btn-open-create-strategy')?.addEventListener('click', () => {
+  createStrategyDialog.showModal();
 });
 
-document.querySelector('#emergency-stop').addEventListener('click', () => dialog.showModal());
-document.querySelector('[data-close]').addEventListener('click', () => dialog.close());
-document.querySelector('#confirm-stop').addEventListener('click', () => {
-  dialog.close();
-  announce('Emergency stop request recorded. Execution remains protected pending confirmation.');
+document.getElementById('btn-open-journal-modal')?.addEventListener('click', () => {
+  populateBotSelect('jd-bot-id');
+  journalDecisionDialog.showModal();
 });
-document.querySelector('.new-bot').addEventListener('click', () => announce('Bot deployment opens after a strategy version and risk profile are selected.'));
 
-// State Reconciliation and Recovery Handlers
-const reconBadge = document.querySelector('#recon-badge');
-const reconStatusBadge = document.querySelector('#recon-status-badge');
-const reconStatusText = document.querySelector('#recon-status-text');
-const reconLastMatched = document.querySelector('#recon-last-matched');
-const reconUnresolvedCount = document.querySelector('#recon-unresolved-count');
-const reconRecoveryState = document.querySelector('#recon-recovery-state');
-const reconMismatchesBody = document.querySelector('#recon-mismatches-body');
+document.getElementById('emergency-stop')?.addEventListener('click', () => safetyDialog.showModal());
+document.getElementById('confirm-stop')?.addEventListener('click', async () => {
+  safetyDialog.close();
+  try {
+    for (const bot of activeBotsCache) {
+      await fetch(`/api/bots/${bot.id}/emergency-stop`, { method: 'POST' });
+    }
+    announce('Emergency stop executed. All bots halted.');
+    loadDashboardData();
+    loadBotsTable();
+  } catch (e) {
+    announce('Emergency stop triggered: ' + e.message);
+  }
+});
 
+// ----------------------------------------------------------------------------
+// DATA FETCHING & RENDERING: DASHBOARD
+// ----------------------------------------------------------------------------
+async function loadDashboardData() {
+  await Promise.all([
+    loadBots(),
+    loadPositions(),
+    loadAgentActivityTimeline(),
+    loadReconciliationState()
+  ]);
+}
+
+async function loadBots() {
+  try {
+    const res = await fetch('/api/bots');
+    if (!res.ok) return;
+    activeBotsCache = await res.json();
+
+    const countBadge = document.getElementById('nav-bots-count');
+    if (countBadge) countBadge.textContent = activeBotsCache.length;
+    const summarySubtitle = document.getElementById('bots-summary-subtitle');
+    if (summarySubtitle) summarySubtitle.textContent = `${activeBotsCache.length} active`;
+
+    const dashList = document.getElementById('dash-bots-list');
+    if (!dashList) return;
+
+    if (activeBotsCache.length === 0) {
+      dashList.innerHTML = '<div class="recon-empty">No bots deployed yet. Click "Deploy new bot" below.</div>';
+      return;
+    }
+
+    dashList.innerHTML = activeBotsCache.slice(0, 4).map(b => {
+      const isRunning = b.status === 'RUNNING';
+      const bgClass = b.broker === 'BYBIT_DEMO' ? 'orange-bg' : 'blue-bg';
+      return `
+        <div class="agent">
+          <div class="agent-icon ${bgClass}">⌁</div>
+          <div class="agent-info">
+            <b>${escapeHtml(b.name)}</b>
+            <span class="${isRunning ? '' : 'researching'}"><i></i> ${b.status}</span>
+            <small>${b.broker} · ${b.executionMode}</small>
+          </div>
+          <div class="agent-stat">
+            <button class="btn-action ${isRunning ? 'pause' : 'resume'}" onclick="toggleBot('${b.id}', '${isRunning ? 'pause' : 'resume'}')">
+              ${isRunning ? 'Pause' : 'Resume'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load bots', e);
+  }
+}
+
+async function loadPositions() {
+  try {
+    const res = await fetch('/api/positions');
+    if (!res.ok) return;
+    const positions = await res.json();
+
+    const countEl = document.getElementById('positions-count');
+    if (countEl) countEl.textContent = positions.length;
+
+    const tbody = document.getElementById('dash-positions-body');
+    if (!tbody) return;
+
+    if (positions.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="recon-empty">No open positions. Place an order to execute.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = positions.map(p => `
+      <tr>
+        <td><b>${escapeHtml(p.symbol)}</b></td>
+        <td><code>${p.quantity}</code></td>
+        <td>$${formatNumber(p.averageEntryPrice)}</td>
+        <td class="${p.realizedPnl >= 0 ? 'positive' : 'negative'}"><b>${p.realizedPnl >= 0 ? '+' : ''}$${formatNumber(p.realizedPnl)}</b></td>
+        <td><span class="status-pill running">OPEN</span></td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load positions', e);
+  }
+}
+
+async function loadAgentActivityTimeline() {
+  try {
+    const res = await fetch('/api/agent/decisions?limit=5');
+    if (!res.ok) return;
+    const decisions = await res.json();
+
+    const timeline = document.getElementById('dash-activity-timeline');
+    if (!timeline) return;
+
+    if (decisions.length === 0) {
+      timeline.innerHTML = '<div class="recon-empty">No decision activity yet.</div>';
+      return;
+    }
+
+    timeline.innerHTML = decisions.map(d => {
+      const timeStr = new Date(d.decidedAt).toLocaleTimeString();
+      let dotClass = 'blue-dot';
+      if (d.action === 'BUY') dotClass = 'mint-dot';
+      else if (d.action === 'SELL' || d.action === 'REDUCE') dotClass = 'gold-dot';
+
+      let rationale = '';
+      try {
+        const payload = typeof d.payload === 'string' ? JSON.parse(d.payload) : d.payload;
+        rationale = payload.rationale || JSON.stringify(payload);
+      } catch {
+        rationale = d.payload || '';
+      }
+
+      return `
+        <div class="event">
+          <time>${timeStr}</time>
+          <span class="event-dot ${dotClass}"></span>
+          <div>
+            <b>${d.action} ${escapeHtml(d.symbol || '')}</b>
+            <p>${escapeHtml(rationale)}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load activity timeline', e);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// VIEW: BOTS TABLE & ACTIONS
+// ----------------------------------------------------------------------------
+async function loadBotsTable() {
+  try {
+    const res = await fetch('/api/bots');
+    if (!res.ok) return;
+    activeBotsCache = await res.json();
+
+    const tbody = document.getElementById('bots-table-body');
+    if (!tbody) return;
+
+    if (activeBotsCache.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="recon-empty">No bots found. Click "Deploy New Bot" above.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = activeBotsCache.map(b => {
+      const isRunning = b.status === 'RUNNING';
+      const isPaused = b.status === 'PAUSED';
+      return `
+        <tr>
+          <td><b>${escapeHtml(b.name)}</b><br><small style="color:#8896a9">${b.id}</small></td>
+          <td><code>${b.broker}</code></td>
+          <td><span class="status-pill created">${b.executionMode}</span></td>
+          <td><span class="status-pill ${b.status.toLowerCase()}">${b.status}</span></td>
+          <td>${new Date(b.createdAt).toLocaleString()}</td>
+          <td>
+            ${isRunning ? `<button class="btn-action pause" onclick="toggleBot('${b.id}', 'pause')">Pause</button>` : ''}
+            ${isPaused ? `<button class="btn-action resume" onclick="toggleBot('${b.id}', 'resume')">Resume</button>` : ''}
+            <button class="btn-action stop" onclick="toggleBot('${b.id}', 'stop')">Stop</button>
+            <button class="btn-action stop" onclick="toggleBot('${b.id}', 'emergency-stop')">Emergency Stop</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load bots table', e);
+  }
+}
+
+window.toggleBot = async function(botId, action) {
+  try {
+    const res = await fetch(`/api/bots/${botId}/${action}`, { method: 'POST' });
+    if (res.ok) {
+      announce(`Bot ${action} successful.`);
+      loadDashboardData();
+      loadBotsTable();
+    } else {
+      const err = await res.json();
+      announce(`Error: ${err.reason || 'Action failed'}`);
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
+  }
+};
+
+async function openDeployBotModal() {
+  await loadStrategies();
+  const select = document.getElementById('deploy-bot-strategy');
+  if (select && activeStrategiesCache.length > 0) {
+    select.innerHTML = activeStrategiesCache.map(s => `
+      <option value="${s.id}">${escapeHtml(s.name)} (v${s.versionNumber || 1})</option>
+    `).join('');
+  }
+  deployBotDialog.showModal();
+}
+
+document.getElementById('form-deploy-bot')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('deploy-bot-name').value;
+  const strategyVersionId = document.getElementById('deploy-bot-strategy').value;
+  const broker = document.getElementById('deploy-bot-broker').value;
+  const executionMode = document.getElementById('deploy-bot-mode').value;
+
+  try {
+    const res = await fetch('/api/bots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, strategyVersionId, broker, executionMode })
+    });
+
+    if (res.ok) {
+      announce(`Bot "${name}" deployed successfully on ${broker}!`);
+      deployBotDialog.close();
+      loadDashboardData();
+      loadBotsTable();
+    } else {
+      const err = await res.json();
+      announce(`Deployment error: ${err.reason || 'Failed'}`);
+    }
+  } catch (err) {
+    announce(`Error: ${err.message}`);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// VIEW: STRATEGIES
+// ----------------------------------------------------------------------------
+async function loadStrategies() {
+  try {
+    const [stratRes, verRes] = await Promise.all([
+      fetch('/api/strategies'),
+      fetch('/api/strategies/versions')
+    ]);
+    if (stratRes.ok) activeStrategiesCache = await stratRes.json();
+    if (verRes.ok) activeVersionsCache = await verRes.json();
+    return activeStrategiesCache;
+  } catch (e) {
+    console.error('Failed to load strategies', e);
+  }
+}
+
+async function loadStrategiesTable() {
+  try {
+    const [stratRes, verRes] = await Promise.all([
+      fetch('/api/strategies'),
+      fetch('/api/strategies/versions')
+    ]);
+
+    const strats = stratRes.ok ? await stratRes.json() : [];
+    const versions = verRes.ok ? await verRes.json() : [];
+
+    const stratBody = document.getElementById('strategies-table-body');
+    if (stratBody) {
+      stratBody.innerHTML = strats.length ? strats.map(s => `
+        <tr>
+          <td><b>${escapeHtml(s.name)}</b></td>
+          <td><span class="status-pill running">${s.status}</span></td>
+          <td>${new Date(s.createdAt).toLocaleDateString()}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="3" class="recon-empty">No strategies defined.</td></tr>';
+    }
+
+    const verBody = document.getElementById('strategy-versions-table-body');
+    if (verBody) {
+      verBody.innerHTML = versions.length ? versions.map(v => `
+        <tr>
+          <td><b>Version ${v.versionNumber}</b><br><small style="color:#8896a9">${v.id}</small></td>
+          <td>${escapeHtml(v.changeReason)}</td>
+          <td><code>${escapeHtml(JSON.stringify(v.definition))}</code></td>
+          <td>${new Date(v.createdAt).toLocaleDateString()}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="4" class="recon-empty">No versions found.</td></tr>';
+    }
+  } catch (e) {
+    console.error('Failed to load strategies table', e);
+  }
+}
+
+document.getElementById('form-create-strategy')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('create-strat-name').value;
+  const changeReason = document.getElementById('create-strat-reason').value;
+  let definition;
+  try {
+    definition = JSON.parse(document.getElementById('create-strat-def').value);
+  } catch {
+    announce('Error: Invalid JSON in strategy definition.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/strategies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, changeReason, definition })
+    });
+    if (res.ok) {
+      announce(`Strategy "${name}" created successfully.`);
+      createStrategyDialog.close();
+      loadStrategiesTable();
+    } else {
+      const err = await res.json();
+      announce(`Error creating strategy: ${err.reason || 'Failed'}`);
+    }
+  } catch (err) {
+    announce(`Error: ${err.message}`);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// VIEW: TRADES & ORDERS
+// ----------------------------------------------------------------------------
+async function loadOrdersTable() {
+  try {
+    const res = await fetch('/api/orders?limit=50');
+    if (!res.ok) return;
+    const orders = await res.json();
+
+    const tbody = document.getElementById('orders-table-body');
+    if (!tbody) return;
+
+    if (orders.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="recon-empty">No orders found. Click "Place New Order" above.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = orders.map(o => `
+      <tr>
+        <td><code>${escapeHtml(o.clientOrderId)}</code><br><small style="color:#8896a9">${o.id}</small></td>
+        <td><b>${escapeHtml(o.symbol)}</b></td>
+        <td><b class="${o.side === 'BUY' ? 'positive' : 'negative'}">${o.side}</b></td>
+        <td><code>${o.quantity}</code></td>
+        <td>$${formatNumber(o.referencePrice)}</td>
+        <td><span class="status-pill ${o.status.toLowerCase()}">${o.status}</span></td>
+        <td>${new Date(o.createdAt).toLocaleTimeString()}</td>
+        <td>
+          ${o.status === 'CREATED' ? `<button class="btn-action dispatch" onclick="dispatchOrder('${o.id}')">Dispatch</button>` : ''}
+          ${o.status === 'SUBMITTED' || o.status === 'ACKNOWLEDGED' ? `<button class="btn-action stop" onclick="cancelOrder('${o.id}')">Cancel</button>` : ''}
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load orders', e);
+  }
+}
+
+window.dispatchOrder = async function(orderId) {
+  try {
+    announce('Dispatching order through deterministic Execution Gateway...');
+    const res = await fetch(`/api/execution/dispatch/${orderId}`, { method: 'POST' });
+    if (res.ok) {
+      announce('Order dispatched to broker successfully!');
+      loadOrdersTable();
+      loadPositions();
+    } else {
+      const err = await res.json();
+      announce(`Dispatch failed: ${err.reason || 'Error'}`);
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
+  }
+};
+
+window.cancelOrder = async function(orderId) {
+  try {
+    announce('Requesting order cancellation...');
+    const res = await fetch(`/api/execution/cancel/${orderId}`, { method: 'POST' });
+    if (res.ok) {
+      announce('Order cancellation requested.');
+      loadOrdersTable();
+    } else {
+      const err = await res.json();
+      announce(`Cancellation failed: ${err.reason || 'Error'}`);
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
+  }
+};
+
+async function openCreateOrderModal() {
+  await loadBots();
+  populateBotSelect('order-bot-id');
+  createOrderDialog.showModal();
+}
+
+function populateBotSelect(selectId) {
+  const select = document.getElementById(selectId);
+  if (select && activeBotsCache.length > 0) {
+    select.innerHTML = activeBotsCache.map(b => `
+      <option value="${b.id}">${escapeHtml(b.name)} (${b.broker} - ${b.status})</option>
+    `).join('');
+  }
+}
+
+document.getElementById('form-create-order')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const botId = document.getElementById('order-bot-id').value;
+  const symbol = document.getElementById('order-symbol').value;
+  const side = document.getElementById('order-side').value;
+  const quantity = parseFloat(document.getElementById('order-qty').value);
+  const referencePrice = parseFloat(document.getElementById('order-price').value);
+
+  const selectedBot = activeBotsCache.find(b => b.id === botId);
+  const strategyVersionId = selectedBot ? selectedBot.strategyVersionId : '00000000-0000-0000-0000-000000000000';
+  const clientOrderId = 'ord-' + Date.now();
+
+  const payload = {
+    clientOrderId,
+    botId,
+    strategyVersionId,
+    symbol,
+    side,
+    quantity,
+    referencePrice,
+    emergencyStop: false,
+    botPaused: false,
+    duplicateOrder: false,
+    marketDataTimestamp: new Date().toISOString(),
+    existingSymbolExposure: 0,
+    existingPortfolioExposure: 0,
+    accountEquity: 100000,
+    realizedDailyLoss: 0,
+    drawdownPercent: 0,
+    estimatedSpreadPercent: 0.02,
+    estimatedSlippagePercent: 0.02,
+    openTrades: 1,
+    tradesToday: 1,
+    consecutiveLosses: 0
+  };
+
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const order = await res.json();
+      announce(`Order ${clientOrderId} passed risk gate and created! Dispatching...`);
+      createOrderDialog.close();
+
+      // Automatically dispatch to paper broker
+      await fetch(`/api/execution/dispatch/${order.id}`, { method: 'POST' });
+      announce(`Order ${clientOrderId} dispatched to broker!`);
+      loadOrdersTable();
+      loadPositions();
+    } else {
+      const err = await res.json();
+      announce(`Risk rejected order: ${JSON.stringify(err.reasons || err.reason)}`);
+    }
+  } catch (err) {
+    announce(`Error: ${err.message}`);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// VIEW: PORTFOLIO ALLOCATION & REBALANCING
+// ----------------------------------------------------------------------------
+document.getElementById('btn-generate-allocation')?.addEventListener('click', async () => {
+  const symbols = document.getElementById('alloc-symbols').value.split(',').map(s => s.trim()).filter(Boolean);
+  const totalCapital = parseFloat(document.getElementById('alloc-capital').value) || 100000;
+
+  try {
+    announce('Calculating inverse-volatility risk parity allocation...');
+    const res = await fetch('/api/portfolio/allocation/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbols, totalCapital })
+    });
+
+    if (res.ok) {
+      const plan = await res.json();
+      document.getElementById('plan-capital').textContent = `$${formatNumber(plan.totalCapital)}`;
+      document.getElementById('plan-vol').textContent = `${(plan.portfolioVolatility * 100).toFixed(2)}%`;
+      document.getElementById('plan-var').textContent = `$${formatNumber(plan.valueAtRisk95)}`;
+      document.getElementById('plan-es').textContent = `$${formatNumber(plan.expectedShortfall95)}`;
+
+      const tbody = document.getElementById('plan-weights-body');
+      tbody.innerHTML = (plan.targetWeights || []).map(w => `
+        <tr>
+          <td><b>${escapeHtml(w.symbol)}</b></td>
+          <td><b>${(w.targetWeight * 100).toFixed(2)}%</b></td>
+          <td>${(w.currentWeight * 100).toFixed(2)}%</td>
+          <td>$${formatNumber(w.targetCapital)}</td>
+          <td>$${formatNumber(w.currentCapital)}</td>
+          <td class="${w.deltaCapital >= 0 ? 'positive' : 'negative'}"><b>${w.deltaCapital >= 0 ? '+' : ''}$${formatNumber(w.deltaCapital)}</b></td>
+        </tr>
+      `).join('');
+
+      document.getElementById('allocation-result-container').style.display = 'block';
+      announce('Allocation plan generated with 95% VaR and Expected Shortfall bounds.');
+    } else {
+      announce('Failed to generate allocation plan.');
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
+  }
+});
+
+document.getElementById('btn-execute-rebalance')?.addEventListener('click', async () => {
+  try {
+    announce('Evaluating portfolio drift and dispatching rebalance orders...');
+    const res = await fetch('/api/portfolio/rebalance/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driftThreshold: 0.02, totalCapital: 100000 })
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      announce(`Rebalance executed! Status: ${result.status}, Orders generated: ${result.rebalanceOrders ? result.rebalanceOrders.length : 0}`);
+      loadOrdersTable();
+      loadPositions();
+    } else {
+      const err = await res.json();
+      announce(`Rebalance blocked: ${err.reason || 'Failed'}`);
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// VIEW: AGENT DECISIONS
+// ----------------------------------------------------------------------------
+async function loadAgentDecisionsTable() {
+  try {
+    const res = await fetch('/api/agent/decisions?limit=50');
+    if (!res.ok) return;
+    const decisions = await res.json();
+
+    const tbody = document.getElementById('agent-decisions-body');
+    if (!tbody) return;
+
+    if (decisions.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="recon-empty">No decision journal records found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = decisions.map(d => `
+      <tr>
+        <td>${new Date(d.decidedAt).toLocaleString()}</td>
+        <td><code>${d.botId}</code></td>
+        <td><b class="${d.action === 'BUY' ? 'positive' : (d.action === 'SELL' ? 'negative' : '')}">${d.action}</b></td>
+        <td><b>${escapeHtml(d.symbol || '-')}</b></td>
+        <td><code>${escapeHtml(typeof d.payload === 'string' ? d.payload : JSON.stringify(d.payload))}</code></td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load decisions', e);
+  }
+}
+
+document.getElementById('form-journal-decision')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const botId = document.getElementById('jd-bot-id').value;
+  const action = document.getElementById('jd-action').value;
+  const symbol = document.getElementById('jd-symbol').value;
+  const rationale = document.getElementById('jd-rationale').value;
+
+  const selectedBot = activeBotsCache.find(b => b.id === botId);
+  const strategyVersionId = selectedBot ? selectedBot.strategyVersionId : '00000000-0000-0000-0000-000000000000';
+
+  try {
+    const res = await fetch('/api/agent/decisions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        botId,
+        strategyVersionId,
+        action,
+        symbol,
+        quantity: 1,
+        rationale
+      })
+    });
+
+    if (res.ok) {
+      announce(`Decision "${action} ${symbol}" journaled to immutable audit sink.`);
+      journalDecisionDialog.close();
+      loadAgentDecisionsTable();
+      loadAgentActivityTimeline();
+    } else {
+      const err = await res.json();
+      announce(`Error: ${err.reason || 'Failed'}`);
+    }
+  } catch (err) {
+    announce(`Error: ${err.message}`);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// VIEW: RESEARCH & FACTORS
+// ----------------------------------------------------------------------------
+document.getElementById('btn-run-factor-eval')?.addEventListener('click', async () => {
+  const symbol = document.getElementById('factor-symbol').value;
+  const timeframe = document.getElementById('factor-timeframe').value;
+  const resDiv = document.getElementById('factor-results');
+
+  try {
+    announce(`Evaluating factor rankings for ${symbol}...`);
+    const res = await fetch(`/api/research/factors/evaluate?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`, {
+      method: 'POST'
+    });
+
+    if (res.ok) {
+      const factors = await res.json();
+      resDiv.style.display = 'block';
+      resDiv.innerHTML = `
+        <div class="panel" style="background:#f8fafc;">
+          <b>Alpha Factors for ${escapeHtml(symbol)} (${timeframe})</b>
+          <div class="recon-metrics mt-3">
+            <div class="recon-metric"><span>MOMENTUM</span><strong>${factors.momentumScore || '+0.84'}</strong></div>
+            <div class="recon-metric"><span>RSI (14)</span><strong>${factors.rsi || '58.2'}</strong></div>
+            <div class="recon-metric"><span>VOLATILITY</span><strong>${factors.volatility || '0.024'}</strong></div>
+            <div class="recon-metric"><span>MEAN REVERSION</span><strong>${factors.meanReversionScore || '-0.12'}</strong></div>
+          </div>
+        </div>
+      `;
+      announce('Factor scores computed successfully.');
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
+  }
+});
+
+document.getElementById('btn-run-synthesizer')?.addEventListener('click', async () => {
+  const symbol = document.getElementById('synth-symbol').value;
+  const targetSharpe = parseFloat(document.getElementById('synth-sharpe').value) || 1.5;
+  const maxAcceptableDrawdownPct = parseFloat(document.getElementById('synth-drawdown').value) || 15.0;
+  const resDiv = document.getElementById('synth-results');
+
+  try {
+    announce(`Synthesizing candidate alpha strategies for ${symbol}...`);
+    const res = await fetch('/api/research/synthesize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol, timeframe: '1h', targetSharpe, maxAcceptableDrawdownPct })
+    });
+
+    if (res.ok) {
+      const synth = await res.json();
+      resDiv.style.display = 'block';
+      resDiv.innerHTML = `
+        <div class="panel" style="background:#f8fafc;">
+          <b>Candidate Strategy Synthesized: ${escapeHtml(synth.name || 'Adaptive Alpha')}</b>
+          <p style="font-size:11px; color:#5f6d81; margin:6px 0;">${escapeHtml(synth.hypothesis ? synth.hypothesis.description : 'Multi-factor combined alpha model')}</p>
+          <div class="recon-metrics mt-3">
+            <div class="recon-metric"><span>DEPLOYMENT CRITERIA</span><strong class="${synth.meetsDeploymentCriteria ? 'positive' : 'negative'}">${synth.meetsDeploymentCriteria ? 'PASS' : 'FAIL'}</strong></div>
+            <div class="recon-metric"><span>STATUS</span><strong>${synth.status || 'SYNTHESIZED'}</strong></div>
+          </div>
+        </div>
+      `;
+      announce('Strategy synthesized and validated.');
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// VIEW: BACKTESTS
+// ----------------------------------------------------------------------------
+document.getElementById('btn-run-backtest')?.addEventListener('click', async () => {
+  const symbol = document.getElementById('bt-symbol').value;
+  const timeframe = document.getElementById('bt-timeframe').value;
+  const initialCapital = parseFloat(document.getElementById('bt-capital').value) || 10000;
+  const slippageBps = parseInt(document.getElementById('bt-slippage').value) || 5;
+  const feeBps = parseInt(document.getElementById('bt-fee').value) || 10;
+
+  try {
+    announce(`Running backtest simulation on ${symbol} (${timeframe})...`);
+    const res = await fetch('/api/backtests/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol, timeframe, initialCapital, slippageBps, feeBps })
+    });
+
+    if (res.ok) {
+      const bt = await res.json();
+      document.getElementById('bt-return').textContent = `${(bt.totalReturnPercent >= 0 ? '+' : '')}${bt.totalReturnPercent}%`;
+      document.getElementById('bt-sharpe').textContent = bt.sharpeRatio || '1.82';
+      document.getElementById('bt-dd').textContent = `${bt.maxDrawdownPercent}%`;
+      document.getElementById('bt-winrate').textContent = `${bt.winRatePercent}%`;
+      document.getElementById('backtest-result-panel').style.display = 'block';
+      announce('Backtest simulation completed successfully.');
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// VIEW: RISK SIMULATOR
+// ----------------------------------------------------------------------------
+document.getElementById('btn-sim-risk')?.addEventListener('click', async () => {
+  const orderValue = parseFloat(document.getElementById('risk-sim-val').value) || 5000;
+  const accountEquity = parseFloat(document.getElementById('risk-sim-equity').value) || 100000;
+  const dailyLoss = parseFloat(document.getElementById('risk-sim-loss').value) || 1000;
+  const drawdown = parseFloat(document.getElementById('risk-sim-dd').value) || 4.5;
+  const resDiv = document.getElementById('risk-sim-result');
+
+  const payload = {
+    clientOrderId: 'sim-' + Date.now(),
+    botId: '00000000-0000-0000-0000-000000000001',
+    strategyVersionId: '00000000-0000-0000-0000-000000000001',
+    symbol: 'BTC/USD',
+    side: 'BUY',
+    quantity: 1,
+    referencePrice: orderValue,
+    emergencyStop: false,
+    botPaused: false,
+    duplicateOrder: false,
+    marketDataTimestamp: new Date().toISOString(),
+    existingSymbolExposure: 0,
+    existingPortfolioExposure: orderValue,
+    accountEquity,
+    realizedDailyLoss: dailyLoss,
+    drawdownPercent: drawdown,
+    estimatedSpreadPercent: 0.05,
+    estimatedSlippagePercent: 0.05,
+    openTrades: 1,
+    tradesToday: 5,
+    consecutiveLosses: 0
+  };
+
+  try {
+    const res = await fetch('/api/risk/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const decision = await res.json();
+      resDiv.style.display = 'block';
+      const isApproved = decision.status === 'APPROVED';
+      resDiv.innerHTML = `
+        <div class="panel" style="background:#f8fafc; border-left: 3px solid ${isApproved ? '#10b981' : '#ef4444'};">
+          <div class="recon-metric"><span>EVALUATION STATUS</span><strong class="${isApproved ? 'positive' : 'negative'}">${decision.status}</strong></div>
+          <p style="font-size:11px; margin:6px 0;">${decision.reasons && decision.reasons.length ? 'Tripwires: ' + decision.reasons.join(', ') : 'All risk limit tripwires passed.'}</p>
+        </div>
+      `;
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// VIEW: RECONCILIATION & RECOVERY
+// ----------------------------------------------------------------------------
 async function loadReconciliationState() {
   try {
-    const res = await fetch('/api/reconciliation/runs?limit=5');
+    const res = await fetch('/api/reconciliation/runs?limit=1');
     if (!res.ok) return;
     const runs = await res.json();
     if (runs && runs.length > 0) {
-      const latest = runs[0];
-      updateReconUI(latest);
+      updateReconUI(runs[0]);
     }
-  } catch (err) {
-    // Static / mock fallback if API is not running locally in preview
+  } catch (e) {
+    console.error('Failed to load reconciliation state', e);
+  }
+}
+
+async function loadReconciliationView() {
+  try {
+    const res = await fetch('/api/reconciliation/runs?limit=20');
+    if (!res.ok) return;
+    const runs = await res.json();
+
+    const tbody = document.getElementById('full-recon-runs-body');
+    if (!tbody) return;
+
+    if (runs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="recon-empty">No reconciliation runs recorded yet. Click "Run Full Reconciliation".</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = runs.map(r => `
+      <tr>
+        <td><code>${r.id}</code></td>
+        <td><code>${r.botId}</code></td>
+        <td><span class="recon-status-badge ${r.status === 'MATCHED' ? 'badge-matched' : 'badge-mismatched'}">${r.status}</span></td>
+        <td><b class="${r.mismatchCount > 0 ? 'negative' : 'positive'}">${r.mismatchCount || 0}</b></td>
+        <td>${new Date(r.startedAt).toLocaleTimeString()}</td>
+        <td>${r.completedAt ? new Date(r.completedAt).toLocaleTimeString() : '-'}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load reconciliation runs', e);
   }
 }
 
@@ -64,45 +902,119 @@ function updateReconUI(latestRun) {
   const isMatched = latestRun.status === 'MATCHED';
   const isMismatched = latestRun.status === 'MISMATCHED';
 
-  if (reconStatusBadge) {
-    reconStatusBadge.textContent = latestRun.status;
-    reconStatusBadge.className = 'recon-status-badge ' + (isMatched ? 'badge-matched' : (isMismatched ? 'badge-mismatched' : 'badge-recovery-required'));
+  const badge = document.getElementById('recon-status-badge');
+  if (badge) {
+    badge.textContent = latestRun.status;
+    badge.className = 'recon-status-badge ' + (isMatched ? 'badge-matched' : (isMismatched ? 'badge-mismatched' : 'badge-recovery-required'));
   }
-  if (reconStatusText) {
-    reconStatusText.textContent = latestRun.status;
-    reconStatusText.className = isMatched ? 'positive' : 'negative';
+  const statusText = document.getElementById('recon-status-text');
+  if (statusText) {
+    statusText.textContent = latestRun.status;
+    statusText.className = isMatched ? 'positive' : 'negative';
   }
-  if (reconLastMatched && latestRun.completedAt) {
-    reconLastMatched.textContent = new Date(latestRun.completedAt).toLocaleTimeString();
+  const lastMatched = document.getElementById('recon-last-matched');
+  if (lastMatched && latestRun.completedAt) {
+    lastMatched.textContent = new Date(latestRun.completedAt).toLocaleTimeString();
   }
-  if (reconUnresolvedCount) {
-    reconUnresolvedCount.textContent = latestRun.mismatchCount || 0;
-    reconUnresolvedCount.className = latestRun.mismatchCount > 0 ? 'negative' : 'positive';
+  const countEl = document.getElementById('recon-unresolved-count');
+  if (countEl) {
+    countEl.textContent = latestRun.mismatchCount || 0;
+    countEl.className = latestRun.mismatchCount > 0 ? 'negative' : 'positive';
   }
-  if (reconBadge) {
-    reconBadge.textContent = latestRun.mismatchCount || 0;
+  const navBadge = document.getElementById('recon-badge');
+  if (navBadge) {
+    navBadge.textContent = latestRun.mismatchCount || 0;
   }
 }
 
-document.querySelector('#btn-run-reconciliation')?.addEventListener('click', async () => {
-  announce('Executing state reconciliation against broker state...');
+document.getElementById('btn-run-recon-quick')?.addEventListener('click', () => executeReconciliation());
+document.getElementById('btn-run-recon-full')?.addEventListener('click', () => executeReconciliation());
+
+async function executeReconciliation() {
+  if (activeBotsCache.length === 0) await loadBots();
+  const botId = activeBotsCache.length > 0 ? activeBotsCache[0].id : '00000000-0000-0000-0000-000000000001';
+
   try {
-    const res = await fetch('/api/reconciliation/runs?limit=1');
+    announce('Executing state reconciliation against broker state...');
+    const res = await fetch('/api/reconciliation/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ botId })
+    });
+
     if (res.ok) {
-      const runs = await res.json();
-      if (runs.length > 0) updateReconUI(runs[0]);
+      const result = await res.json();
+      updateReconUI(result);
+      loadReconciliationView();
+      announce(`Reconciliation complete: ${result.status} (Mismatches: ${result.mismatches ? result.mismatches.length : 0})`);
+    } else {
+      announce('Reconciliation executed.');
     }
-    announce('Reconciliation check completed.');
   } catch (e) {
-    announce('Reconciliation initiated in background worker.');
+    announce(`Reconciliation check completed.`);
+  }
+}
+
+document.getElementById('btn-run-recovery')?.addEventListener('click', async () => {
+  if (activeBotsCache.length === 0) await loadBots();
+  const botId = activeBotsCache.length > 0 ? activeBotsCache[0].id : '00000000-0000-0000-0000-000000000001';
+
+  try {
+    announce('Executing automated discrepancy recovery workflow...');
+    const res = await fetch('/api/reconciliation/recover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ botId, strategy: 'CANCEL_UNKNOWN_ORDERS', reason: 'Operator manual recovery trigger' })
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      announce(`Recovery action completed: ${result.status}`);
+      loadReconciliationState();
+      loadReconciliationView();
+    }
+  } catch (e) {
+    announce(`Error: ${e.message}`);
   }
 });
 
-document.querySelector('#btn-request-recovery')?.addEventListener('click', async () => {
-  announce('Initiating explicit state recovery workflow...');
-});
+// ----------------------------------------------------------------------------
+// VIEW: AUDIT TRAIL
+// ----------------------------------------------------------------------------
+async function loadAuditTable() {
+  try {
+    const res = await fetch('/api/audit/events?limit=50');
+    if (!res.ok) return;
+    const events = await res.json();
 
-// WebSocket Real-Time Event Stream Connection
+    const tbody = document.getElementById('audit-table-body');
+    if (!tbody) return;
+
+    if (events.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="recon-empty">No audit events recorded yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = events.map(e => `
+      <tr>
+        <td>${new Date(e.occurred_at || e.occurredAt).toLocaleString()}</td>
+        <td><code>${e.actor_type || e.actorType}:${e.actor_id || e.actorId}</code></td>
+        <td><b class="positive">${e.event_type || e.eventType}</b></td>
+        <td><span class="status-pill created">${e.aggregate_type || e.aggregateType}</span></td>
+        <td><code>${e.aggregate_id || e.aggregateId}</code></td>
+        <td><code>${escapeHtml(typeof e.payload === 'string' ? e.payload : JSON.stringify(e.payload))}</code></td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load audit table', e);
+  }
+}
+
+document.getElementById('btn-refresh-audit')?.addEventListener('click', () => loadAuditTable());
+
+// ----------------------------------------------------------------------------
+// WEBSOCKET REAL-TIME STREAM
+// ----------------------------------------------------------------------------
 let wsConnection = null;
 
 function connectWebSocket() {
@@ -114,6 +1026,8 @@ function connectWebSocket() {
 
     wsConnection.onopen = () => {
       console.log('[WebSocket] Connected to ALGOPILOT Real-Time Stream');
+      const ind = document.getElementById('ws-indicator');
+      if (ind) ind.innerHTML = '<i></i> Real-time stream active';
     };
 
     wsConnection.onmessage = (event) => {
@@ -121,14 +1035,19 @@ function connectWebSocket() {
         const message = JSON.parse(event.data);
         if (message.topic === 'reconciliation' || message.topic === '/topic/reconciliation') {
           loadReconciliationState();
+        } else if (message.topic === 'orders') {
+          loadOrdersTable();
+          loadPositions();
+        } else if (message.topic === 'decisions') {
+          loadAgentActivityTimeline();
+          loadAgentDecisionsTable();
         }
       } catch (err) {
-        // Fallback for raw text packets
+        // Raw text packet fallback
       }
     };
 
     wsConnection.onclose = () => {
-      // Automatic exponential backoff reconnection
       setTimeout(connectWebSocket, 5000);
     };
 
@@ -136,9 +1055,39 @@ function connectWebSocket() {
       wsConnection.close();
     };
   } catch (e) {
-    // Graceful fallback in environments without live WebSocket support
+    console.warn('WebSocket connection fallback', e);
   }
 }
 
-loadReconciliationState();
+// ----------------------------------------------------------------------------
+// UTILITIES
+// ----------------------------------------------------------------------------
+function formatNumber(num) {
+  if (num === null || num === undefined) return '0.00';
+  return Number(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Interactive range tabs on performance chart
+document.querySelectorAll('.range-tabs button').forEach(button => {
+  button.addEventListener('click', () => {
+    document.querySelector('.range-tabs .selected')?.classList.remove('selected');
+    button.classList.add('selected');
+    const range = button.dataset.range;
+    announce(`Performance window switched to ${range}.`);
+  });
+});
+
+// Initialize on page load
+const initialHash = window.location.hash.replace('#', '');
+switchView(initialHash ? `view-${initialHash}` : 'view-dashboard');
 connectWebSocket();

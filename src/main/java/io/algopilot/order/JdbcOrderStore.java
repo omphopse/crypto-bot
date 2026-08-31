@@ -30,6 +30,10 @@ public class JdbcOrderStore implements OrderStore {
     return jdbc.query("select * from orders where bot_id = ? and status in ('CREATED', 'SUBMITTED', 'ACKNOWLEDGED', 'PARTIALLY_FILLED', 'CANCEL_REQUESTED') order by created_at desc", this::map, botId);
   }
 
+  @Override public List<OrderRecord> findAll(int limit) {
+    return jdbc.query("select * from orders order by created_at desc limit ?", this::map, Math.max(1, limit));
+  }
+
   @Override public OrderRecord save(OrderRecord order) {
     jdbc.update("insert into orders (id, client_order_id, bot_id, strategy_version_id, symbol, side, quantity, reference_price, status, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         order.id(), order.clientOrderId(), order.botId(), order.strategyVersionId(), order.symbol(), order.side().name(), order.quantity(), order.referencePrice(), order.status().name(), order.createdAt());

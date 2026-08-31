@@ -1,7 +1,12 @@
 package io.algopilot.bot;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 public interface BotStore {
   Bot save(Bot bot);
-  java.util.Optional<Bot> findById(java.util.UUID id);
-  Bot updateStatus(java.util.UUID id, BotStatus status);
+  Optional<Bot> findById(UUID id);
+  default List<Bot> findAll() { return List.of(); }
+  Bot updateStatus(UUID id, BotStatus status);
 }

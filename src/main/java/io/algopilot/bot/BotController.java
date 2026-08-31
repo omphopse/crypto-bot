@@ -16,7 +16,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class BotController {
   private final BotService service;
   private final BotControlService controls;
-  public BotController(BotService service, BotControlService controls) { this.service = service; this.controls = controls; }
+  private final BotStore botStore;
+
+  public BotController(BotService service, BotControlService controls, BotStore botStore) {
+    this.service = service;
+    this.controls = controls;
+    this.botStore = botStore;
+  }
+
+  @org.springframework.web.bind.annotation.GetMapping
+  public java.util.List<Bot> list() {
+    return botStore.findAll();
+  }
+
+  @org.springframework.web.bind.annotation.GetMapping("/{id}")
+  public ResponseEntity<Bot> get(@PathVariable java.util.UUID id) {
+    return botStore.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+  }
+
   @PostMapping public ResponseEntity<Bot> deploy(@Valid @RequestBody DeployBotRequest request) { Bot bot = service.deploy(request); return ResponseEntity.created(URI.create("/api/bots/" + bot.id())).body(bot); }
   @PostMapping("/{id}/pause") public Bot pause(@PathVariable java.util.UUID id) { return controls.pause(id); }
   @PostMapping("/{id}/stop") public Bot stop(@PathVariable java.util.UUID id) { return controls.stop(id); }

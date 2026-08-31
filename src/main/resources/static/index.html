@@ -3,95 +3,794 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ALGOPILOT — Autonomous trading operations</title>
+    <title>ALGOPILOT — Autonomous Trading Operations</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
-        <a class="brand" href="#dashboard" aria-label="ALGOPILOT dashboard"><span class="brand-mark">A</span><span>ALGOPILOT</span></a>
-        <div class="workspace"><span class="avatar">MT</span><span>Mercury Trading</span><button class="chevron">⌄</button></div>
+        <a class="brand" href="#dashboard" aria-label="ALGOPILOT dashboard">
+          <span class="brand-mark">A</span>
+          <span>ALGOPILOT</span>
+        </a>
+        <div class="workspace">
+          <span class="avatar">MT</span>
+          <span>Mercury Trading</span>
+          <button class="chevron" title="Workspace options">⌄</button>
+        </div>
         <nav aria-label="Main navigation">
           <p class="nav-label">OPERATIONS</p>
-          <a class="nav-item active" href="#dashboard" data-view="Dashboard"><span class="nav-icon">⌘</span>Dashboard</a>
-          <a class="nav-item" href="#bots" data-view="Bots"><span class="nav-icon">◉</span>Bots <span class="nav-count">3</span></a>
-          <a class="nav-item" href="#strategies" data-view="Strategies"><span class="nav-icon">⌁</span>Strategies</a>
-          <a class="nav-item" href="#trades" data-view="Trades"><span class="nav-icon">⇄</span>Trades</a>
-          <a class="nav-item" href="#portfolio" data-view="Portfolio"><span class="nav-icon">◫</span>Portfolio</a>
+          <a class="nav-item active" href="#dashboard" data-target="view-dashboard"><span class="nav-icon">⌘</span>Dashboard</a>
+          <a class="nav-item" href="#bots" data-target="view-bots"><span class="nav-icon">◉</span>Bots <span class="nav-count" id="nav-bots-count">3</span></a>
+          <a class="nav-item" href="#strategies" data-target="view-strategies"><span class="nav-icon">⌁</span>Strategies</a>
+          <a class="nav-item" href="#trades" data-target="view-trades"><span class="nav-icon">⇄</span>Trades &amp; Orders</a>
+          <a class="nav-item" href="#portfolio" data-target="view-portfolio"><span class="nav-icon">◫</span>Portfolio &amp; Rebalance</a>
           <p class="nav-label">INTELLIGENCE</p>
-          <a class="nav-item" href="#agent" data-view="Agent activity"><span class="nav-icon">✦</span>Agent activity</a>
-          <a class="nav-item" href="#research" data-view="Research"><span class="nav-icon">◌</span>Research</a>
-          <a class="nav-item" href="#backtests" data-view="Backtests"><span class="nav-icon">↗</span>Backtests</a>
+          <a class="nav-item" href="#agent" data-target="view-agent"><span class="nav-icon">✦</span>Agent Activity</a>
+          <a class="nav-item" href="#research" data-target="view-research"><span class="nav-icon">◌</span>Research &amp; Factors</a>
+          <a class="nav-item" href="#backtests" data-target="view-backtests"><span class="nav-icon">↗</span>Backtests &amp; WFO</a>
           <p class="nav-label">CONTROL</p>
-          <a class="nav-item" href="#risk" data-view="Risk controls"><span class="nav-icon">◇</span>Risk controls</a>
-          <a class="nav-item" href="#reconciliation" data-view="Reconciliation"><span class="nav-icon">⚖</span>Reconciliation <span class="nav-count" id="recon-badge">0</span></a>
-          <a class="nav-item" href="#alerts" data-view="Alerts"><span class="nav-icon">△</span>Alerts <span class="nav-count alert">2</span></a>
-          <a class="nav-item" href="#audit" data-view="Audit trail"><span class="nav-icon">▤</span>Audit trail</a>
+          <a class="nav-item" href="#risk" data-target="view-risk"><span class="nav-icon">◇</span>Risk Controls</a>
+          <a class="nav-item" href="#reconciliation" data-target="view-reconciliation"><span class="nav-icon">⚖</span>Reconciliation <span class="nav-count" id="recon-badge">0</span></a>
+          <a class="nav-item" href="#alerts" data-target="view-alerts"><span class="nav-icon">△</span>Alerts <span class="nav-count alert">0</span></a>
+          <a class="nav-item" href="#audit" data-target="view-audit"><span class="nav-icon">▤</span>Audit Trail</a>
         </nav>
-        <div class="sidebar-bottom"><a class="nav-item" href="#settings" data-view="Settings"><span class="nav-icon">⚙</span>Settings</a><button class="account"><span class="avatar pale">MT</span><span><b>Maya Torres</b><small>Owner</small></span><span>⋮</span></button></div>
+        <div class="sidebar-bottom">
+          <a class="nav-item" href="#settings" data-target="view-settings"><span class="nav-icon">⚙</span>Settings</a>
+          <div class="account">
+            <span class="avatar pale">MT</span>
+            <span><b>Maya Torres</b><small>Owner · Single-User</small></span>
+          </div>
+        </div>
       </aside>
 
       <main>
         <header class="topbar">
           <button class="menu-button" aria-label="Open navigation">☰</button>
-          <div class="crumb"><span>Workspace</span><b>/</b><strong id="page-title">Dashboard</strong></div>
-          <div class="top-actions"><span class="market-status"><i></i> Market open</span><button class="icon-button" aria-label="Search">⌕</button><button class="icon-button notification" aria-label="Notifications">♧<span></span></button><button class="help">?</button></div>
+          <div class="crumb">
+            <span>Workspace</span>
+            <b>/</b>
+            <strong id="page-title">Dashboard</strong>
+          </div>
+          <div class="top-actions">
+            <span class="market-status" id="ws-indicator"><i></i> Real-time feed active</span>
+            <button class="btn-sm secondary" id="btn-quick-order">＋ New Order</button>
+            <button class="btn-sm primary" id="btn-quick-bot">＋ Deploy Bot</button>
+            <button class="icon-button notification" title="Active alerts">♧</button>
+          </div>
         </header>
-        <section class="content">
-          <div class="headline-row"><div><div class="eyebrow"><span class="pulse"></span> ALL SYSTEMS NOMINAL</div><h1>Good afternoon, Maya</h1><p class="subtitle">Your automated portfolio is actively monitoring 12 markets.</p></div><div class="execution-pill"><span>EXECUTION MODE</span><b>◉ PAPER</b><button id="mode-button" aria-label="Change execution mode">⌄</button></div></div>
-          <section class="summary-grid" aria-label="Portfolio summary">
-            <article class="metric-card balance"><div class="metric-label">PORTFOLIO VALUE <button class="more">•••</button></div><div class="metric-value">$124,892.40</div><div class="metric-detail up">↗ $2,841.20 <span>+2.33% today</span></div><div class="sparkline blue"><svg viewBox="0 0 276 48" preserveAspectRatio="none"><path d="M0 43 L13 38 L24 40 L36 27 L48 30 L62 23 L76 29 L90 20 L105 25 L118 15 L133 18 L144 12 L158 18 L171 9 L184 14 L196 7 L211 12 L222 3 L235 10 L248 5 L262 9 L276 1" /></svg></div></article>
-            <article class="metric-card"><div class="metric-label">DAILY P&amp;L</div><div class="metric-value positive">+$2,841.20</div><div class="metric-detail up">↗ 2.33% <span>vs. previous close</span></div><div class="sparkline mint"><svg viewBox="0 0 276 48" preserveAspectRatio="none"><path d="M0 37 L14 40 L27 30 L41 34 L55 22 L67 28 L81 18 L96 26 L111 15 L124 20 L138 9 L151 14 L164 6 L180 16 L194 9 L207 18 L219 8 L234 12 L248 4 L262 7 L276 1" /></svg></div></article>
-            <article class="metric-card"><div class="metric-label">OPEN EXPOSURE</div><div class="metric-value">$38,410.00</div><div class="metric-detail neutral">30.8% <span>of portfolio limit</span></div><div class="progress"><span style="width:30.8%"></span></div><div class="limit-row"><span>Available capacity</span><b>$86,482</b></div></article>
-            <article class="metric-card"><div class="metric-label">RISK STATE</div><div class="risk-value"><i></i> NORMAL</div><div class="risk-copy">All deterministic risk checks are passing.</div><a href="#risk" class="inline-link">View risk controls <span>→</span></a></article>
-          </section>
 
-          <section class="dashboard-grid">
-            <div class="left-column">
-              <article class="panel performance"><div class="panel-title"><div><h2>Portfolio performance</h2><p>Equity curve · Net of fees and estimated slippage</p></div><div class="range-tabs"><button>1D</button><button class="selected">1W</button><button>1M</button><button>YTD</button><button>ALL</button></div></div><div class="chart-meta"><b>$124,892</b><span class="up">+6.84%</span><span>Aug 25 — Aug 31, 2026</span></div><div class="chart-area"><div class="y-axis"><span>$126k</span><span>$124k</span><span>$122k</span><span>$120k</span><span>$118k</span></div><svg class="equity-chart" viewBox="0 0 680 216" preserveAspectRatio="none" aria-label="Portfolio performance trend"><defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#3b82f6" stop-opacity=".19"/><stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs><g class="grid"><path d="M0 7 H680 M0 58 H680 M0 109 H680 M0 160 H680 M0 211 H680"/></g><path class="area" d="M0 173 C20 161 34 165 50 151 S77 160 96 145 S121 153 140 121 S168 132 187 113 S209 127 230 111 S251 99 271 108 S301 104 322 90 S347 97 366 73 S394 78 416 61 S441 76 459 55 S492 62 514 45 S539 54 559 32 S583 38 602 24 S626 39 646 18 S667 25 680 8 V216 H0 Z"/><path class="line" d="M0 173 C20 161 34 165 50 151 S77 160 96 145 S121 153 140 121 S168 132 187 113 S209 127 230 111 S251 99 271 108 S301 104 322 90 S347 97 366 73 S394 78 416 61 S441 76 459 55 S492 62 514 45 S539 54 559 32 S583 38 602 24 S626 39 646 18 S667 25 680 8"/><circle cx="680" cy="8" r="4"/></svg><div class="x-axis"><span>Mon 25</span><span>Tue 26</span><span>Wed 27</span><span>Thu 28</span><span>Fri 29</span><span>Sat 30</span><span>Today</span></div></div></article>
-              <article class="panel positions"><div class="panel-title"><div><h2>Open positions <span class="badge">4</span></h2><p>Marked to last available market price</p></div><a href="#positions" class="inline-link">View all positions <span>→</span></a></div><table><thead><tr><th>SYMBOL</th><th>STRATEGY</th><th>QUANTITY</th><th>AVG. ENTRY</th><th>LAST PRICE</th><th>UNREALIZED P&amp;L</th><th></th></tr></thead><tbody><tr><td><b>BTC/USD</b><small>Crypto</small></td><td><span class="strategy-chip blue-chip">Momentum v4</span></td><td>0.184</td><td>$112,408.20</td><td>$113,204.50</td><td class="positive"><b>+$146.52</b><small>+0.71%</small></td><td><button class="row-menu">•••</button></td></tr><tr><td><b>NVDA</b><small>Equity</small></td><td><span class="strategy-chip purple-chip">Trend Rider v2</span></td><td>82</td><td>$181.42</td><td>$183.66</td><td class="positive"><b>+$183.68</b><small>+1.24%</small></td><td><button class="row-menu">•••</button></td></tr><tr><td><b>ETH/USD</b><small>Crypto</small></td><td><span class="strategy-chip orange-chip">Mean Rev. v3</span></td><td>5.20</td><td>$4,192.30</td><td>$4,168.10</td><td class="negative"><b>−$125.84</b><small>−0.58%</small></td><td><button class="row-menu">•••</button></td></tr></tbody></table></article>
-              <article class="panel reconciliation" id="reconciliation-panel">
-                <div class="panel-title">
-                  <div>
-                    <h2>State Reconciliation &amp; Recovery <span class="recon-status-badge badge-matched" id="recon-status-badge">MATCHED</span></h2>
-                    <p>Continuous validation of local ledger against broker state (Balances, Orders, Fills, Positions)</p>
-                  </div>
-                  <div class="recon-actions">
-                    <button class="recon-btn secondary" id="btn-run-reconciliation">↻ Run Reconciliation</button>
-                    <button class="recon-btn action" id="btn-request-recovery">Recover Bot</button>
-                  </div>
-                </div>
-                <div class="recon-metrics">
-                  <div class="recon-metric"><span>LATEST STATUS</span><strong id="recon-status-text" class="positive">MATCHED</strong></div>
-                  <div class="recon-metric"><span>LAST RUN</span><span id="recon-last-matched">Aug 31, 19:15 UTC</span></div>
-                  <div class="recon-metric"><span>CRITICAL MISMATCHES</span><strong id="recon-unresolved-count" class="positive">0</strong></div>
-                  <div class="recon-metric"><span>RECOVERY STATE</span><span id="recon-recovery-state">NORMAL</span></div>
-                </div>
-                <div class="recon-table-wrap">
-                  <table class="recon-table">
-                    <thead>
-                      <tr><th>CATEGORY</th><th>TYPE</th><th>SEVERITY</th><th>SYMBOL</th><th>LOCAL STATE</th><th>BROKER STATE</th><th>STATUS</th></tr>
-                    </thead>
-                    <tbody id="recon-mismatches-body">
-                      <tr><td colspan="7" class="recon-empty">All deterministic ledger states match broker state. Zero active discrepancies.</td></tr>
-                    </tbody>
-                  </table>
+        <section class="content">
+          <!-- VIEW: DASHBOARD -->
+          <div class="app-view active" id="view-dashboard">
+            <div class="headline-row">
+              <div>
+                <div class="eyebrow"><span class="pulse"></span> ALL SYSTEMS NOMINAL</div>
+                <h1>Good afternoon, Maya</h1>
+                <p class="subtitle">Your automated portfolio is actively executing deterministically across paper &amp; demo markets.</p>
+              </div>
+              <div class="execution-pill">
+                <span>EXECUTION MODE</span>
+                <b>◉ PAPER &amp; DEMO ONLY</b>
+              </div>
+            </div>
+
+            <section class="summary-grid" aria-label="Portfolio summary">
+              <article class="metric-card balance">
+                <div class="metric-label">PORTFOLIO VALUE</div>
+                <div class="metric-value" id="dash-portfolio-val">$124,892.40</div>
+                <div class="metric-detail up">↗ $2,841.20 <span>+2.33% today</span></div>
+                <div class="sparkline blue">
+                  <svg viewBox="0 0 276 48" preserveAspectRatio="none"><path d="M0 43 L13 38 L24 40 L36 27 L48 30 L62 23 L76 29 L90 20 L105 25 L118 15 L133 18 L144 12 L158 18 L171 9 L184 14 L196 7 L211 12 L222 3 L235 10 L248 5 L262 9 L276 1" /></svg>
                 </div>
               </article>
+              <article class="metric-card">
+                <div class="metric-label">DAILY P&amp;L</div>
+                <div class="metric-value positive" id="dash-daily-pnl">+$2,841.20</div>
+                <div class="metric-detail up">↗ 2.33% <span>vs. previous close</span></div>
+                <div class="sparkline mint">
+                  <svg viewBox="0 0 276 48" preserveAspectRatio="none"><path d="M0 37 L14 40 L27 30 L41 34 L55 22 L67 28 L81 18 L96 26 L111 15 L124 20 L138 9 L151 14 L164 6 L180 16 L194 9 L207 18 L219 8 L234 12 L248 4 L262 7 L276 1" /></svg>
+                </div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-label">OPEN EXPOSURE</div>
+                <div class="metric-value" id="dash-open-exposure">$38,410.00</div>
+                <div class="metric-detail neutral">30.8% <span>of portfolio limit</span></div>
+                <div class="progress"><span style="width:30.8%"></span></div>
+                <div class="limit-row"><span>Available capacity</span><b>$86,482</b></div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-label">RISK STATE</div>
+                <div class="risk-value"><i></i> NORMAL</div>
+                <div class="risk-copy">All deterministic risk checks are passing. Live trading is strictly blocked.</div>
+                <a href="#risk" class="inline-link">View risk controls <span>→</span></a>
+              </article>
+            </section>
+
+            <section class="dashboard-grid">
+              <div class="left-column">
+                <article class="panel performance">
+                  <div class="panel-title">
+                    <div>
+                      <h2>Portfolio performance</h2>
+                      <p>Equity curve · Net of fees and estimated slippage</p>
+                    </div>
+                    <div class="range-tabs">
+                      <button data-range="1D">1D</button>
+                      <button data-range="1W" class="selected">1W</button>
+                      <button data-range="1M">1M</button>
+                      <button data-range="YTD">YTD</button>
+                      <button data-range="ALL">ALL</button>
+                    </div>
+                  </div>
+                  <div class="chart-meta">
+                    <b id="chart-val">$124,892</b>
+                    <span class="up" id="chart-pct">+6.84%</span>
+                    <span id="chart-dates">Aug 25 — Aug 31, 2026</span>
+                  </div>
+                  <div class="chart-area">
+                    <div class="y-axis"><span>$126k</span><span>$124k</span><span>$122k</span><span>$120k</span><span>$118k</span></div>
+                    <svg class="equity-chart" viewBox="0 0 680 216" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="fill" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stop-color="#3b82f6" stop-opacity=".19"/>
+                          <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <g class="grid"><path d="M0 7 H680 M0 58 H680 M0 109 H680 M0 160 H680 M0 211 H680"/></g>
+                      <path class="area" d="M0 173 C20 161 34 165 50 151 S77 160 96 145 S121 153 140 121 S168 132 187 113 S209 127 230 111 S251 99 271 108 S301 104 322 90 S347 97 366 73 S394 78 416 61 S441 76 459 55 S492 62 514 45 S539 54 559 32 S583 38 602 24 S626 39 646 18 S667 25 680 8 V216 H0 Z"/>
+                      <path class="line" d="M0 173 C20 161 34 165 50 151 S77 160 96 145 S121 153 140 121 S168 132 187 113 S209 127 230 111 S251 99 271 108 S301 104 322 90 S347 97 366 73 S394 78 416 61 S441 76 459 55 S492 62 514 45 S539 54 559 32 S583 38 602 24 S626 39 646 18 S667 25 680 8"/>
+                      <circle cx="680" cy="8" r="4"/>
+                    </svg>
+                    <div class="x-axis"><span>Mon 25</span><span>Tue 26</span><span>Wed 27</span><span>Thu 28</span><span>Fri 29</span><span>Sat 30</span><span>Today</span></div>
+                  </div>
+                </article>
+
+                <article class="panel positions">
+                  <div class="panel-title">
+                    <div>
+                      <h2>Open positions <span class="badge" id="positions-count">3</span></h2>
+                      <p>Marked to last available market price</p>
+                    </div>
+                    <a href="#portfolio" class="inline-link">Rebalance portfolio <span>→</span></a>
+                  </div>
+                  <table>
+                    <thead>
+                      <tr><th>SYMBOL</th><th>QUANTITY</th><th>AVG. ENTRY</th><th>REALIZED P&amp;L</th><th>STATUS</th></tr>
+                    </thead>
+                    <tbody id="dash-positions-body">
+                      <tr><td colspan="5" class="recon-empty">Loading live positions...</td></tr>
+                    </tbody>
+                  </table>
+                </article>
+
+                <article class="panel reconciliation">
+                  <div class="panel-title">
+                    <div>
+                      <h2>State Reconciliation &amp; Recovery <span class="recon-status-badge badge-matched" id="recon-status-badge">MATCHED</span></h2>
+                      <p>Continuous validation of local ledger against broker state (Balances, Orders, Fills, Positions)</p>
+                    </div>
+                    <div class="recon-actions">
+                      <button class="recon-btn secondary" id="btn-run-recon-quick">↻ Run Reconciliation</button>
+                      <a href="#reconciliation" class="recon-btn action">View Details</a>
+                    </div>
+                  </div>
+                  <div class="recon-metrics">
+                    <div class="recon-metric"><span>LATEST STATUS</span><strong id="recon-status-text" class="positive">MATCHED</strong></div>
+                    <div class="recon-metric"><span>LAST RUN</span><span id="recon-last-matched">Aug 31, 19:15 UTC</span></div>
+                    <div class="recon-metric"><span>CRITICAL MISMATCHES</span><strong id="recon-unresolved-count" class="positive">0</strong></div>
+                    <div class="recon-metric"><span>RECOVERY STATE</span><span id="recon-recovery-state">NORMAL</span></div>
+                  </div>
+                </article>
+              </div>
+
+              <div class="right-column">
+                <article class="panel bot-card">
+                  <div class="panel-title">
+                    <div>
+                      <h2>Autonomous Trading Bots</h2>
+                      <p id="bots-summary-subtitle">3 active</p>
+                    </div>
+                    <a href="#bots" class="inline-link">Manage all <span>→</span></a>
+                  </div>
+                  <div class="agent-list" id="dash-bots-list">
+                    <!-- Populated dynamically -->
+                  </div>
+                  <button class="new-bot" id="dash-btn-deploy">＋ Deploy new bot</button>
+                </article>
+
+                <article class="panel activity">
+                  <div class="panel-title">
+                    <div>
+                      <h2>Live Agent Activity</h2>
+                      <p>Decision journal · persisted audit stream</p>
+                    </div>
+                    <span class="live"><i></i> LIVE</span>
+                  </div>
+                  <div class="timeline" id="dash-activity-timeline">
+                    <!-- Populated dynamically from WebSocket / REST -->
+                  </div>
+                  <a href="#agent" class="activity-link">Open complete decision journal <span>→</span></a>
+                </article>
+
+                <article class="safety-banner">
+                  <div class="shield">◇</div>
+                  <div>
+                    <b>Safety is enforced</b>
+                    <p>Every action is validated by deterministic risk controls before execution.</p>
+                  </div>
+                  <button id="emergency-stop">Emergency stop</button>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <!-- VIEW: BOTS -->
+          <div class="app-view" id="view-bots">
+            <div class="view-header">
+              <div>
+                <h2>Autonomous Trading Bots</h2>
+                <p>Monitor, pause, resume, and deploy automated trading bots with strict risk boundaries.</p>
+              </div>
+              <button class="btn primary" id="btn-open-deploy-bot">＋ Deploy New Bot</button>
             </div>
-            <div class="right-column">
-              <article class="panel bot-card"><div class="panel-title"><div><h2>Autonomous agents</h2><p>3 of 3 active</p></div><a href="#bots" class="inline-link">Manage <span>→</span></a></div><div class="agent-list"><div class="agent"><div class="agent-icon blue-bg">⌁</div><div class="agent-info"><b>Crypto Momentum</b><span><i></i> Monitoring</span><small>BTC/USD · 5 min</small></div><div class="agent-stat"><b class="positive">+$842.50</b><span>Today</span></div></div><div class="agent"><div class="agent-icon purple-bg">⌁</div><div class="agent-info"><b>US Equity Trend</b><span><i></i> Monitoring</span><small>NVDA, AAPL · 15 min</small></div><div class="agent-stat"><b class="positive">+$1,320.80</b><span>Today</span></div></div><div class="agent"><div class="agent-icon orange-bg">⌁</div><div class="agent-info"><b>ETH Reversion</b><span class="researching"><i></i> Researching</span><small>ETH/USD · 1 hr</small></div><div class="agent-stat"><b class="negative">−$58.90</b><span>Today</span></div></div></div><button class="new-bot">＋ Deploy new bot</button></article>
-              <article class="panel activity"><div class="panel-title"><div><h2>Live agent activity</h2><p>Decision journal · persisted audit stream</p></div><span class="live"><i></i> LIVE</span></div><div class="timeline"><div class="event"><time>14:42:08</time><span class="event-dot blue-dot"></span><div><b>Market data received</b><p>BTC/USD · Coinbase feed · 18ms latency</p></div></div><div class="event"><time>14:42:09</time><span class="event-dot violet-dot"></span><div><b>Signal strength increased</b><p>Crypto Momentum v4 · confidence 0.74</p></div></div><div class="event"><time>14:42:11</time><span class="event-dot gold-dot"></span><div><b>Risk check passed</b><p>Exposure, frequency, spread and freshness valid</p></div></div><div class="event"><time>14:42:12</time><span class="event-dot mint-dot"></span><div><b>Position monitored</b><p>BTC/USD · stop loss remains unchanged</p></div></div></div><a href="#agent" class="activity-link">Open complete decision journal <span>→</span></a></article>
-              <article class="safety-banner"><div class="shield">◇</div><div><b>Safety is enforced</b><p>Every action is validated by deterministic risk controls before execution.</p></div><button id="emergency-stop">Emergency stop</button></article>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>NAME</th>
+                    <th>BROKER</th>
+                    <th>MODE</th>
+                    <th>STATUS</th>
+                    <th>CREATED AT</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="bots-table-body">
+                  <tr><td colspan="6" class="recon-empty">Loading bots...</td></tr>
+                </tbody>
+              </table>
             </div>
-          </section>
+          </div>
+
+          <!-- VIEW: STRATEGIES -->
+          <div class="app-view" id="view-strategies">
+            <div class="view-header">
+              <div>
+                <h2>Strategy Library &amp; Versioning</h2>
+                <p>Immutable strategy definitions, parameters, and version histories.</p>
+              </div>
+              <button class="btn primary" id="btn-open-create-strategy">＋ Create Strategy</button>
+            </div>
+            <div class="grid-2col">
+              <div class="table-container">
+                <h3>Active Strategies</h3>
+                <table class="data-table">
+                  <thead>
+                    <tr><th>NAME</th><th>STATUS</th><th>CREATED</th></tr>
+                  </thead>
+                  <tbody id="strategies-table-body">
+                    <tr><td colspan="3" class="recon-empty">Loading strategies...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-container">
+                <h3>Strategy Versions</h3>
+                <table class="data-table">
+                  <thead>
+                    <tr><th>VERSION</th><th>REASON</th><th>DEFINITION</th><th>CREATED</th></tr>
+                  </thead>
+                  <tbody id="strategy-versions-table-body">
+                    <tr><td colspan="4" class="recon-empty">Loading versions...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: TRADES & ORDERS -->
+          <div class="app-view" id="view-trades">
+            <div class="view-header">
+              <div>
+                <h2>Trades &amp; Order Execution Gateway</h2>
+                <p>Deterministic order lifecycle management, risk validation, and paper/demo broker dispatch.</p>
+              </div>
+              <button class="btn primary" id="btn-open-create-order">＋ Place New Order</button>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>CLIENT ORDER ID</th>
+                    <th>SYMBOL</th>
+                    <th>SIDE</th>
+                    <th>QTY</th>
+                    <th>REF PRICE</th>
+                    <th>STATUS</th>
+                    <th>CREATED AT</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-table-body">
+                  <tr><td colspan="8" class="recon-empty">Loading order history...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- VIEW: PORTFOLIO & REBALANCING -->
+          <div class="app-view" id="view-portfolio">
+            <div class="view-header">
+              <div>
+                <h2>Portfolio Allocation &amp; Automated Rebalancing</h2>
+                <p>Inverse-volatility risk parity allocation, correlation analysis, and deterministic rebalance execution.</p>
+              </div>
+              <button class="btn primary" id="btn-execute-rebalance">↻ Execute Rebalance</button>
+            </div>
+            <div class="panel form-panel mb-4">
+              <h3>Generate Risk-Parity Allocation Plan</h3>
+              <div class="form-row">
+                <div class="form-group flex-2">
+                  <label>Assets (comma-separated)</label>
+                  <input type="text" id="alloc-symbols" value="BTC,ETH,SOL,NVDA,AAPL,TSLA" />
+                </div>
+                <div class="form-group flex-1">
+                  <label>Total Portfolio Capital ($)</label>
+                  <input type="number" id="alloc-capital" value="100000" />
+                </div>
+                <div class="form-group align-end">
+                  <button class="btn primary" id="btn-generate-allocation">Calculate Allocation</button>
+                </div>
+              </div>
+            </div>
+            <div id="allocation-result-container" style="display:none;" class="panel mb-4">
+              <h3>Target Allocation Weights &amp; Risk Metrics</h3>
+              <div class="recon-metrics">
+                <div class="recon-metric"><span>TOTAL CAPITAL</span><strong id="plan-capital">$100,000.00</strong></div>
+                <div class="recon-metric"><span>PORTFOLIO VOLATILITY</span><strong id="plan-vol">1.41%</strong></div>
+                <div class="recon-metric"><span>VALUE AT RISK (VaR 95%)</span><strong id="plan-var" class="negative">$2,319.31</strong></div>
+                <div class="recon-metric"><span>EXPECTED SHORTFALL (ES 95%)</span><strong id="plan-es" class="negative">$2,908.41</strong></div>
+              </div>
+              <table class="data-table mt-3">
+                <thead>
+                  <tr><th>SYMBOL</th><th>TARGET WEIGHT</th><th>CURRENT WEIGHT</th><th>TARGET CAPITAL</th><th>CURRENT CAPITAL</th><th>DELTA ($)</th></tr>
+                </thead>
+                <tbody id="plan-weights-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- VIEW: AGENT ACTIVITY -->
+          <div class="app-view" id="view-agent">
+            <div class="view-header">
+              <div>
+                <h2>Live Agent Decision Journal</h2>
+                <p>Structured alpha decisions streamed directly from autonomous agent reasoning engines.</p>
+              </div>
+              <button class="btn secondary" id="btn-open-journal-modal">＋ Journal Decision</button>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>DECIDED AT</th>
+                    <th>BOT ID</th>
+                    <th>ACTION</th>
+                    <th>SYMBOL</th>
+                    <th>RATIONALE &amp; PAYLOAD</th>
+                  </tr>
+                </thead>
+                <tbody id="agent-decisions-body">
+                  <tr><td colspan="5" class="recon-empty">Loading agent decision stream...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- VIEW: RESEARCH & FACTORS -->
+          <div class="app-view" id="view-research">
+            <div class="view-header">
+              <div>
+                <h2>Quantitative Factor Engine &amp; Strategy Synthesizer</h2>
+                <p>Factor z-score evaluations and automated strategy hypothesis synthesis.</p>
+              </div>
+            </div>
+            <div class="grid-2col">
+              <div class="panel form-panel">
+                <h3>Alpha Factor Evaluation</h3>
+                <div class="form-group">
+                  <label>Symbol</label>
+                  <input type="text" id="factor-symbol" value="BTC/USD" />
+                </div>
+                <div class="form-group">
+                  <label>Timeframe</label>
+                  <select id="factor-timeframe">
+                    <option value="5m">5 Minutes</option>
+                    <option value="15m">15 Minutes</option>
+                    <option value="1h" selected>1 Hour</option>
+                    <option value="1d">1 Day</option>
+                  </select>
+                </div>
+                <button class="btn primary full-width" id="btn-run-factor-eval">Evaluate Alpha Factors</button>
+                <div id="factor-results" class="mt-3" style="display:none;"></div>
+              </div>
+
+              <div class="panel form-panel">
+                <h3>Autonomous Strategy Synthesis</h3>
+                <div class="form-group">
+                  <label>Target Asset</label>
+                  <input type="text" id="synth-symbol" value="BTC/USD" />
+                </div>
+                <div class="form-group">
+                  <label>Target Minimum Sharpe Ratio</label>
+                  <input type="number" id="synth-sharpe" value="1.50" step="0.1" />
+                </div>
+                <div class="form-group">
+                  <label>Max Acceptable Drawdown (%)</label>
+                  <input type="number" id="synth-drawdown" value="15.0" step="1.0" />
+                </div>
+                <button class="btn primary full-width" id="btn-run-synthesizer">Synthesize &amp; Backtest Strategy</button>
+                <div id="synth-results" class="mt-3" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: BACKTESTS -->
+          <div class="app-view" id="view-backtests">
+            <div class="view-header">
+              <div>
+                <h2>Backtest Simulator &amp; Walk-Forward Optimization</h2>
+                <p>Event-driven historical execution simulation with slippage, fee modeling, and out-of-sample stability testing.</p>
+              </div>
+            </div>
+            <div class="panel form-panel mb-4">
+              <h3>Run Strategy Backtest</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Symbol</label>
+                  <input type="text" id="bt-symbol" value="BTC/USD" />
+                </div>
+                <div class="form-group">
+                  <label>Timeframe</label>
+                  <select id="bt-timeframe">
+                    <option value="1h" selected>1 Hour</option>
+                    <option value="1d">1 Day</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Initial Capital ($)</label>
+                  <input type="number" id="bt-capital" value="10000" />
+                </div>
+                <div class="form-group">
+                  <label>Slippage (Bps)</label>
+                  <input type="number" id="bt-slippage" value="5" />
+                </div>
+                <div class="form-group">
+                  <label>Fee (Bps)</label>
+                  <input type="number" id="bt-fee" value="10" />
+                </div>
+                <div class="form-group align-end">
+                  <button class="btn primary" id="btn-run-backtest">Run Simulation</button>
+                </div>
+              </div>
+            </div>
+            <div id="backtest-result-panel" style="display:none;" class="panel mb-4">
+              <h3>Backtest Simulation Metrics</h3>
+              <div class="recon-metrics">
+                <div class="recon-metric"><span>TOTAL RETURN</span><strong id="bt-return" class="positive">+24.50%</strong></div>
+                <div class="recon-metric"><span>SHARPE RATIO</span><strong id="bt-sharpe">1.82</strong></div>
+                <div class="recon-metric"><span>MAX DRAWDOWN</span><strong id="bt-dd" class="negative">6.40%</strong></div>
+                <div class="recon-metric"><span>WIN RATE</span><strong id="bt-winrate">68.2%</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: RISK CONTROLS -->
+          <div class="app-view" id="view-risk">
+            <div class="view-header">
+              <div>
+                <h2>Deterministic Risk Engine &amp; Tripwires</h2>
+                <p>Non-bypassable runtime pre-trade risk controls and safety policies.</p>
+              </div>
+            </div>
+            <div class="grid-2col">
+              <div class="panel">
+                <h3>Active Deterministic Limits</h3>
+                <div class="risk-limits-list">
+                  <div class="risk-limit-item"><span>Max Single Position Exposure</span><b>20.0% of equity</b></div>
+                  <div class="risk-limit-item"><span>Max Total Portfolio Exposure</span><b>80.0% of equity</b></div>
+                  <div class="risk-limit-item"><span>Max Realized Daily Loss</span><b>5.0% of equity</b></div>
+                  <div class="risk-limit-item"><span>Max Acceptable Drawdown</span><b>15.0% from peak</b></div>
+                  <div class="risk-limit-item"><span>Max Spread Threshold</span><b>0.50%</b></div>
+                  <div class="risk-limit-item"><span>Max Slippage Threshold</span><b>0.50%</b></div>
+                  <div class="risk-limit-item"><span>Max Market Data Age</span><b>10 seconds</b></div>
+                  <div class="risk-limit-item"><span>Max Open Trades per Bot</span><b>10</b></div>
+                  <div class="risk-limit-item"><span>Max Trades Per Day</span><b>100</b></div>
+                  <div class="risk-limit-item"><span>Max Consecutive Losses</span><b>5</b></div>
+                  <div class="risk-limit-item"><span>Live Trading Policy</span><b class="negative">STRICTLY DISABLED</b></div>
+                </div>
+              </div>
+              <div class="panel form-panel">
+                <h3>Simulate Pre-Trade Risk Evaluation</h3>
+                <div class="form-group">
+                  <label>Order Value ($)</label>
+                  <input type="number" id="risk-sim-val" value="5000" />
+                </div>
+                <div class="form-group">
+                  <label>Account Equity ($)</label>
+                  <input type="number" id="risk-sim-equity" value="100000" />
+                </div>
+                <div class="form-group">
+                  <label>Simulated Daily Loss ($)</label>
+                  <input type="number" id="risk-sim-loss" value="1000" />
+                </div>
+                <div class="form-group">
+                  <label>Simulated Drawdown (%)</label>
+                  <input type="number" id="risk-sim-dd" value="4.5" />
+                </div>
+                <button class="btn primary full-width" id="btn-sim-risk">Evaluate Risk Gate</button>
+                <div id="risk-sim-result" class="mt-3" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: RECONCILIATION -->
+          <div class="app-view" id="view-reconciliation">
+            <div class="view-header">
+              <div>
+                <h2>Broker State Reconciliation &amp; Recovery</h2>
+                <p>Deterministic 4-layer discrepancy validation (Balances, Orders, Fills, Positions) against broker endpoints.</p>
+              </div>
+              <div class="recon-actions">
+                <button class="btn secondary" id="btn-run-recon-full">↻ Run Full Reconciliation</button>
+                <button class="btn primary" id="btn-run-recovery">Recover Discrepancies</button>
+              </div>
+            </div>
+            <div class="panel mb-4">
+              <div class="recon-metrics">
+                <div class="recon-metric"><span>ACTIVE ADAPTERS</span><strong>ALPACA_PAPER, BYBIT_DEMO</strong></div>
+                <div class="recon-metric"><span>UNRESOLVED MISMATCHES</span><strong id="full-recon-mismatches" class="positive">0</strong></div>
+                <div class="recon-metric"><span>SYSTEM HEALTH</span><strong class="positive">HEALTHY</strong></div>
+                <div class="recon-metric"><span>SAFETY ENFORCEMENT</span><strong class="positive">ACTIVE</strong></div>
+              </div>
+            </div>
+            <div class="table-container">
+              <h3>Recent Reconciliation Runs</h3>
+              <table class="data-table">
+                <thead>
+                  <tr><th>RUN ID</th><th>BOT ID</th><th>STATUS</th><th>MISMATCHES</th><th>STARTED AT</th><th>COMPLETED AT</th></tr>
+                </thead>
+                <tbody id="full-recon-runs-body">
+                  <tr><td colspan="6" class="recon-empty">Loading reconciliation runs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- VIEW: ALERTS -->
+          <div class="app-view" id="view-alerts">
+            <div class="view-header">
+              <div>
+                <h2>System Alerts &amp; Notifications</h2>
+                <p>Real-time notifications, connection states, and risk tripwire alerts.</p>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="alert-list" id="alerts-list">
+                <div class="alert-item positive-border">
+                  <b>All Adapters Operational</b>
+                  <p>Alpaca Paper and Bybit Demo adapters connected and active.</p>
+                  <small>System</small>
+                </div>
+                <div class="alert-item positive-border">
+                  <b>Deterministic Safety Invariants Enforced</b>
+                  <p>Live trading blocked. Paper &amp; Demo trading isolation active.</p>
+                  <small>Policy</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: AUDIT TRAIL -->
+          <div class="app-view" id="view-audit">
+            <div class="view-header">
+              <div>
+                <h2>Append-Only Audit Trail</h2>
+                <p>Immutable forensic record of all order dispatches, risk decisions, bot status transitions, and rebalances.</p>
+              </div>
+              <button class="btn secondary" id="btn-refresh-audit">↻ Refresh</button>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>TIMESTAMP</th>
+                    <th>ACTOR</th>
+                    <th>EVENT TYPE</th>
+                    <th>AGGREGATE</th>
+                    <th>AGGREGATE ID</th>
+                    <th>PAYLOAD</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                  <tr><td colspan="6" class="recon-empty">Loading audit events...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- VIEW: SETTINGS -->
+          <div class="app-view" id="view-settings">
+            <div class="view-header">
+              <div>
+                <h2>System Configuration &amp; Adapters</h2>
+                <p>Operational runtime configuration and external paper/demo endpoints.</p>
+              </div>
+            </div>
+            <div class="panel form-panel">
+              <div class="settings-grid">
+                <div class="setting-item"><span>Alpaca Base URL</span><code>https://paper-api.alpaca.markets/v2</code></div>
+                <div class="setting-item"><span>Alpaca Execution Mode</span><b class="positive">PAPER (Strictly isolated)</b></div>
+                <div class="setting-item"><span>Bybit Base URL</span><code>https://api-demo.bybit.com</code></div>
+                <div class="setting-item"><span>Bybit Execution Mode</span><b class="positive">DEMO (Strictly isolated)</b></div>
+                <div class="setting-item"><span>Database</span><code>PostgreSQL 16 · Flyway Migrations V1-V12</code></div>
+                <div class="setting-item"><span>Redis Stream</span><code>Redis 7 Alpine · Port 6379</code></div>
+                <div class="setting-item"><span>Live Trading Policy</span><b class="negative">DISABLED (Compile-time &amp; Runtime Hardened)</b></div>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </div>
-    <dialog id="safety-dialog"><div class="dialog-icon">!</div><h2>Emergency stop ready</h2><p>This control pauses every bot and prevents new orders. Existing orders are preserved until the execution service performs its configured cancellation procedure.</p><div class="dialog-actions"><button class="secondary" data-close>Cancel</button><button class="danger" id="confirm-stop">Confirm emergency stop</button></div></dialog>
+
+    <!-- MODAL: DEPLOY BOT -->
+    <dialog id="deploy-bot-dialog">
+      <div class="dialog-header">
+        <h3>Deploy New Autonomous Bot</h3>
+        <button class="dialog-close" data-close>✕</button>
+      </div>
+      <form id="form-deploy-bot">
+        <div class="form-group">
+          <label>Bot Name</label>
+          <input type="text" id="deploy-bot-name" required placeholder="e.g. BTC Alpha Momentum" />
+        </div>
+        <div class="form-group">
+          <label>Strategy Version ID</label>
+          <select id="deploy-bot-strategy" required></select>
+        </div>
+        <div class="form-group">
+          <label>Broker</label>
+          <select id="deploy-bot-broker" required>
+            <option value="ALPACA_PAPER">Alpaca Paper (Equities &amp; Crypto)</option>
+            <option value="BYBIT_DEMO">Bybit Demo (Crypto Derivatives)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Execution Mode</label>
+          <select id="deploy-bot-mode" required>
+            <option value="PAPER">PAPER (Alpaca)</option>
+            <option value="DEMO">DEMO (Bybit)</option>
+          </select>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn secondary" data-close>Cancel</button>
+          <button type="submit" class="btn primary">Deploy Bot</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- MODAL: CREATE STRATEGY -->
+    <dialog id="create-strategy-dialog">
+      <div class="dialog-header">
+        <h3>Create New Trading Strategy</h3>
+        <button class="dialog-close" data-close>✕</button>
+      </div>
+      <form id="form-create-strategy">
+        <div class="form-group">
+          <label>Strategy Name</label>
+          <input type="text" id="create-strat-name" required placeholder="e.g. Multi-Factor Mean Reversion" />
+        </div>
+        <div class="form-group">
+          <label>Change Reason / Description</label>
+          <input type="text" id="create-strat-reason" required value="Initial deployment definition" />
+        </div>
+        <div class="form-group">
+          <label>JSON Definition</label>
+          <textarea id="create-strat-def" rows="4">{"type":"MOMENTUM","timeframe":"15m","fastEma":12,"slowEma":26,"rsiPeriod":14,"takeProfitPct":0.05,"stopLossPct":0.02}</textarea>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn secondary" data-close>Cancel</button>
+          <button type="submit" class="btn primary">Create Strategy</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- MODAL: PLACE ORDER -->
+    <dialog id="create-order-dialog">
+      <div class="dialog-header">
+        <h3>Place &amp; Dispatch Order</h3>
+        <button class="dialog-close" data-close>✕</button>
+      </div>
+      <form id="form-create-order">
+        <div class="form-group">
+          <label>Bot</label>
+          <select id="order-bot-id" required></select>
+        </div>
+        <div class="form-group">
+          <label>Symbol</label>
+          <input type="text" id="order-symbol" required value="BTC/USD" />
+        </div>
+        <div class="form-group">
+          <label>Side</label>
+          <select id="order-side" required>
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="order-qty" step="0.001" required value="0.05" />
+        </div>
+        <div class="form-group">
+          <label>Reference Price ($)</label>
+          <input type="number" id="order-price" step="0.01" required value="65000.00" />
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn secondary" data-close>Cancel</button>
+          <button type="submit" class="btn primary">Submit Order</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- MODAL: JOURNAL DECISION -->
+    <dialog id="journal-decision-dialog">
+      <div class="dialog-header">
+        <h3>Journal Agent Decision</h3>
+        <button class="dialog-close" data-close>✕</button>
+      </div>
+      <form id="form-journal-decision">
+        <div class="form-group">
+          <label>Bot</label>
+          <select id="jd-bot-id" required></select>
+        </div>
+        <div class="form-group">
+          <label>Action</label>
+          <select id="jd-action" required>
+            <option value="HOLD">HOLD</option>
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+            <option value="REDUCE">REDUCE</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Symbol</label>
+          <input type="text" id="jd-symbol" required value="BTC/USD" />
+        </div>
+        <div class="form-group">
+          <label>Rationale / Detail</label>
+          <input type="text" id="jd-rationale" required value="Factor score confirmed trend continuation signal." />
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn secondary" data-close>Cancel</button>
+          <button type="submit" class="btn primary">Journal Decision</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- MODAL: SAFETY EMERGENCY STOP -->
+    <dialog id="safety-dialog">
+      <div class="dialog-icon">!</div>
+      <h2>Emergency Stop Confirmation</h2>
+      <p>This command pauses every bot, blocks new order creation, and cancels all active orders. Live trading remains permanently disabled.</p>
+      <div class="dialog-actions">
+        <button class="secondary" data-close>Cancel</button>
+        <button class="danger" id="confirm-stop">Confirm Emergency Stop</button>
+      </div>
+    </dialog>
+
     <div class="toast" role="status" aria-live="polite"></div>
     <script src="./app.js"></script>
   </body>

@@ -18,7 +18,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
   private final OrderService service;
   private final OrderLifecycleService lifecycle;
-  public OrderController(OrderService service, OrderLifecycleService lifecycle) { this.service = service; this.lifecycle = lifecycle; }
+  private final OrderStore orderStore;
+
+  public OrderController(OrderService service, OrderLifecycleService lifecycle, OrderStore orderStore) {
+    this.service = service;
+    this.lifecycle = lifecycle;
+    this.orderStore = orderStore;
+  }
+
+  @org.springframework.web.bind.annotation.GetMapping
+  public java.util.List<OrderRecord> list(@org.springframework.web.bind.annotation.RequestParam(defaultValue = "50") int limit) {
+    return orderStore.findAll(limit);
+  }
+
+  @org.springframework.web.bind.annotation.GetMapping("/{orderId}")
+  public ResponseEntity<OrderRecord> get(@PathVariable UUID orderId) {
+    return orderStore.findById(orderId).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+  }
+
   @PostMapping public ResponseEntity<OrderRecord> create(@Valid @RequestBody RiskDecisionRequest request) { return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request)); }
   @PostMapping("/{orderId}/status") public OrderRecord transition(@PathVariable UUID orderId, @Valid @RequestBody OrderTransitionRequest request) { return lifecycle.transition(orderId, request); }
   @ExceptionHandler(OrderRejectedException.class) ResponseEntity<?> rejected(OrderRejectedException error) { return ResponseEntity.unprocessableEntity().body(Map.of("status", "REJECTED", "reasons", error.decision().reasons())); }

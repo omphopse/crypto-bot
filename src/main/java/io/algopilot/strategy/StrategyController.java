@@ -14,7 +14,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/strategies")
 public class StrategyController {
   private final StrategyService service;
-  public StrategyController(StrategyService service) { this.service = service; }
+  private final StrategyStore store;
+
+  public StrategyController(StrategyService service, StrategyStore store) {
+    this.service = service;
+    this.store = store;
+  }
+
+  @org.springframework.web.bind.annotation.GetMapping
+  public java.util.List<Strategy> listStrategies() {
+    return store.findAllStrategies();
+  }
+
+  @org.springframework.web.bind.annotation.GetMapping("/versions")
+  public java.util.List<StrategyVersion> listVersions() {
+    return store.findAllVersions();
+  }
+
   @PostMapping public ResponseEntity<StrategyVersion> create(@Valid @RequestBody CreateStrategyRequest request) {
     StrategyVersion version = service.create(request); return ResponseEntity.created(URI.create("/api/strategies/" + version.strategyId() + "/versions/1")).body(version);
   }

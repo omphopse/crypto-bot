@@ -45,4 +45,33 @@ public class JdbcStrategyStore implements StrategyStore {
     Integer number = jdbc.queryForObject("select coalesce(max(version_number), 0) from strategy_versions where strategy_id = ?", Integer.class, strategyId);
     return number == null ? 0 : number;
   }
+
+  @Override public java.util.List<Strategy> findAllStrategies() {
+    return jdbc.query("select id, name, status, created_at from strategies order by created_at desc",
+        (rs, rowNum) -> new Strategy(
+            (UUID) rs.getObject("id"),
+            rs.getString("name"),
+            rs.getString("status"),
+            rs.getTimestamp("created_at").toInstant()
+        ));
+  }
+
+  @Override public java.util.List<StrategyVersion> findAllVersions() {
+    String sql = "select id, strategy_id, version_number, definition, change_reason, created_at from strategy_versions order by created_at desc";
+    return jdbc.query(sql, (rs, rowNum) -> {
+      try {
+        JsonNode definitionNode = json.readTree(rs.getString("definition"));
+        return new StrategyVersion(
+            (UUID) rs.getObject("id"),
+            (UUID) rs.getObject("strategy_id"),
+            rs.getInt("version_number"),
+            definitionNode,
+            rs.getString("change_reason"),
+            rs.getTimestamp("created_at").toInstant()
+        );
+      } catch (JsonProcessingException e) {
+        throw new IllegalStateException("Failed to parse strategy definition", e);
+      }
+    });
+  }
 }
