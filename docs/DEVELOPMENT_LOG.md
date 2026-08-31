@@ -258,8 +258,42 @@
 - **Test Results:** 101 passed, 0 failed, 0 skipped.
 - **Build Result:** Maven compilation and test suite succeeded with exit code 0.
 - **Security Review:** Read-only WebSocket channel interceptor categorically rejects client send messages on broadcast topics. Zero client-side execution authority. Live streaming endpoints strictly blocked.
-- **Remaining Limitations:** Autonomous multi-agent research agent pipelines and advanced factor models belong to subsequent milestones.
 - **Next Recommended Phase:** Autonomous Research & Multi-Factor Strategy Agent or Advanced Portfolio Risk Management.
+
+## 2026-08-31 — Autonomous Multi-Factor Strategy & Research Agent Engine
+
+- **Phase:** Autonomous Multi-Factor Strategy & Research Agent Engine
+- **Objective:** Implement quantitative factor modeling (momentum, mean reversion, volatility breakout, volume spike, trend strength), alpha hypothesis generation, automated strategy synthesis, and qualification gating via backtesting and walk-forward validation.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V10__research_factors.sql`
+  - `src/main/java/io/algopilot/research/factor/FactorType.java`
+  - `src/main/java/io/algopilot/research/factor/FactorScore.java`
+  - `src/main/java/io/algopilot/research/factor/FactorEngine.java`
+  - `src/main/java/io/algopilot/research/model/AlphaHypothesis.java`
+  - `src/main/java/io/algopilot/research/model/StrategyCandidate.java`
+  - `src/main/java/io/algopilot/research/persistence/ResearchStore.java`
+  - `src/main/java/io/algopilot/research/persistence/JdbcResearchStore.java`
+  - `src/main/java/io/algopilot/research/service/ResearchAgentService.java`
+  - `src/main/java/io/algopilot/research/controller/ResearchController.java`
+  - `src/test/java/io/algopilot/research/factor/FactorEngineTest.java`
+  - `src/test/java/io/algopilot/research/service/ResearchAgentServiceTest.java`
+  - `src/test/java/io/algopilot/research/controller/ResearchControllerTest.java`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `docs/SECURITY.md`
+- **Database Migrations:** `V10__research_factors.sql` creating `alpha_hypotheses` and `strategy_candidates`.
+- **Implementation Summary:** Built `FactorEngine` evaluating 5 standard quantitative factors with normalized scores in `[-1.0000, +1.0000]` and composite alpha score weighting. Built `ResearchAgentService` to evaluate factor matrices, formulate `AlphaHypothesis` records, synthesize parameterized `StrategyVersion` definitions, and gate candidates through `BacktestEngine` and `WalkForwardEngine` to ensure only robust strategies receive `APPROVED_CANDIDATE` status. Persisted hypotheses and candidates to PostgreSQL with append-only audit events.
+- **Tests Executed:** 107 automated tests (6 dedicated new tests covering factor evaluation, strategy synthesis, validation gating, and REST controllers).
+- **Test Results:** 107 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven compilation and test suite succeeded with exit code 0.
+- **Security Review:** Research agent operates strictly as an untrusted information generator with zero execution authority. Candidate strategies must pass backtest/walk-forward qualification gates.
+- **Remaining Limitations:** Advanced portfolio cross-sectional risk parity and multi-asset position optimization belong to the next phase.
+- **Next Recommended Phase:** Advanced Portfolio Risk Management & Cross-Asset Allocation Engine.
+
 
 
 

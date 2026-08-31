@@ -1,6 +1,6 @@
 # ALGOPILOT
 
-ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus real backend boundaries: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, typed deterministic risk evaluation, broker state reconciliation, real Paper/Demo broker adapters (Alpaca Paper & Bybit Demo) wired through a non-bypassable Execution Gateway, an event-driven backtesting and walk-forward validation engine, and a real-time WebSocket market streaming gateway and event bus. The console is deliberately locked to **PAPER** execution; live broker trading is strictly disabled.
+ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus real backend boundaries: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, typed deterministic risk evaluation, broker state reconciliation, real Paper/Demo broker adapters (Alpaca Paper & Bybit Demo) wired through a non-bypassable Execution Gateway, an event-driven backtesting and walk-forward validation engine, real-time WebSocket market streaming gateway and event bus, and an autonomous multi-factor strategy research and synthesis engine. The console is deliberately locked to **PAPER** execution; live broker trading is strictly disabled.
 
 ## Run locally
 
@@ -21,6 +21,10 @@ Run `docker compose up postgres`, then `mvn test` and `mvn spring-boot:run`. The
 - `POST /api/execution/dispatch/{orderId}`: Dispatches an approved order through `ExecutionGateway` to the appropriate paper/demo broker adapter (`AlpacaPaperAdapter` or `BybitDemoAdapter`).
 - `POST /api/execution/cancel/{orderId}`: Requests order cancellation on the broker adapter.
 - `GET /api/execution/adapters`: Lists registered broker adapters and their supported modes.
+- `POST /api/research/evaluate-factors`: Evaluates multi-factor market matrix (momentum, mean reversion, volatility breakout, volume spike, trend strength) and produces an `AlphaHypothesis`.
+- `POST /api/research/synthesize-strategy`: Synthesizes candidate strategy version from dominant factor drivers, running backtesting and walk-forward validation gates.
+- `GET /api/research/hypotheses`: Retrieves recent alpha hypotheses.
+- `GET /api/research/candidates`: Retrieves synthesized strategy candidates and qualification statuses.
 - `GET /api/feed/status`: Returns active paper/demo streaming feeds, connection states, and subscribed symbols.
 - `POST /api/feed/subscribe`: Subscribes a market data feed to a symbol ticker stream.
 - `POST /api/feed/publish`: Ingests and broadcasts a market tick through the internal `MarketEventBus`.

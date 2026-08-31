@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 — 2026-08-31
+
+- Added quantitative multi-factor modeling engine (`FactorEngine`) computing standardized factor scores for Momentum (EMA divergence), Mean Reversion (RSI extremes), Volatility Breakout (ATR expansion), Volume Imbalance (volume spikes), and Trend Strength, with composite alpha weighting.
+- Added structured `AlphaHypothesis` generation capturing composite scores, factor attributions, and transparent quantitative rationales.
+- Added autonomous strategy synthesis engine (`ResearchAgentService`) formulating versioned strategy JSON definitions parameterized to dominant market factor drivers.
+- Implemented automated qualification gating: candidate strategies are rigorously validated against `BacktestEngine` and `WalkForwardEngine` before receiving `APPROVED_CANDIDATE` status.
+- Added Flyway migration `V10__research_factors.sql` and PostgreSQL persistence (`JdbcResearchStore`) for `alpha_hypotheses` and `strategy_candidates`.
+- Added REST APIs under `/api/research` (`/evaluate-factors`, `/synthesize-strategy`, `/hypotheses`, `/candidates`).
+- Added 6 unit and integration tests covering factor calculations, hypothesis creation, strategy synthesis, backtesting validation gating, and controller endpoints (107 total passing tests).
+
 ## 0.5.0 — 2026-08-31
 
 - Added high-throughput, thread-safe in-memory pub/sub `MarketEventBus` coordinating market ticks, system events, and order updates without blocking execution threads.

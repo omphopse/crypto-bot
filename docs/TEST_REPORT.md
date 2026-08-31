@@ -1,41 +1,36 @@
 # Test report
 
-## 2026-08-31 — Real-Time WebSocket Streaming & Market Data Feed Milestone
+## 2026-08-31 — Autonomous Multi-Factor Strategy & Research Agent Engine Milestone
 
 Command: `mvn test -q`
 
-Result: passed (101 tests executed across 32 test classes, 0 failures, 0 errors, 0 skipped).
+Result: passed (107 tests executed across 35 test classes, 0 failures, 0 errors, 0 skipped).
 
-### Covered WebSocket Streaming & Market Data Feed Scenarios:
+### Covered Multi-Factor Research & Strategy Synthesis Scenarios:
 
-1. **Market Event Bus (`MarketEventBus`):**
-   - Global tick distribution to active consumers.
-   - Symbol-filtered tick distribution (e.g. `BTC/USD`, `ETH/USD`).
-   - System event pub/sub across topics (`orders`, `bots`, `positions`, `reconciliation`).
-   - Thread-safe subscriber registration and cleanup.
+1. **Factor Engine (`FactorEngine`):**
+   - Momentum factor calculation (Fast vs Slow EMA rate of change).
+   - Mean Reversion factor calculation (RSI overbought/oversold extremes).
+   - Volatility Breakout factor calculation (High/Low range vs ATR multiplier).
+   - Volume Imbalance factor calculation (Volume spikes vs 20-period average volume).
+   - Trend Strength factor calculation (Price distance to moving average).
+   - Composite Alpha Score weighted combination bounded strictly between `[-1.0000, +1.0000]`.
+   - Empty/undersized candle dataset safety.
 
-2. **WebSocket Event Broadcasting (`WebSocketEventPublisher`):**
-   - Forwarding market ticks to `/topic/market-data` and `/topic/market-data/{symbol}`.
-   - Forwarding system lifecycle events to `/topic/{topic}` destinations.
-   - Exception handling on broadcast channels.
+2. **Research Agent Application Service (`ResearchAgentService`):**
+   - Alpha hypothesis generation with transparent factor attribution summaries.
+   - Strategy synthesis with parameterized versioned strategy definitions.
+   - Validation qualification gating: deterministic evaluation of Backtest Sharpe ratio, max drawdown, and Walk-Forward Efficiency (WFE) ratio.
+   - Automated candidate classification (`APPROVED_CANDIDATE` vs `REJECTED_CANDIDATE`).
+   - Append-only audit trail generation.
 
-3. **Alpaca Paper Market Feed (`AlpacaPaperMarketFeed`):**
-   - Trade packet (`t`) normalization into `MarketTick` models with timestamp parsing.
-   - Quote packet (`q`) normalization into `MarketTick` models with mid-price calculation.
-   - Lifecycle management (start, stop, subscribe, unsubscribe).
-   - Live-trading URL rejection.
-
-4. **Bybit Demo Market Feed (`BybitDemoMarketFeed`):**
-   - Ticker and trade message normalization into `MarketTick` models with timestamp extraction.
-   - Symbol normalization and precision scaling (scale 4).
-   - Lifecycle management and demo-mode URL verification.
-
-5. **Feed REST Controller (`FeedController`):**
-   - Status retrieval (`/api/feed/status`).
-   - Dynamic symbol subscription (`/api/feed/subscribe`).
-   - Test tick ingestion and publication (`/api/feed/publish`).
+3. **Research REST Controller (`ResearchController`):**
+   - Factor evaluation endpoint (`/api/research/evaluate-factors`).
+   - Strategy synthesis endpoint (`/api/research/synthesize-strategy`).
+   - Querying recent hypotheses (`/api/research/hypotheses`) and strategy candidates (`/api/research/candidates`).
 
 ### Earlier Verified Milestone Suites (All Passing):
+- Real-Time WebSocket Streaming & Market Data Feeds (12 tests).
 - Event-Driven Backtesting & Walk-Forward Validation Engine (14 tests).
 - Exchange Adapters (Alpaca Paper & Bybit Demo) and Execution Gateway (21 tests).
 - Reconciliation & Recovery engine, service, controller, and health indicators (54 tests).

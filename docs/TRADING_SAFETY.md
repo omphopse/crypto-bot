@@ -7,6 +7,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 - Bybit: `DEMO` only (`https://api-demo.bybit.com`)
 - `LIVE`: Strictly disabled and rejected at all configuration and execution boundaries.
 
+## Autonomous Strategy Synthesis & Research Safety Invariants
+1. **Zero Execution Authority**: Research agents and factor engines operate exclusively as analytical tools. They cannot create live orders or access exchange credentials.
+2. **Deterministic Validation Gating**: Candidate strategies synthesized by research agents cannot be deployed directly. They require backtest Sharpe verification and positive Walk-Forward Efficiency (WFE) validation.
+3. **Immutable Strategy Versioning**: Approved strategy candidates are stored as immutable `StrategyVersion` records with full parameter provenance.
+
 ## Real-Time Streaming & WebSocket Safety Invariants
 1. **Read-Only Subscriptions**: Connected WebSocket clients have zero command or order execution capability. Any inbound `SEND` command to broadcast topics is intercepted and rejected.
 2. **Decoupled Asynchronous Processing**: Real-time tick ingestion is handled on an asynchronous in-memory event bus (`MarketEventBus`) ensuring high-throughput market feeds never block or starve order execution or reconciliation workers.
