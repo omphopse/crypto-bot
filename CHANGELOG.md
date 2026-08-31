@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0 — 2026-08-31
+
+- Added Micrometer `TradingMetrics` component registering trading operational metrics for submitted orders, executed orders, approved/rejected risk decisions, active reconciliation mismatches, and rebalance runs.
+- Configured Spring Boot Actuator health probe groups (`/actuator/health/liveness` and `/actuator/health/readiness`).
+- Added multi-stage hardened `Dockerfile` with build isolation, G1GC tuning, and unprivileged user execution (`USER 10001:10001`).
+- Updated `docker-compose.yml` with production multi-service topology (PostgreSQL 16, Redis 7, and `algopilot-api`) with healthcheck dependencies.
+- Added `.env.example` documenting database, Redis, and broker configuration.
+- Added comprehensive operational runbook in `docs/RUNBOOK.md` detailing incident response procedures for reconciliation mismatches, emergency stop resets, stream disconnects, and database rollback safety.
+- Added 1 unit test for `TradingMetrics` (119 total passing tests).
+
 ## 0.8.0 — 2026-08-31
 
 - Added portfolio allocation drift monitoring engine (`PortfolioRebalanceService.evaluateDrift`) calculating asset weight divergence ($|w_{\text{actual}} - w_{\text{target}}|$) and synthesizing rebalancing order intents.

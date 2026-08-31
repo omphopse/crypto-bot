@@ -1,32 +1,27 @@
 # Test report
 
-## 2026-08-31 — Automated Portfolio Rebalancing Execution & Drift Monitoring Engine Milestone
+## 2026-08-31 — Production Deployment Packaging, Health Orchestration & Operational Runbooks Milestone
 
 Command: `mvn test -q`
 
-Result: passed (118 tests executed across 42 test classes, 0 failures, 0 errors, 0 skipped).
+Result: passed (119 tests executed across 43 test classes, 0 failures, 0 errors, 0 skipped).
 
-### Covered Portfolio Rebalancing & Drift Monitoring Scenarios:
+### Covered Operational Metrics & Production Verification Scenarios:
 
-1. **Portfolio Drift Evaluation (`PortfolioRebalanceService.evaluateDrift`):**
-   - Percentage weight drift calculation ($|w_{\text{actual}} - w_{\text{target}}| \times 100$).
-   - Threshold-based rebalancing trigger evaluation ($\ge 5.0\%$).
-   - Order intent synthesis (`BUY` / `SELL`, quantities, prices, capital delta).
+1. **Operational Trading Metrics (`TradingMetrics`):**
+   - Counter metrics incrementing for `algopilot.orders.submitted.count` and `algopilot.orders.executed.count`.
+   - Tagged risk decision counters for `algopilot.risk.decisions.count{status="APPROVED"}` and `{status="REJECTED"}`.
+   - Counter metrics for `algopilot.rebalance.runs.count`.
+   - Gauge metric for active reconciliation mismatches (`algopilot.reconciliation.mismatches.active`).
 
-2. **Risk-Gated Rebalancing Execution (`PortfolioRebalanceService.executeRebalance`):**
-   - Conversion of intents into typed `RiskDecisionRequest` parameters.
-   - Enforcement of deterministic `RiskDecisionService.evaluate(...)` gate.
-   - Internal `OrderRecord` creation via `OrderService`.
-   - Dispatching to `ExecutionGateway`.
-   - Run lifecycle tracking (`STARTED`, `COMPLETED`, `FAILED_RISK_GATING`).
-   - Logging append-only audit events.
-
-3. **Rebalancing REST Controller (`PortfolioRebalanceController`):**
-   - Drift evaluation endpoint (`/api/portfolio/rebalance/evaluate-drift`).
-   - Execution endpoint (`/api/portfolio/rebalance/execute`).
-   - Listing runs and run order details (`/api/portfolio/rebalance/runs`, `/{id}`, `/{id}/orders`).
+2. **Container Packaging & Environment Configuration:**
+   - Multi-stage Dockerfile build validation.
+   - Non-root user permissions (`USER 10001:10001`).
+   - Actuator health probes (`/actuator/health/liveness` and `/actuator/health/readiness`).
+   - Multi-container Docker Compose definition.
 
 ### Earlier Verified Milestone Suites (All Passing):
+- Automated Portfolio Rebalancing Execution & Drift Monitoring (4 tests).
 - Cross-Asset Portfolio Allocation & Risk Parity Engine (7 tests).
 - Autonomous Multi-Factor Strategy & Research Agent Engine (6 tests).
 - Real-Time WebSocket Streaming & Market Data Feeds (12 tests).

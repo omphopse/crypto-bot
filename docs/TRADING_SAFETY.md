@@ -7,6 +7,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 - Bybit: `DEMO` only (`https://api-demo.bybit.com`)
 - `LIVE`: Strictly disabled and rejected at all configuration and execution boundaries.
 
+## Production Incident Response & Safety Invariants
+1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
+2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.
+3. **Hardened Unprivileged Execution**: Production containers execute exclusively as an unprivileged non-root user (`USER 10001:10001`).
+
 ## Automated Portfolio Rebalancing Invariants
 1. **Mandatory Risk Evaluation**: Every synthesized rebalance order intent must pass `RiskDecisionService.evaluate(...)` before order creation and execution.
 2. **Deterministic Drift Threshold**: Rebalance executions trigger only when maximum asset weight drift exceeds the defined threshold ($\ge 5.0\%$) or upon explicit operator request.

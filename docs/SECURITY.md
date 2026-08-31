@@ -16,6 +16,10 @@
 - Broker Adapters = Paper / Demo Execution Clients (strictly bound to `paper-api.alpaca.markets` and `api-demo.bybit.com`).
 - Broker State Provider = Canonical Read-Only Abstraction (reconciliation and balance inspection without live order submission authority).
 
+## Container & Operational Security
+- Multi-stage Docker container runs under an unprivileged non-root user (`USER 10001:10001`).
+- Actuator endpoints expose only operational health probes and sanitized Prometheus metrics with zero credential leakage.
+
 ## Data & Audit Integrity
 - Audit events are strictly append-only in PostgreSQL.
 - Risk decisions snapshot input parameters and evaluated reasons before order persistence.

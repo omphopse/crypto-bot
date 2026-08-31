@@ -12,9 +12,22 @@ python3 -m http.server 8080
 
 Then open `http://localhost:8080`.
 
-## API development
+## Production Deployment (Docker Compose)
 
-Run `docker compose up postgres`, then `mvn test` and `mvn spring-boot:run`. The health endpoint is `GET /actuator/health`; the typed risk gate is `POST /api/risk/evaluate`, and `POST /api/orders` creates an idempotent internal order only after risk approval.
+Launch the complete multi-container production topology (PostgreSQL, Redis, and hardened Spring Boot API):
+
+```sh
+cp .env.example .env
+docker compose up -d
+```
+
+Check health:
+- `curl http://localhost:8080/actuator/health`
+- `curl http://localhost:8080/actuator/metrics`
+
+## API & Operations Reference
+
+The health endpoint is `GET /actuator/health`; the typed risk gate is `POST /api/risk/evaluate`, and `POST /api/orders` creates an idempotent internal order only after risk approval.
 
 - `POST /api/bots`: Deploys a persisted bot against an immutable strategy version. Only `ALPACA_PAPER`/`PAPER` and `BYBIT_DEMO`/`DEMO` pairs are accepted; live trading is rejected.
 - `POST /api/agent/decisions`: Journals typed agent intent and evidence. It does not execute; an order must separately pass the risk and order boundaries.
@@ -61,7 +74,7 @@ Clients connect to `ws://localhost:8080/ws` (with SockJS fallback). Broadcast ch
 
 WebSocket channels are strictly read-only for connected clients; command injection is rejected by channel interceptors.
 
-## Safety boundary
+## Safety boundary & Runbooks
 
 No UI action is an execution authority. Production order flow must be:
 
@@ -69,6 +82,6 @@ No UI action is an execution authority. Production order flow must be:
 
 The browser/research layer is an untrusted information source only. Live trading is disabled by design until separately implemented with explicit deployment gates.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the service design, [docs/TRADING_SAFETY.md](docs/TRADING_SAFETY.md) for non-negotiable controls, and [docs/SECURITY.md](docs/SECURITY.md) for security boundaries.
+See [docs/RUNBOOK.md](docs/RUNBOOK.md) for incident response and operational procedures, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for service design, [docs/TRADING_SAFETY.md](docs/TRADING_SAFETY.md) for non-negotiable controls, and [docs/SECURITY.md](docs/SECURITY.md) for security boundaries.
 
 Milestone status and test evidence are recorded in [docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md) and [docs/TEST_REPORT.md](docs/TEST_REPORT.md).
