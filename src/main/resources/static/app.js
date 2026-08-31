@@ -641,7 +641,7 @@ document.getElementById('btn-execute-rebalance')?.addEventListener('click', asyn
       }
     }
 
-    announce('Evaluating portfolio drift and dispatching rebalance orders...');
+    if (activeBotsCache.length === 0) await loadBots();
     const botId = activeBotsCache.length > 0 ? activeBotsCache[0].id : null;
     const res = await fetch('/api/portfolio/rebalance/execute', {
       method: 'POST',

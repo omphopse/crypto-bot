@@ -84,7 +84,7 @@ public class PortfolioRebalanceController {
     }
 
     if (botId == null) {
-      return ResponseEntity.badRequest().body(null);
+      throw new IllegalArgumentException("NO_ACTIVE_BOT_FOUND: Please deploy a bot first before executing portfolio rebalancing.");
     }
 
     RebalanceRun run = service.executeRebalance(
