@@ -87,6 +87,13 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() < 200 || response.statusCode() >= 300) {
+        if (response.body() != null && response.body().contains("client_order_id must be unique")) {
+          log.info("Order {} was already submitted to Alpaca; resolving existing order status.", order.clientOrderId());
+          Optional<BrokerOrder> existingOrder = getOrderStatus(order.clientOrderId(), null);
+          String exchangeOrderId = existingOrder.map(BrokerOrder::brokerOrderId).orElse("alpaca-" + order.clientOrderId());
+          OrderStatus status = existingOrder.map(BrokerOrder::status).orElse(OrderStatus.ACKNOWLEDGED);
+          return new OrderSubmissionResult(order.clientOrderId(), exchangeOrderId, status, clock.instant(), Map.of("broker", "ALPACA_PAPER", "mode", "PAPER", "duplicateResolved", true));
+        }
         if (response.statusCode() == 401 && (config.getKeyId().contains("dummy") || config.getKeyId().startsWith("paper_") || config.getKeyId().length() < 10)) {
           log.warn("Alpaca Paper API returned 401 with placeholder key: {}. Simulating paper execution acknowledgment.", config.getKeyId());
           String exchangeOrderId = "alpaca-paper-" + UUID.randomUUID().toString().substring(0, 8);

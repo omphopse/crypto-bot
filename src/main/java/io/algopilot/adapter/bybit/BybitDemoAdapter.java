@@ -91,6 +91,13 @@ public class BybitDemoAdapter implements BrokerOrderAdapter, BrokerStateProvider
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() < 200 || response.statusCode() >= 300) {
+        if (response.body() != null && (response.body().contains("duplicate") || response.body().contains("already exist"))) {
+          log.info("Order {} was already submitted to Bybit; resolving existing order status.", order.clientOrderId());
+          Optional<BrokerOrder> existingOrder = getOrderStatus(order.clientOrderId(), null);
+          String exchangeOrderId = existingOrder.map(BrokerOrder::brokerOrderId).orElse("bybit-" + order.clientOrderId());
+          OrderStatus status = existingOrder.map(BrokerOrder::status).orElse(OrderStatus.ACKNOWLEDGED);
+          return new OrderSubmissionResult(order.clientOrderId(), exchangeOrderId, status, clock.instant(), Map.of("broker", "BYBIT_DEMO", "mode", "DEMO", "duplicateResolved", true));
+        }
         if ((response.statusCode() == 401 || response.statusCode() == 403) && (config.getApiKey().contains("dummy") || config.getApiKey().startsWith("demo_") || config.getApiKey().length() < 10)) {
           log.warn("Bybit Demo API returned error with placeholder key: {}. Simulating demo execution acknowledgment.", config.getApiKey());
           String exchangeOrderId = "bybit-demo-" + UUID.randomUUID().toString().substring(0, 8);
@@ -102,6 +109,13 @@ public class BybitDemoAdapter implements BrokerOrderAdapter, BrokerStateProvider
       JsonNode root = json.readTree(response.body());
       int retCode = root.path("retCode").asInt(-1);
       if (retCode != 0) {
+        if (root.path("retMsg").asText("").contains("duplicate") || root.path("retMsg").asText("").contains("already exist")) {
+          log.info("Order {} was already submitted to Bybit; resolving existing order status.", order.clientOrderId());
+          Optional<BrokerOrder> existingOrder = getOrderStatus(order.clientOrderId(), null);
+          String exchangeOrderId = existingOrder.map(BrokerOrder::brokerOrderId).orElse("bybit-" + order.clientOrderId());
+          OrderStatus status = existingOrder.map(BrokerOrder::status).orElse(OrderStatus.ACKNOWLEDGED);
+          return new OrderSubmissionResult(order.clientOrderId(), exchangeOrderId, status, clock.instant(), Map.of("broker", "BYBIT_DEMO", "mode", "DEMO", "duplicateResolved", true));
+        }
         if (config.getApiKey().contains("dummy") || config.getApiKey().startsWith("demo_") || config.getApiKey().length() < 10) {
           log.warn("Bybit Demo API returned retCode={} with placeholder key: {}. Simulating demo execution acknowledgment.", retCode, config.getApiKey());
           String exchangeOrderId = "bybit-demo-" + UUID.randomUUID().toString().substring(0, 8);
