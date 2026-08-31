@@ -7,6 +7,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 - Bybit: `DEMO` only (`https://api-demo.bybit.com`)
 - `LIVE`: Strictly disabled and rejected at all configuration and execution boundaries.
 
+## Automated Portfolio Rebalancing Invariants
+1. **Mandatory Risk Evaluation**: Every synthesized rebalance order intent must pass `RiskDecisionService.evaluate(...)` before order creation and execution.
+2. **Deterministic Drift Threshold**: Rebalance executions trigger only when maximum asset weight drift exceeds the defined threshold ($\ge 5.0\%$) or upon explicit operator request.
+3. **Execution State Integrity**: Rebalance runs transition through explicit status lifecycle states (`STARTED`, `COMPLETED`, `FAILED_RISK_GATING`).
+
 ## Cross-Asset Portfolio Allocation & Risk Parity Invariants
 1. **Advisory Weighting**: Target weights calculated by `RiskParityAllocator` represent capital targets. Any resulting rebalancing orders must individually pass through `RiskEngine`.
 2. **Strict Sum-to-One Normalization**: Target capital weights are normalized such that $\sum w_i = 1.0000$ using exact `BigDecimal` precision.

@@ -1,41 +1,33 @@
 # Test report
 
-## 2026-08-31 — Cross-Asset Portfolio Allocation & Risk Parity Engine Milestone
+## 2026-08-31 — Automated Portfolio Rebalancing Execution & Drift Monitoring Engine Milestone
 
 Command: `mvn test -q`
 
-Result: passed (114 tests executed across 40 test classes, 0 failures, 0 errors, 0 skipped).
+Result: passed (118 tests executed across 42 test classes, 0 failures, 0 errors, 0 skipped).
 
-### Covered Portfolio Allocation & Risk Parity Scenarios:
+### Covered Portfolio Rebalancing & Drift Monitoring Scenarios:
 
-1. **Correlation & Covariance Engine (`CorrelationMatrixCalculator`):**
-   - Percentage returns extraction from price candles.
-   - Sample mean, variance, standard deviation calculations.
-   - Pairwise covariance calculation.
-   - Pearson correlation coefficients bounded strictly between `[-1.0000, +1.0000]`.
-   - Complete cross-asset correlation matrix construction.
+1. **Portfolio Drift Evaluation (`PortfolioRebalanceService.evaluateDrift`):**
+   - Percentage weight drift calculation ($|w_{\text{actual}} - w_{\text{target}}| \times 100$).
+   - Threshold-based rebalancing trigger evaluation ($\ge 5.0\%$).
+   - Order intent synthesis (`BUY` / `SELL`, quantities, prices, capital delta).
 
-2. **Risk Parity Allocator (`RiskParityAllocator`):**
-   - Inverse-volatility weighting assigning lower weights to high-volatility assets.
-   - Exact sum-to-1.0000 normalization invariant.
-   - Handling of uniform/zero volatility fallback.
+2. **Risk-Gated Rebalancing Execution (`PortfolioRebalanceService.executeRebalance`):**
+   - Conversion of intents into typed `RiskDecisionRequest` parameters.
+   - Enforcement of deterministic `RiskDecisionService.evaluate(...)` gate.
+   - Internal `OrderRecord` creation via `OrderService`.
+   - Dispatching to `ExecutionGateway`.
+   - Run lifecycle tracking (`STARTED`, `COMPLETED`, `FAILED_RISK_GATING`).
+   - Logging append-only audit events.
 
-3. **Portfolio Risk Calculator (`PortfolioRiskCalculator`):**
-   - Portfolio variance $\sigma_p^2 = \sum_i \sum_j w_i w_j \sigma_i \sigma_j \rho_{ij}$ and portfolio volatility $\sigma_p$.
-   - 1-day 95% Parametric Value at Risk (VaR 95%).
-   - 1-day 95% Conditional Value at Risk (Expected Shortfall / CVaR 95%).
-
-4. **Portfolio Allocation Service (`PortfolioAllocationService`):**
-   - End-to-end plan generation with rebalancing delta calculations.
-   - Validation against empty symbol lists.
-   - PostgreSQL persistence and append-only audit trail logging.
-
-5. **Portfolio Allocation REST Controller (`PortfolioAllocationController`):**
-   - Endpoint `/api/portfolio/allocation/allocate` generating plans.
-   - Endpoint `/api/portfolio/allocation/latest` and `/{id}` with 404 handling.
-   - Endpoint `/api/portfolio/allocation/history`.
+3. **Rebalancing REST Controller (`PortfolioRebalanceController`):**
+   - Drift evaluation endpoint (`/api/portfolio/rebalance/evaluate-drift`).
+   - Execution endpoint (`/api/portfolio/rebalance/execute`).
+   - Listing runs and run order details (`/api/portfolio/rebalance/runs`, `/{id}`, `/{id}/orders`).
 
 ### Earlier Verified Milestone Suites (All Passing):
+- Cross-Asset Portfolio Allocation & Risk Parity Engine (7 tests).
 - Autonomous Multi-Factor Strategy & Research Agent Engine (6 tests).
 - Real-Time WebSocket Streaming & Market Data Feeds (12 tests).
 - Event-Driven Backtesting & Walk-Forward Validation Engine (14 tests).

@@ -1,6 +1,6 @@
 # ALGOPILOT
 
-ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus real backend boundaries: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, typed deterministic risk evaluation, broker state reconciliation, real Paper/Demo broker adapters (Alpaca Paper & Bybit Demo) wired through a non-bypassable Execution Gateway, an event-driven backtesting and walk-forward validation engine, real-time WebSocket market streaming gateway and event bus, an autonomous multi-factor strategy research and synthesis engine, and a cross-asset portfolio allocation & correlation-aware risk parity engine. The console is deliberately locked to **PAPER** execution; live broker trading is strictly disabled.
+ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus real backend boundaries: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, typed deterministic risk evaluation, broker state reconciliation, real Paper/Demo broker adapters (Alpaca Paper & Bybit Demo) wired through a non-bypassable Execution Gateway, an event-driven backtesting and walk-forward validation engine, real-time WebSocket market streaming gateway and event bus, an autonomous multi-factor strategy research and synthesis engine, a cross-asset portfolio allocation & risk parity engine, and an automated portfolio rebalancing & drift monitoring engine. The console is deliberately locked to **PAPER** execution; live broker trading is strictly disabled.
 
 ## Run locally
 
@@ -21,6 +21,10 @@ Run `docker compose up postgres`, then `mvn test` and `mvn spring-boot:run`. The
 - `POST /api/execution/dispatch/{orderId}`: Dispatches an approved order through `ExecutionGateway` to the appropriate paper/demo broker adapter (`AlpacaPaperAdapter` or `BybitDemoAdapter`).
 - `POST /api/execution/cancel/{orderId}`: Requests order cancellation on the broker adapter.
 - `GET /api/execution/adapters`: Lists registered broker adapters and their supported modes.
+- `POST /api/portfolio/rebalance/evaluate-drift`: Evaluates current asset holding weights against target allocation plans to detect allocation drift and derive rebalance orders.
+- `POST /api/portfolio/rebalance/execute`: Executes automated portfolio rebalancing with mandatory risk gate evaluation and order dispatching.
+- `GET /api/portfolio/rebalance/runs`: Lists recent portfolio rebalance execution runs.
+- `GET /api/portfolio/rebalance/runs/{id}`: Retrieves rebalance run execution details and order outcomes.
 - `POST /api/portfolio/allocation/allocate`: Computes cross-asset covariance matrix, calculates inverse-volatility risk parity target weights, and produces a `PortfolioAllocationPlan` with VaR 95% and CVaR 95%.
 - `GET /api/portfolio/allocation/latest`: Retrieves the latest portfolio allocation plan.
 - `GET /api/portfolio/allocation/history`: Lists historical portfolio allocation plans.

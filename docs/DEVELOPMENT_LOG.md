@@ -327,8 +327,40 @@
 - **Test Results:** 114 passed, 0 failed, 0 skipped.
 - **Build Result:** Maven compilation and test suite succeeded with exit code 0.
 - **Security Review:** Portfolio allocation engine produces advisory rebalancing weights only; actual execution remains strictly gated through `RiskEngine` and `ExecutionGateway`.
-- **Remaining Limitations:** Automated rebalancing order dispatch and schedule execution belong to production operations.
 - **Next Recommended Phase:** Automated Portfolio Rebalancing & Order Execution Orchestration.
+
+## 2026-08-31 — Automated Portfolio Rebalancing Execution & Drift Monitoring Engine
+
+- **Phase:** Automated Portfolio Rebalancing Execution & Drift Monitoring Engine
+- **Objective:** Implement portfolio drift calculation against target allocation plans, rebalancing order intent derivation, mandatory deterministic risk engine evaluation, ExecutionGateway order dispatching, and execution run lifecycle tracking.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V12__portfolio_rebalancing.sql`
+  - `src/main/java/io/algopilot/portfolio/rebalance/model/RebalanceOrderIntent.java`
+  - `src/main/java/io/algopilot/portfolio/rebalance/model/PortfolioDriftResult.java`
+  - `src/main/java/io/algopilot/portfolio/rebalance/model/RebalanceOrder.java`
+  - `src/main/java/io/algopilot/portfolio/rebalance/model/RebalanceRun.java`
+  - `src/main/java/io/algopilot/portfolio/rebalance/persistence/RebalanceStore.java`
+  - `src/main/java/io/algopilot/portfolio/rebalance/persistence/JdbcRebalanceStore.java`
+  - `src/main/java/io/algopilot/portfolio/rebalance/service/PortfolioRebalanceService.java`
+  - `src/main/java/io/algopilot/portfolio/rebalance/controller/PortfolioRebalanceController.java`
+  - `src/test/java/io/algopilot/portfolio/rebalance/service/PortfolioRebalanceServiceTest.java`
+  - `src/test/java/io/algopilot/portfolio/rebalance/controller/PortfolioRebalanceControllerTest.java`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `docs/SECURITY.md`
+- **Database Migrations:** `V12__portfolio_rebalancing.sql` creating `rebalance_runs` and `rebalance_orders`.
+- **Implementation Summary:** Implemented `PortfolioRebalanceService.evaluateDrift` computing percentage allocation drift ($|w_{\text{actual}} - w_{\text{target}}|$) against configurable thresholds. Implemented `PortfolioRebalanceService.executeRebalance` which constructs typed `RiskDecisionRequest` objects, enforces non-bypassable `RiskDecisionService.evaluate(...)` checks, creates internal `OrderRecord` items, dispatches approved orders through `ExecutionGateway`, and tracks rebalance lifecycle runs (`STARTED`, `COMPLETED`, `FAILED_RISK_GATING`). Persisted all runs and orders to PostgreSQL with append-only audit trail logging.
+- **Tests Executed:** 118 automated tests (4 dedicated new tests covering drift evaluation, risk-gated execution, order dispatching, and REST controllers).
+- **Test Results:** 118 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven compilation and test suite succeeded with exit code 0.
+- **Security Review:** Zero bypass of risk engine. Every rebalancing order must individually pass deterministic risk evaluation before order creation and broker dispatching.
+- **Remaining Limitations:** Automated multi-container clustering and live operator incident response runbooks belong to production release packaging.
+- **Next Recommended Phase:** Production Deployment Packaging, Health Dashboards & Operator Runbooks.
+
 
 
 

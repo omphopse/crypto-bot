@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0 — 2026-08-31
+
+- Added portfolio allocation drift monitoring engine (`PortfolioRebalanceService.evaluateDrift`) calculating asset weight divergence ($|w_{\text{actual}} - w_{\text{target}}|$) and synthesizing rebalancing order intents.
+- Added automated rebalancing execution engine (`PortfolioRebalanceService.executeRebalance`) enforcing mandatory deterministic risk gate evaluation (`RiskDecisionService`) and broker dispatching (`ExecutionGateway`).
+- Added Flyway migration `V12__portfolio_rebalancing.sql` and PostgreSQL persistence (`JdbcRebalanceStore`) for `rebalance_runs` and `rebalance_orders`.
+- Added REST APIs under `/api/portfolio/rebalance` (`/evaluate-drift`, `/execute`, `/runs`, `/runs/{id}`, `/runs/{id}/orders`).
+- Added 4 unit and integration tests covering drift calculations, execution with risk approval, rejected order handling, and REST controllers (118 total passing tests).
+
 ## 0.7.0 — 2026-08-31
 
 - Added quantitative multi-asset covariance and Pearson correlation matrix engine (`CorrelationMatrixCalculator`).
