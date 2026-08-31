@@ -41,4 +41,5 @@ public class BotController {
   @PostMapping("/{id}/resume") public Bot resume(@PathVariable java.util.UUID id) { return controls.resume(id); }
   @ExceptionHandler(BotDeploymentException.class) ResponseEntity<?> blocked(BotDeploymentException error) { return ResponseEntity.unprocessableEntity().body(Map.of("status", "REJECTED", "reason", error.getMessage())); }
   @ExceptionHandler({BotControlException.class, BotNotFoundException.class}) ResponseEntity<?> controlBlocked(RuntimeException error) { return ResponseEntity.unprocessableEntity().body(Map.of("status", "REJECTED", "reason", error.getMessage())); }
+  @ExceptionHandler(Exception.class) ResponseEntity<?> generalError(Exception error) { return ResponseEntity.badRequest().body(Map.of("status", "ERROR", "reason", error.getMessage() != null ? error.getMessage() : error.getClass().getSimpleName())); }
 }

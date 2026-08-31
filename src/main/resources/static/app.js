@@ -287,16 +287,30 @@ window.toggleBot = async function(botId, action) {
   }
 };
 
+let activeVersionsCache = [];
+
 async function openDeployBotModal() {
   await loadStrategies();
+  const stratNameMap = {};
+  activeStrategiesCache.forEach(s => { stratNameMap[s.id] = s.name; });
+
   const select = document.getElementById('deploy-bot-strategy');
-  if (select && activeStrategiesCache.length > 0) {
-    select.innerHTML = activeStrategiesCache.map(s => `
-      <option value="${s.id}">${escapeHtml(s.name)} (v${s.versionNumber || 1})</option>
-    `).join('');
+  if (select && activeVersionsCache.length > 0) {
+    select.innerHTML = activeVersionsCache.map(v => {
+      const stratName = stratNameMap[v.strategyId] || 'Strategy';
+      return `<option value="${v.id}">${escapeHtml(stratName)} (v${v.versionNumber} - ${escapeHtml(v.changeReason || '')})</option>`;
+    }).join('');
   }
   deployBotDialog.showModal();
 }
+
+document.getElementById('deploy-bot-broker')?.addEventListener('change', (e) => {
+  const modeSelect = document.getElementById('deploy-bot-mode');
+  if (modeSelect) {
+    if (e.target.value === 'ALPACA_PAPER') modeSelect.value = 'PAPER';
+    else if (e.target.value === 'BYBIT_DEMO') modeSelect.value = 'DEMO';
+  }
+});
 
 document.getElementById('form-deploy-bot')?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -319,7 +333,7 @@ document.getElementById('form-deploy-bot')?.addEventListener('submit', async (e)
       loadBotsTable();
     } else {
       const err = await res.json();
-      announce(`Deployment error: ${err.reason || 'Failed'}`);
+      announce(`Deployment error: ${err.reason || err.status || 'Failed'}`);
     }
   } catch (err) {
     announce(`Error: ${err.message}`);
