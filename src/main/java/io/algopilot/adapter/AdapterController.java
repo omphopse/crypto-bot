@@ -49,8 +49,8 @@ public class AdapterController {
         .toList();
   }
 
-  @ExceptionHandler({BrokerAdapterException.class, OrderNotFoundException.class})
-  public ResponseEntity<?> handleAdapterError(RuntimeException error) {
-    return ResponseEntity.unprocessableEntity().body(Map.of("status", "REJECTED", "reason", error.getMessage()));
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<?> handleAdapterError(Exception error) {
+    return ResponseEntity.unprocessableEntity().body(Map.of("status", "REJECTED", "reason", error.getMessage() != null ? error.getMessage() : error.getClass().getSimpleName()));
   }
 }

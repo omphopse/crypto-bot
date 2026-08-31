@@ -25,7 +25,7 @@ public class OrderLifecycleService {
   }
   private Set<OrderStatus> allowed(OrderStatus status) {
     return switch (status) {
-      case CREATED -> EnumSet.of(OrderStatus.SUBMITTED, OrderStatus.REJECTED, OrderStatus.FAILED, OrderStatus.EXPIRED);
+      case CREATED -> EnumSet.of(OrderStatus.SUBMITTED, OrderStatus.ACKNOWLEDGED, OrderStatus.PARTIALLY_FILLED, OrderStatus.FILLED, OrderStatus.REJECTED, OrderStatus.FAILED, OrderStatus.EXPIRED);
       case SUBMITTED -> EnumSet.of(OrderStatus.ACKNOWLEDGED, OrderStatus.PARTIALLY_FILLED, OrderStatus.FILLED, OrderStatus.REJECTED, OrderStatus.FAILED, OrderStatus.CANCEL_REQUESTED, OrderStatus.EXPIRED);
       case ACKNOWLEDGED -> EnumSet.of(OrderStatus.PARTIALLY_FILLED, OrderStatus.FILLED, OrderStatus.CANCEL_REQUESTED, OrderStatus.REJECTED, OrderStatus.FAILED, OrderStatus.EXPIRED);
       case PARTIALLY_FILLED -> EnumSet.of(OrderStatus.FILLED, OrderStatus.CANCEL_REQUESTED, OrderStatus.CANCELLED, OrderStatus.FAILED);
