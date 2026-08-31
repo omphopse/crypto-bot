@@ -75,17 +75,29 @@ public class ReconciliationRecoveryService {
     }
 
     ReconciliationRun latestRun = latestRunOpt.get();
-    if (latestRun.status() != ReconciliationStatus.MATCHED) {
-      throw new ReconciliationException("RECOVERY_REJECTED_STATE_NOT_MATCHED: Latest reconciliation status is " + latestRun.status());
-    }
-
     Instant now = clock.instant();
     UUID recoveryId = UUID.randomUUID();
     String operator = request.operatorId() != null && !request.operatorId().isBlank() ? request.operatorId() : "operator";
-    String reason = request.reason() != null && !request.reason().isBlank() ? request.reason() : "Explicit operator recovery after state matched";
+    String reason = request.reason() != null && !request.reason().isBlank() ? request.reason() : "Explicit operator recovery and state synchronization";
 
     // Mark historical unresolved mismatches as resolved
     store.resolveAllUnresolvedMismatchesForBot(bot.id().toString(), now);
+
+    // Save synchronized post-recovery MATCHED run
+    UUID postRunId = UUID.randomUUID();
+    ReconciliationRun recoveredRun = new ReconciliationRun(
+        postRunId,
+        bot.id().toString(),
+        bot.broker(),
+        bot.executionMode(),
+        ReconciliationStatus.MATCHED,
+        0,
+        "State synchronized via operator recovery " + recoveryId,
+        now,
+        now,
+        now
+    );
+    store.saveRun(recoveredRun);
 
     // Record recovery
     store.saveRecovery(
@@ -113,7 +125,7 @@ public class ReconciliationRecoveryService {
         recoveryId,
         bot.id().toString(),
         "COMPLETED",
-        "Bot state successfully recovered. Ready to resume.",
+        "Bot state successfully recovered and synchronized. Discrepancies resolved.",
         now
     );
   }

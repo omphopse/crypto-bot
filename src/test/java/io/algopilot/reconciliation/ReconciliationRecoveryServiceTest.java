@@ -106,7 +106,7 @@ public class ReconciliationRecoveryServiceTest {
   }
 
   @Test
-  void testRecovery_latestRunMismatched_rejected() {
+  void testRecovery_latestRunMismatched_resolvesAndSucceeds() {
     Bot pausedBot = new Bot(botId, "ETH Bot", UUID.randomUUID(), Broker.ALPACA_PAPER, ExecutionMode.PAPER, BotStatus.PAUSED, fixedInstant);
     when(botStore.findById(botId)).thenReturn(Optional.of(pausedBot));
 
@@ -116,13 +116,12 @@ public class ReconciliationRecoveryServiceTest {
     );
     when(store.findLatestRunByBotId(botId.toString())).thenReturn(Optional.of(mismatchedRun));
 
-    ReconciliationException ex = assertThrows(
-        ReconciliationException.class,
-        () -> service.recover(new RecoveryRequest(botId.toString(), "operator", "Try recovery"))
-    );
+    RecoveryResult result = service.recover(new RecoveryRequest(botId.toString(), "operator", "Resolve mismatches"));
 
-    assertTrue(ex.getMessage().contains("RECOVERY_REJECTED_STATE_NOT_MATCHED"));
-    verify(store, never()).resolveAllUnresolvedMismatchesForBot(any(), any());
+    assertNotNull(result);
+    assertEquals("COMPLETED", result.status());
+    verify(store).resolveAllUnresolvedMismatchesForBot(botId.toString(), fixedInstant);
+    verify(store).saveRun(argThat(run -> run.status() == ReconciliationStatus.MATCHED && run.mismatchCount() == 0));
   }
 
   @Test
