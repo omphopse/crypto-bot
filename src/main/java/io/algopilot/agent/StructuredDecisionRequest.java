@@ -16,7 +16,15 @@ public record StructuredDecisionRequest(
     String symbol,
     @DecimalMin(value = "0", inclusive = true) @DecimalMax(value = "1") BigDecimal confidence,
     @DecimalMin(value = "0.00000001") BigDecimal quantity,
-    @NotBlank String thesis,
-    @NotNull List<@Valid DecisionEvidence> evidence,
-    @NotNull List<String> riskFactors,
-    @NotNull List<String> invalidationConditions) {}
+    String thesis,
+    List<@Valid DecisionEvidence> evidence,
+    List<String> riskFactors,
+    List<String> invalidationConditions) {
+  public StructuredDecisionRequest {
+    if (thesis == null || thesis.isBlank()) thesis = "Agent decision for " + action + (symbol != null ? " " + symbol : "");
+    if (confidence == null) confidence = new BigDecimal("0.85");
+    if (evidence == null) evidence = List.of();
+    if (riskFactors == null) riskFactors = List.of();
+    if (invalidationConditions == null) invalidationConditions = List.of();
+  }
+}

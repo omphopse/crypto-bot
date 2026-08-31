@@ -726,8 +726,12 @@ document.getElementById('form-journal-decision')?.addEventListener('submit', asy
         strategyVersionId,
         action,
         symbol,
+        confidence: 0.85,
         quantity: 1,
-        rationale
+        thesis: rationale || `Agent decision for ${action} ${symbol}`,
+        evidence: [],
+        riskFactors: [],
+        invalidationConditions: []
       })
     });
 
@@ -735,10 +739,9 @@ document.getElementById('form-journal-decision')?.addEventListener('submit', asy
       announce(`Decision "${action} ${symbol}" journaled to immutable audit sink.`);
       journalDecisionDialog.close();
       loadAgentDecisionsTable();
-      loadAgentActivityTimeline();
     } else {
       const err = await res.json();
-      announce(`Error: ${err.reason || 'Failed'}`);
+      announce(`Journal error: ${err.reason || err.status || 'Failed'}`);
     }
   } catch (err) {
     announce(`Error: ${err.message}`);

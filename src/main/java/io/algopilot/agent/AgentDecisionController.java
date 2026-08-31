@@ -27,5 +27,6 @@ public class AgentDecisionController {
   }
 
   @PostMapping public ResponseEntity<AgentDecision> journal(@Valid @RequestBody StructuredDecisionRequest request) { AgentDecision decision = service.journal(request); return ResponseEntity.created(URI.create("/api/agent/decisions/" + decision.id())).body(decision); }
-  @ExceptionHandler(DecisionValidationException.class) ResponseEntity<?> invalid(DecisionValidationException error) { return ResponseEntity.unprocessableEntity().body(Map.of("status", "REJECTED", "reason", error.getMessage())); }
+  @ExceptionHandler({DecisionValidationException.class, Exception.class})
+  public ResponseEntity<?> invalid(Exception error) { return ResponseEntity.unprocessableEntity().body(Map.of("status", "REJECTED", "reason", error.getMessage() != null ? error.getMessage() : error.getClass().getSimpleName())); }
 }
