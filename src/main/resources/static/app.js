@@ -742,25 +742,35 @@ document.getElementById('btn-run-factor-eval')?.addEventListener('click', async 
 
   try {
     announce(`Evaluating factor rankings for ${symbol}...`);
-    const res = await fetch(`/api/research/factors/evaluate?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`, {
-      method: 'POST'
+    const res = await fetch('/api/research/evaluate-factors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol, timeframe })
     });
 
     if (res.ok) {
       const factors = await res.json();
       resDiv.style.display = 'block';
       resDiv.innerHTML = `
-        <div class="panel" style="background:#f8fafc;">
-          <b>Alpha Factors for ${escapeHtml(symbol)} (${timeframe})</b>
-          <div class="recon-metrics mt-3">
-            <div class="recon-metric"><span>MOMENTUM</span><strong>${factors.momentumScore || '+0.84'}</strong></div>
-            <div class="recon-metric"><span>RSI (14)</span><strong>${factors.rsi || '58.2'}</strong></div>
-            <div class="recon-metric"><span>VOLATILITY</span><strong>${factors.volatility || '0.024'}</strong></div>
-            <div class="recon-metric"><span>MEAN REVERSION</span><strong>${factors.meanReversionScore || '-0.12'}</strong></div>
+        <div class="panel" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <b>Alpha Factors for ${escapeHtml(symbol)} (${timeframe})</b>
+            <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:600; padding:4px 8px; border-radius:4px;">Composite: ${factors.compositeScore || '0.00'}</span>
+          </div>
+          <div class="recon-metrics mt-3" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px;">
+            ${(factors.factors || []).map(f => `
+              <div class="recon-metric" style="background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:10px;">
+                <span style="font-size:10px; color:#64748b; text-transform:uppercase;">${escapeHtml(f.factorName)}</span>
+                <strong style="font-size:16px; color:#0f172a;">${f.normalizedScore != null ? f.normalizedScore : '0.00'}</strong>
+                <div style="font-size:10px; color:#94a3b8; margin-top:2px;">${escapeHtml(f.explanation || '')}</div>
+              </div>
+            `).join('')}
           </div>
         </div>
       `;
       announce('Factor scores computed successfully.');
+    } else {
+      announce('Failed to compute factor scores.');
     }
   } catch (e) {
     announce(`Error: ${e.message}`);
@@ -775,7 +785,7 @@ document.getElementById('btn-run-synthesizer')?.addEventListener('click', async 
 
   try {
     announce(`Synthesizing candidate alpha strategies for ${symbol}...`);
-    const res = await fetch('/api/research/synthesize', {
+    const res = await fetch('/api/research/synthesize-strategy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ symbol, timeframe: '1h', targetSharpe, maxAcceptableDrawdownPct })
@@ -785,16 +795,20 @@ document.getElementById('btn-run-synthesizer')?.addEventListener('click', async 
       const synth = await res.json();
       resDiv.style.display = 'block';
       resDiv.innerHTML = `
-        <div class="panel" style="background:#f8fafc;">
+        <div class="panel" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
           <b>Candidate Strategy Synthesized: ${escapeHtml(synth.name || 'Adaptive Alpha')}</b>
-          <p style="font-size:11px; color:#5f6d81; margin:6px 0;">${escapeHtml(synth.hypothesis ? synth.hypothesis.description : 'Multi-factor combined alpha model')}</p>
-          <div class="recon-metrics mt-3">
-            <div class="recon-metric"><span>DEPLOYMENT CRITERIA</span><strong class="${synth.meetsDeploymentCriteria ? 'positive' : 'negative'}">${synth.meetsDeploymentCriteria ? 'PASS' : 'FAIL'}</strong></div>
-            <div class="recon-metric"><span>STATUS</span><strong>${synth.status || 'SYNTHESIZED'}</strong></div>
+          <p style="font-size:12px; color:#475569; margin:6px 0;">${escapeHtml(synth.hypothesis ? synth.hypothesis.rationale : 'Multi-factor combined alpha model')}</p>
+          <div class="recon-metrics mt-3" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px;">
+            <div class="recon-metric" style="background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:10px;"><span>DEPLOYMENT</span><strong class="${synth.meetsDeploymentCriteria ? 'positive' : 'negative'}">${synth.meetsDeploymentCriteria ? 'PASS' : 'FAIL'}</strong></div>
+            <div class="recon-metric" style="background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:10px;"><span>STATUS</span><strong>${synth.status || 'SYNTHESIZED'}</strong></div>
+            <div class="recon-metric" style="background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:10px;"><span>SHARPE RATIO</span><strong>${synth.backtestResult ? synth.backtestResult.sharpeRatio : 'N/A'}</strong></div>
+            <div class="recon-metric" style="background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:10px;"><span>MAX DRAWDOWN</span><strong class="negative">${synth.backtestResult ? synth.backtestResult.maxDrawdownPct + '%' : 'N/A'}</strong></div>
           </div>
         </div>
       `;
       announce('Strategy synthesized and validated.');
+    } else {
+      announce('Failed to synthesize strategy.');
     }
   } catch (e) {
     announce(`Error: ${e.message}`);

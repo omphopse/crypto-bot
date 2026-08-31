@@ -42,20 +42,21 @@ public class ResearchController {
     this.researchService = researchService;
   }
 
-  @PostMapping("/evaluate-factors")
-  public ResponseEntity<AlphaHypothesis> evaluateFactors(@RequestBody EvaluateFactorsPayload payload) {
-    String symbol = payload.symbol() != null ? payload.symbol() : "BTC/USD";
-    String timeframe = payload.timeframe() != null ? payload.timeframe() : "1h";
-    List<Candle> candles = payload.candleData() != null && !payload.candleData().isEmpty()
+  @PostMapping({"/evaluate-factors", "/factors/evaluate"})
+  public ResponseEntity<AlphaHypothesis> evaluateFactors(@RequestBody(required = false) EvaluateFactorsPayload payload) {
+    String sym = (payload != null && payload.symbol() != null) ? payload.symbol() : "BTC/USD";
+    String tf = (payload != null && payload.timeframe() != null) ? payload.timeframe() : "1h";
+    List<Candle> candles = (payload != null && payload.candleData() != null && !payload.candleData().isEmpty())
         ? payload.candleData()
-        : generateSyntheticCandles(symbol, timeframe, 100);
+        : generateSyntheticCandles(sym, tf, 100);
 
-    AlphaHypothesis hypothesis = researchService.evaluateFactors(symbol, timeframe, candles);
+    AlphaHypothesis hypothesis = researchService.evaluateFactors(sym, tf, candles);
     return ResponseEntity.ok(hypothesis);
   }
 
-  @PostMapping("/synthesize-strategy")
-  public ResponseEntity<StrategySynthesisResult> synthesizeStrategy(@RequestBody SynthesizeStrategyPayload payload) {
+  @PostMapping({"/synthesize-strategy", "/synthesize"})
+  public ResponseEntity<StrategySynthesisResult> synthesizeStrategy(@RequestBody(required = false) SynthesizeStrategyPayload payload) {
+    if (payload == null) payload = new SynthesizeStrategyPayload(null, null, null, null, null);
     String symbol = payload.symbol() != null ? payload.symbol() : "BTC/USD";
     String timeframe = payload.timeframe() != null ? payload.timeframe() : "1h";
     List<Candle> candles = payload.candleData() != null && !payload.candleData().isEmpty()
