@@ -77,7 +77,7 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
         "qty", order.quantity().toPlainString(),
         "side", order.side().name().toLowerCase(),
         "type", "market",
-        "time_in_force", "gtc",
+        "time_in_force", "day",
         "client_order_id", order.clientOrderId()
     );
 
