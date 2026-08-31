@@ -555,17 +555,24 @@ document.getElementById('form-create-order')?.addEventListener('submit', async (
 
     if (res.ok) {
       const order = await res.json();
-      announce(`Order ${clientOrderId} passed risk gate and created! Dispatching...`);
       createOrderDialog.close();
 
-      // Automatically dispatch to paper broker
-      await fetch(`/api/execution/dispatch/${order.id}`, { method: 'POST' });
-      announce(`Order ${clientOrderId} dispatched to broker!`);
+      try {
+        const dispatchRes = await fetch(`/api/execution/dispatch/${order.id}`, { method: 'POST' });
+        if (dispatchRes.ok) {
+          announce(`Order ${clientOrderId} passed risk gate and dispatched to broker!`);
+        } else {
+          const err = await dispatchRes.json().catch(() => ({}));
+          announce(`Order ${clientOrderId} recorded in ledger. (${err.reason || 'Paper broker dispatch response'})`);
+        }
+      } catch (dispErr) {
+        announce(`Order ${clientOrderId} recorded in ledger.`);
+      }
       loadOrdersTable();
       loadPositions();
     } else {
-      const err = await res.json();
-      announce(`Risk rejected order: ${JSON.stringify(err.reasons || err.reason)}`);
+      const err = await res.json().catch(() => ({}));
+      announce(`Risk rejected order: ${JSON.stringify(err.reasons || err.reason || 'Blocked by risk policy')}`);
     }
   } catch (err) {
     announce(`Error: ${err.message}`);
