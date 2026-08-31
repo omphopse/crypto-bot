@@ -11,6 +11,15 @@ public class BybitConfig {
   private String apiSecret = "";
   private String recvWindow = "5000";
 
+  public BybitConfig() {}
+
+  public BybitConfig(String apiKey, String apiSecret, String baseUrl) {
+    this.apiKey = apiKey;
+    this.apiSecret = apiSecret;
+    this.baseUrl = baseUrl;
+    validate();
+  }
+
   public void validate() {
     if (baseUrl != null && baseUrl.contains("api.bybit.com") && !baseUrl.contains("api-demo.bybit.com") && !baseUrl.contains("api-testnet.bybit.com")) {
       throw new IllegalStateException("LIVE_TRADING_DISABLED: Bybit adapter strictly requires api-demo.bybit.com URL");

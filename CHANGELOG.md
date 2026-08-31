@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0 — 2026-08-31
+
+- Added high-throughput, thread-safe in-memory pub/sub `MarketEventBus` coordinating market ticks, system events, and order updates without blocking execution threads.
+- Added Spring STOMP/WebSocket configuration (`WebSocketConfig`) exposing endpoint `/ws` with SockJS fallback, simple broker `/topic`, and channel interceptor enforcing read-only subscriptions.
+- Added `WebSocketEventPublisher` broadcasting market ticks and system events to `/topic/market-data`, `/topic/bot-status`, `/topic/orders`, `/topic/positions`, `/topic/agent-activity`, `/topic/alerts`, and `/topic/reconciliation`.
+- Added `AlpacaPaperMarketFeed` streaming processor normalizing trades and quotes from Alpaca Paper streams to canonical `MarketTick` models with live-mode rejection.
+- Added `BybitDemoMarketFeed` streaming processor normalizing Bybit V5 Demo ticker/trade packets to canonical `MarketTick` models with demo-only endpoint enforcement.
+- Added REST APIs under `/api/feed` (`/status`, `/subscribe`, `/publish`).
+- Integrated dynamic WebSocket streaming connection in the operations console (`app.js`) with automatic backoff reconnection.
+- Added 12 unit and integration tests covering event bus pub/sub, WebSocket broadcast dispatching, feed normalization, and controller endpoints (101 total passing tests).
+
 ## 0.4.0 — 2026-08-31
 
 - Added deterministic event-driven `BacktestEngine` simulating historical OHLCV bar replay with indicator updates, signal generation, and realistic slippage and broker fee deduction.

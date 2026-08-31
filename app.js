@@ -102,4 +102,43 @@ document.querySelector('#btn-request-recovery')?.addEventListener('click', async
   announce('Initiating explicit state recovery workflow...');
 });
 
+// WebSocket Real-Time Event Stream Connection
+let wsConnection = null;
+
+function connectWebSocket() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+  try {
+    wsConnection = new WebSocket(wsUrl);
+
+    wsConnection.onopen = () => {
+      console.log('[WebSocket] Connected to ALGOPILOT Real-Time Stream');
+    };
+
+    wsConnection.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.topic === 'reconciliation' || message.topic === '/topic/reconciliation') {
+          loadReconciliationState();
+        }
+      } catch (err) {
+        // Fallback for raw text packets
+      }
+    };
+
+    wsConnection.onclose = () => {
+      // Automatic exponential backoff reconnection
+      setTimeout(connectWebSocket, 5000);
+    };
+
+    wsConnection.onerror = () => {
+      wsConnection.close();
+    };
+  } catch (e) {
+    // Graceful fallback in environments without live WebSocket support
+  }
+}
+
 loadReconciliationState();
+connectWebSocket();

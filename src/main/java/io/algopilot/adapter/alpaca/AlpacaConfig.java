@@ -10,6 +10,15 @@ public class AlpacaConfig {
   private String keyId = "";
   private String secretKey = "";
 
+  public AlpacaConfig() {}
+
+  public AlpacaConfig(String keyId, String secretKey, String baseUrl) {
+    this.keyId = keyId;
+    this.secretKey = secretKey;
+    this.baseUrl = baseUrl;
+    validate();
+  }
+
   public void validate() {
     if (baseUrl != null && baseUrl.contains("api.alpaca.markets") && !baseUrl.contains("paper-api.alpaca.markets")) {
       throw new IllegalStateException("LIVE_TRADING_DISABLED: Alpaca adapter strictly requires paper-api.alpaca.markets URL");

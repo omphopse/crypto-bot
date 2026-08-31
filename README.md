@@ -1,6 +1,6 @@
 # ALGOPILOT
 
-ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus real backend boundaries: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, typed deterministic risk evaluation, broker state reconciliation, real Paper/Demo broker adapters (Alpaca Paper & Bybit Demo) wired through a non-bypassable Execution Gateway, and an event-driven backtesting and walk-forward validation engine. The console is deliberately locked to **PAPER** execution; live broker trading is strictly disabled.
+ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus real backend boundaries: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, typed deterministic risk evaluation, broker state reconciliation, real Paper/Demo broker adapters (Alpaca Paper & Bybit Demo) wired through a non-bypassable Execution Gateway, an event-driven backtesting and walk-forward validation engine, and a real-time WebSocket market streaming gateway and event bus. The console is deliberately locked to **PAPER** execution; live broker trading is strictly disabled.
 
 ## Run locally
 
@@ -21,6 +21,9 @@ Run `docker compose up postgres`, then `mvn test` and `mvn spring-boot:run`. The
 - `POST /api/execution/dispatch/{orderId}`: Dispatches an approved order through `ExecutionGateway` to the appropriate paper/demo broker adapter (`AlpacaPaperAdapter` or `BybitDemoAdapter`).
 - `POST /api/execution/cancel/{orderId}`: Requests order cancellation on the broker adapter.
 - `GET /api/execution/adapters`: Lists registered broker adapters and their supported modes.
+- `GET /api/feed/status`: Returns active paper/demo streaming feeds, connection states, and subscribed symbols.
+- `POST /api/feed/subscribe`: Subscribes a market data feed to a symbol ticker stream.
+- `POST /api/feed/publish`: Ingests and broadcasts a market tick through the internal `MarketEventBus`.
 - `POST /api/backtests/run`: Runs an event-driven backtest on historical/candle series with realistic slippage and broker fee deduction.
 - `GET /api/backtests`: Lists recent backtest execution runs.
 - `GET /api/backtests/{id}`: Retrieves complete backtest report, trades, and marked-to-market equity curve.
@@ -33,6 +36,19 @@ Run `docker compose up postgres`, then `mvn test` and `mvn spring-boot:run`. The
 - `GET /api/reconciliation/status/{botId}`: Returns current reconciliation health, active discrepancies, and recovery requirements for a bot.
 - `POST /api/reconciliation/recover`: Executes explicit operator recovery for a paused bot once reconciliation state is matched.
 - Bot controls: `POST /api/bots/{id}/pause`, `/stop`, `/emergency-stop`, and `/resume`. Emergency-stopped bots reject ordinary resume requests pending dedicated emergency recovery procedures.
+
+## WebSocket Streaming
+
+Clients connect to `ws://localhost:8080/ws` (with SockJS fallback). Broadcast channels:
+- `/topic/market-data` & `/topic/market-data/{symbol}`: Real-time price ticks (`MarketTick`).
+- `/topic/bot-status`: Real-time bot state transitions.
+- `/topic/orders`: Order lifecycle updates (`SUBMITTED`, `ACKNOWLEDGED`, `FILLED`, `CANCELLED`).
+- `/topic/positions`: Real-time portfolio position updates.
+- `/topic/agent-activity`: Agent decision journal stream.
+- `/topic/alerts`: Safety and risk limit alerts.
+- `/topic/reconciliation`: Discrepancy detection and recovery events.
+
+WebSocket channels are strictly read-only for connected clients; command injection is rejected by channel interceptors.
 
 ## Safety boundary
 

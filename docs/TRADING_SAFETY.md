@@ -7,6 +7,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 - Bybit: `DEMO` only (`https://api-demo.bybit.com`)
 - `LIVE`: Strictly disabled and rejected at all configuration and execution boundaries.
 
+## Real-Time Streaming & WebSocket Safety Invariants
+1. **Read-Only Subscriptions**: Connected WebSocket clients have zero command or order execution capability. Any inbound `SEND` command to broadcast topics is intercepted and rejected.
+2. **Decoupled Asynchronous Processing**: Real-time tick ingestion is handled on an asynchronous in-memory event bus (`MarketEventBus`) ensuring high-throughput market feeds never block or starve order execution or reconciliation workers.
+3. **Paper/Demo Feeds Only**: Market data streaming connectors stream exclusively from verified paper/demo endpoints.
+
 ## Backtesting & Quantitative Simulation Invariants
 1. **Isolated Sandbox**: Backtesting simulation runs entirely offline and in-memory/database without network connection to broker trading endpoints.
 2. **Realistic Friction Enforced**: Slippage and fee modeling are mandatory parameters in simulation to prevent ungrounded or curve-fitted equity returns.

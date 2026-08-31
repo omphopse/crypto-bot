@@ -1,43 +1,42 @@
 # Test report
 
-## 2026-08-31 — Backtesting & Walk-Forward Validation Engine Milestone
+## 2026-08-31 — Real-Time WebSocket Streaming & Market Data Feed Milestone
 
 Command: `mvn test -q`
 
-Result: passed (89 tests executed across 27 test classes, 0 failures, 0 errors, 0 skipped).
+Result: passed (101 tests executed across 32 test classes, 0 failures, 0 errors, 0 skipped).
 
-### Covered Backtesting & Quantitative Validation Scenarios:
+### Covered WebSocket Streaming & Market Data Feed Scenarios:
 
-1. **Indicator Calculations (`Indicators`):**
-   - Simple Moving Average (SMA) accuracy across multi-period windows.
-   - Exponential Moving Average (EMA) calculation with smoothing multiplier.
-   - Relative Strength Index (RSI) bounds checking and Wilder smoothing accuracy.
-   - Average True Range (ATR) true range volatility measurement.
-   - Safe list sizing for undersized candle series.
+1. **Market Event Bus (`MarketEventBus`):**
+   - Global tick distribution to active consumers.
+   - Symbol-filtered tick distribution (e.g. `BTC/USD`, `ETH/USD`).
+   - System event pub/sub across topics (`orders`, `bots`, `positions`, `reconciliation`).
+   - Thread-safe subscriber registration and cleanup.
 
-2. **Performance Metrics (`PerformanceMetricsCalculator`):**
-   - Exact peak-to-trough Maximum Drawdown percentage computation.
-   - Annualized Sharpe Ratio using daily return variances and risk-free rate adjustment.
-   - Gross profit to gross loss Profit Factor calculation.
-   - Win Rate percentage based on realized trade P&L.
+2. **WebSocket Event Broadcasting (`WebSocketEventPublisher`):**
+   - Forwarding market ticks to `/topic/market-data` and `/topic/market-data/{symbol}`.
+   - Forwarding system lifecycle events to `/topic/{topic}` destinations.
+   - Exception handling on broadcast channels.
 
-3. **Event-Driven Backtesting Simulation (`BacktestEngine`):**
-   - Bar-by-bar chronological execution.
-   - Strategy entry and exit trigger evaluation against technical indicators.
-   - Realistic friction deduction: configurable basis point slippage and broker fee deduction.
-   - Marked-to-market equity curve time series tracking.
-   - Trade journaling with entry/exit prices, fees, net P&L, and reason codes.
+3. **Alpaca Paper Market Feed (`AlpacaPaperMarketFeed`):**
+   - Trade packet (`t`) normalization into `MarketTick` models with timestamp parsing.
+   - Quote packet (`q`) normalization into `MarketTick` models with mid-price calculation.
+   - Lifecycle management (start, stop, subscribe, unsubscribe).
+   - Live-trading URL rejection.
 
-4. **Walk-Forward Validation (`WalkForwardEngine`):**
-   - Chronological dataset segmentation into sequential In-Sample and Out-Of-Sample windows.
-   - Parameter optimization simulation across windows.
-   - Walk-Forward Efficiency (WFE) ratio calculation.
+4. **Bybit Demo Market Feed (`BybitDemoMarketFeed`):**
+   - Ticker and trade message normalization into `MarketTick` models with timestamp extraction.
+   - Symbol normalization and precision scaling (scale 4).
+   - Lifecycle management and demo-mode URL verification.
 
-5. **Persistence & REST API:**
-   - PostgreSQL persistence of backtest runs, trade records, and walk-forward evaluations via `JdbcBacktestStore`.
-   - `BacktestController` endpoints (`/api/backtests/run`, `/{id}`, `/walk-forward`, `/walk-forward/{id}`).
+5. **Feed REST Controller (`FeedController`):**
+   - Status retrieval (`/api/feed/status`).
+   - Dynamic symbol subscription (`/api/feed/subscribe`).
+   - Test tick ingestion and publication (`/api/feed/publish`).
 
 ### Earlier Verified Milestone Suites (All Passing):
+- Event-Driven Backtesting & Walk-Forward Validation Engine (14 tests).
 - Exchange Adapters (Alpaca Paper & Bybit Demo) and Execution Gateway (21 tests).
 - Reconciliation & Recovery engine, service, controller, and health indicators (54 tests).
 - Deterministic Risk Engine evaluation.

@@ -2,24 +2,24 @@
 
 ## Service boundary
 
-The deployable system is a Spring Boot service with PostgreSQL/Flyway, Redis for idempotency and stream coordination, a web operations console, broker adapters for Alpaca Paper and Bybit Demo, and an event-driven backtesting and walk-forward validation engine. It exposes REST resources under `/api` and actuator operational health endpoints under `/actuator`.
+The deployable system is a Spring Boot service with PostgreSQL/Flyway, Redis for idempotency and stream coordination, a web operations console, broker adapters for Alpaca Paper and Bybit Demo, an event-driven backtesting engine, and a real-time WebSocket streaming gateway and event bus. It exposes REST resources under `/api`, WebSocket STOMP streams at `/ws`, and actuator operational health endpoints under `/actuator`.
 
 ```text
-Market adapters + research gateway
-          ↓
-Event bus → strategy evaluation → typed agent decision
-          ↓                         ↓
-Portfolio state ─────────── deterministic risk engine
-                                        ↓ approved only
-                             idempotent execution gateway
-                                        ↓
-                         Alpaca Paper / Bybit Demo adapters
-                                        ↕
-                   Deterministic Reconciliation Engine
-                                        ↓
-PostgreSQL audit journal + Reconciliation store + Actuator Health
-
-Historical Candles → Indicators → BacktestEngine → WalkForwardEngine → BacktestStore
+Alpaca Paper / Bybit Demo Market Feeds
+                   ↓
+            MarketEventBus (In-Memory Pub/Sub)
+           ↙               ↘
+WebSocketEventPublisher    Strategy Engine → Agent Decision
+          ↓                                     ↓
+WebSocket Topics (/topic/*)               Risk Engine
+(Browser Console & Subscribers)                 ↓ approved only
+                                      ExecutionGateway
+                                                ↓
+                                   Broker Adapters (Paper / Demo)
+                                                ↕
+                                  Reconciliation Engine
+                                                ↓
+                                PostgreSQL Audit & State Store
 ```
 
 ## Critical invariants
@@ -31,8 +31,16 @@ Historical Candles → Indicators → BacktestEngine → WalkForwardEngine → B
 5. A reconciliation mismatch automatically pauses the affected running bot and blocks new orders; recovery requires an explicit post-reconciliation verification and operator recovery command.
 6. A deployed strategy version is immutable. Changes create a new version and deployment record. The current API provides `POST /api/strategies` and `POST /api/strategies/{strategyId}/versions` for these append-only definitions.
 7. Emergency-stopped bots cannot resume through ordinary controls or through reconciliation matching alone; they require dedicated emergency-recovery procedures.
-8. Live trading remains disabled and rejected across all API and adapter boundaries.
+8. Live trading remains disabled and rejected across all API, feed, and adapter boundaries.
 9. Backtesting and walk-forward simulations operate in an offline, isolated sandbox with zero broker connectivity or execution authority.
+10. WebSocket connections are strictly read-only for connected clients. Broadcast topics categorically reject client execution requests.
+
+## Real-Time Streaming & Market Event Bus
+
+- **In-Memory Event Bus (`MarketEventBus`)**: High-throughput, thread-safe publish/subscribe bus for market ticks and system events with zero lock contention.
+- **WebSocket STOMP Broker (`WebSocketConfig`)**: Exposes `/ws` with simple broker `/topic` and an inbound channel interceptor enforcing read-only subscriptions.
+- **Event Broadcaster (`WebSocketEventPublisher`)**: Forwards market ticks to `/topic/market-data` and `/topic/market-data/{symbol}`, and system lifecycle events to `/topic/{topic}`.
+- **Market Data Feeds (`AlpacaPaperMarketFeed`, `BybitDemoMarketFeed`)**: Stream processors normalizing vendor-specific trade and quote payloads into canonical `MarketTick` models with live endpoint rejection.
 
 ## Event-Driven Backtesting & Walk-Forward Validation
 

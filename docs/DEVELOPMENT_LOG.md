@@ -220,7 +220,46 @@
 - **Test Results:** 89 passed, 0 failed, 0 skipped.
 - **Build Result:** Maven compilation and test suite succeeded with exit code 0.
 - **Security Review:** Backtesting operates strictly offline in historical sandbox; zero live/paper broker execution permissions or credentials required.
-- **Remaining Limitations:** Real-time WebSocket market streaming feeds and autonomous multi-agent research reasoning belong to subsequent milestones.
 - **Next Recommended Phase:** Real-Time WebSocket Streaming (Market Data & Order Streams) or Autonomous Research & Decision Agent.
+
+## 2026-08-31 — Real-Time WebSocket Streaming, Event Bus & Market Data Feed
+
+- **Phase:** Real-Time WebSocket Streaming, Event Bus & Market Data Feed
+- **Objective:** Establish high-throughput, low-latency market tick ingestion, internal decoupled publish/subscribe coordination, and live WebSocket STOMP broadcasting to the frontend operations console with strict read-only subscription security.
+- **Files Changed:**
+  - `pom.xml`
+  - `src/main/java/io/algopilot/event/MarketTick.java`
+  - `src/main/java/io/algopilot/event/SystemEvent.java`
+  - `src/main/java/io/algopilot/event/MarketEventBus.java`
+  - `src/main/java/io/algopilot/event/WebSocketConfig.java`
+  - `src/main/java/io/algopilot/event/WebSocketEventPublisher.java`
+  - `src/main/java/io/algopilot/feed/MarketDataFeed.java`
+  - `src/main/java/io/algopilot/feed/AlpacaPaperMarketFeed.java`
+  - `src/main/java/io/algopilot/feed/BybitDemoMarketFeed.java`
+  - `src/main/java/io/algopilot/feed/FeedController.java`
+  - `src/main/java/io/algopilot/adapter/alpaca/AlpacaConfig.java`
+  - `src/main/java/io/algopilot/adapter/bybit/BybitConfig.java`
+  - `src/test/java/io/algopilot/event/MarketEventBusTest.java`
+  - `src/test/java/io/algopilot/event/WebSocketEventPublisherTest.java`
+  - `src/test/java/io/algopilot/feed/AlpacaPaperMarketFeedTest.java`
+  - `src/test/java/io/algopilot/feed/BybitDemoMarketFeedTest.java`
+  - `src/test/java/io/algopilot/feed/FeedControllerTest.java`
+  - `app.js`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `docs/SECURITY.md`
+- **Database Migrations:** None (in-memory event streaming and WebSocket pub/sub).
+- **Implementation Summary:** Built `MarketEventBus` for thread-safe in-memory pub/sub distribution of market ticks and system events. Configured `WebSocketConfig` exposing `/ws` with simple broker `/topic` and an inbound channel interceptor enforcing read-only subscriptions. Built `WebSocketEventPublisher` forwarding ticks and system events to `/topic/market-data`, `/topic/bot-status`, `/topic/orders`, `/topic/positions`, `/topic/agent-activity`, `/topic/alerts`, and `/topic/reconciliation`. Implemented `AlpacaPaperMarketFeed` and `BybitDemoMarketFeed` normalizing broker streaming frames to canonical `MarketTick` models. Added `FeedController` REST endpoints and updated `app.js` with WebSocket connection handlers.
+- **Tests Executed:** 101 automated tests (12 dedicated new tests covering event bus pub/sub, WebSocket broadcast dispatching, feed normalization, and controller endpoints).
+- **Test Results:** 101 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven compilation and test suite succeeded with exit code 0.
+- **Security Review:** Read-only WebSocket channel interceptor categorically rejects client send messages on broadcast topics. Zero client-side execution authority. Live streaming endpoints strictly blocked.
+- **Remaining Limitations:** Autonomous multi-agent research agent pipelines and advanced factor models belong to subsequent milestones.
+- **Next Recommended Phase:** Autonomous Research & Multi-Factor Strategy Agent or Advanced Portfolio Risk Management.
+
 
 
