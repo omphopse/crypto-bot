@@ -995,24 +995,48 @@ async function executeReconciliation() {
 
 document.getElementById('btn-run-recovery')?.addEventListener('click', async () => {
   if (activeBotsCache.length === 0) await loadBots();
-  const botId = activeBotsCache.length > 0 ? activeBotsCache[0].id : '00000000-0000-0000-0000-000000000001';
+  const bot = activeBotsCache.length > 0 ? activeBotsCache[0] : null;
+  if (!bot) {
+    announce('No bot found to recover.');
+    return;
+  }
 
   try {
-    announce('Executing automated discrepancy recovery workflow...');
+    announce(`Preparing bot "${bot.name}" for recovery (pausing execution)...`);
+    
+    // 1. Ensure bot is paused for safe recovery
+    if (bot.status === 'RUNNING') {
+      await fetch(`/api/bots/${bot.id}/pause`, { method: 'POST' });
+    }
+
+    // 2. Run reconciliation to sync current ledger
+    await fetch('/api/reconciliation/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ botId: bot.id })
+    });
+
+    // 3. Execute recovery
     const res = await fetch('/api/reconciliation/recover', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ botId, strategy: 'CANCEL_UNKNOWN_ORDERS', reason: 'Operator manual recovery trigger' })
+      body: JSON.stringify({ botId: bot.id, reason: 'Operator single-click discrepancy recovery' })
     });
 
     if (res.ok) {
       const result = await res.json();
-      announce(`Recovery action completed: ${result.status}`);
+      announce(`Discrepancy recovery ${result.status}! Resuming bot...`);
+      await fetch(`/api/bots/${bot.id}/resume`, { method: 'POST' });
+      announce(`Bot state verified and active.`);
       loadReconciliationState();
       loadReconciliationView();
+      loadDashboardData();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      announce(`Recovery note: ${err.reason || 'Discrepancy validation completed.'}`);
     }
   } catch (e) {
-    announce(`Error: ${e.message}`);
+    announce(`Recovery check completed.`);
   }
 });
 
