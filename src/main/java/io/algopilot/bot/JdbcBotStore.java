@@ -13,7 +13,7 @@ public class JdbcBotStore implements BotStore {
   private final JdbcTemplate jdbc;
   public JdbcBotStore(JdbcTemplate jdbc) { this.jdbc = jdbc; }
   @Override public Bot save(Bot bot) {
-    jdbc.update("insert into bots (id, name, strategy_version_id, broker, execution_mode, status, created_at) values (?, ?, ?, ?, ?, ?, ?)", bot.id(), bot.name(), bot.strategyVersionId(), bot.broker().name(), bot.executionMode().name(), bot.status().name(), bot.createdAt());
+    jdbc.update("insert into bots (id, name, strategy_version_id, broker, execution_mode, status, created_at) values (?, ?, ?, ?, ?, ?, ?)", bot.id(), bot.name(), bot.strategyVersionId(), bot.broker().name(), bot.executionMode().name(), bot.status().name(), java.sql.Timestamp.from(bot.createdAt()));
     return bot;
   }
   @Override public Optional<Bot> findById(UUID id) { return jdbc.query("select * from bots where id = ?", this::map, id).stream().findFirst(); }

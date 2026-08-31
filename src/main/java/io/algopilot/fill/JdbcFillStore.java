@@ -20,7 +20,7 @@ public class JdbcFillStore implements FillStore {
 
   @Override public Fill save(Fill fill) {
     jdbc.update("insert into fills (id, order_id, exchange_fill_id, quantity, price, fee, filled_at) values (?, ?, ?, ?, ?, ?, ?)",
-        fill.id(), fill.orderId(), fill.exchangeFillId(), fill.quantity(), fill.price(), fill.fee(), fill.filledAt());
+        fill.id(), fill.orderId(), fill.exchangeFillId(), fill.quantity(), fill.price(), fill.fee(), java.sql.Timestamp.from(fill.filledAt()));
     return fill;
   }
 

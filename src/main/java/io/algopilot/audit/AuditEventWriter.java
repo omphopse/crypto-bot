@@ -17,7 +17,7 @@ public class AuditEventWriter {
   AuditEventWriter(JdbcTemplate jdbc, ObjectMapper json, Clock clock) { this.jdbc = jdbc; this.json = json; this.clock = clock; }
   public void record(String actorType, String actorId, String type, String aggregateType, String aggregateId, Map<String, ?> payload) {
     try {
-      jdbc.update("insert into audit_events (id, occurred_at, actor_type, actor_id, event_type, aggregate_type, aggregate_id, payload) values (?, ?, ?, ?, ?, ?, ?, cast(? as jsonb))", UUID.randomUUID(), clock.instant(), actorType, actorId, type, aggregateType, aggregateId, json.writeValueAsString(payload));
+      jdbc.update("insert into audit_events (id, occurred_at, actor_type, actor_id, event_type, aggregate_type, aggregate_id, payload) values (?, ?, ?, ?, ?, ?, ?, cast(? as jsonb))", UUID.randomUUID(), java.sql.Timestamp.from(clock.instant()), actorType, actorId, type, aggregateType, aggregateId, json.writeValueAsString(payload));
     } catch (JsonProcessingException exception) { throw new IllegalArgumentException("Audit payload cannot be serialized", exception); }
   }
 }

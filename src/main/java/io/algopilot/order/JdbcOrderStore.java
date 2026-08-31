@@ -36,7 +36,7 @@ public class JdbcOrderStore implements OrderStore {
 
   @Override public OrderRecord save(OrderRecord order) {
     jdbc.update("insert into orders (id, client_order_id, bot_id, strategy_version_id, symbol, side, quantity, reference_price, status, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        order.id(), order.clientOrderId(), order.botId(), order.strategyVersionId(), order.symbol(), order.side().name(), order.quantity(), order.referencePrice(), order.status().name(), order.createdAt());
+        order.id(), order.clientOrderId(), order.botId(), order.strategyVersionId(), order.symbol(), order.side().name(), order.quantity(), order.referencePrice(), order.status().name(), java.sql.Timestamp.from(order.createdAt()));
     return order;
   }
 

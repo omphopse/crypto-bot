@@ -34,6 +34,10 @@ public class JdbcReconciliationStore implements ReconciliationStore {
     this.json = json;
   }
 
+  private java.sql.Timestamp toTimestamp(Instant instant) {
+    return instant == null ? null : java.sql.Timestamp.from(instant);
+  }
+
   @Override
   public ReconciliationRun saveRun(ReconciliationRun run) {
     jdbc.update(
@@ -45,9 +49,9 @@ public class JdbcReconciliationStore implements ReconciliationStore {
         run.status().name(),
         run.mismatchCount(),
         run.errorDetail(),
-        run.startedAt(),
-        run.completedAt(),
-        run.createdAt()
+        toTimestamp(run.startedAt()),
+        toTimestamp(run.completedAt()),
+        toTimestamp(run.createdAt())
     );
     return run;
   }
@@ -59,7 +63,7 @@ public class JdbcReconciliationStore implements ReconciliationStore {
         run.status().name(),
         run.mismatchCount(),
         run.errorDetail(),
-        run.completedAt(),
+        toTimestamp(run.completedAt()),
         run.id()
     );
     return run;
@@ -102,8 +106,8 @@ public class JdbcReconciliationStore implements ReconciliationStore {
             json.writeValueAsString(m.localValue()),
             json.writeValueAsString(m.brokerValue()),
             m.resolutionState().name(),
-            m.resolvedAt(),
-            m.createdAt()
+            toTimestamp(m.resolvedAt()),
+            toTimestamp(m.createdAt())
         );
       } catch (JsonProcessingException e) {
         throw new IllegalArgumentException("Mismatch payload cannot be serialized", e);
@@ -148,19 +152,19 @@ public class JdbcReconciliationStore implements ReconciliationStore {
 
   @Override
   public void updateMismatchResolution(UUID mismatchId, ResolutionState state, Instant resolvedAt) {
-    jdbc.update("update reconciliation_mismatches set resolution_state = ?, resolved_at = ? where id = ?", state.name(), resolvedAt, mismatchId);
+    jdbc.update("update reconciliation_mismatches set resolution_state = ?, resolved_at = ? where id = ?", state.name(), toTimestamp(resolvedAt), mismatchId);
   }
 
   @Override
   public void resolveAllUnresolvedMismatchesForBot(String botId, Instant resolvedAt) {
-    jdbc.update("update reconciliation_mismatches set resolution_state = 'RESOLVED', resolved_at = ? where bot_id = ? and resolution_state = 'UNRESOLVED'", resolvedAt, botId);
+    jdbc.update("update reconciliation_mismatches set resolution_state = 'RESOLVED', resolved_at = ? where bot_id = ? and resolution_state = 'UNRESOLVED'", toTimestamp(resolvedAt), botId);
   }
 
   @Override
   public void saveRecovery(UUID id, String botId, UUID runId, String operatorId, String status, String reason, Instant recoveredAt) {
     jdbc.update(
         "insert into reconciliation_recoveries (id, bot_id, run_id, operator_id, status, reason, recovered_at) values (?, ?, ?, ?, ?, ?, ?)",
-        id, botId, runId, operatorId, status, reason, recoveredAt
+        id, botId, runId, operatorId, status, reason, toTimestamp(recoveredAt)
     );
   }
 

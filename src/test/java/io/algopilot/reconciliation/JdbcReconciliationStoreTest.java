@@ -43,7 +43,7 @@ public class JdbcReconciliationStoreTest {
         ReconciliationStatus.STARTED, 0, null, Instant.now(), null, Instant.now()
     );
     store.saveRun(run);
-    verify(jdbc).update(startsWith("insert into reconciliation_runs"), eq(run.id()), eq("bot-123"), eq("ALPACA_PAPER"), eq("PAPER"), eq("STARTED"), eq(0), isNull(), eq(run.startedAt()), isNull(), eq(run.createdAt()));
+    verify(jdbc).update(startsWith("insert into reconciliation_runs"), eq(run.id()), eq("bot-123"), eq("ALPACA_PAPER"), eq("PAPER"), eq("STARTED"), eq(0), isNull(), eq(java.sql.Timestamp.from(run.startedAt())), isNull(), eq(java.sql.Timestamp.from(run.createdAt())));
   }
 
   @Test
@@ -58,14 +58,14 @@ public class JdbcReconciliationStoreTest {
     );
 
     store.saveMismatches(List.of(mismatch));
-    verify(jdbc).update(startsWith("insert into reconciliation_mismatches"), eq(mismatch.id()), eq(runId), eq("bot-123"), eq("POSITION_MISMATCH"), eq("POSITION_QUANTITY_MISMATCH"), eq("CRITICAL"), eq("BTC/USD"), anyString(), anyString(), eq("UNRESOLVED"), isNull(), eq(mismatch.createdAt()));
+    verify(jdbc).update(startsWith("insert into reconciliation_mismatches"), eq(mismatch.id()), eq(runId), eq("bot-123"), eq("POSITION_MISMATCH"), eq("POSITION_QUANTITY_MISMATCH"), eq("CRITICAL"), eq("BTC/USD"), anyString(), anyString(), eq("UNRESOLVED"), isNull(), eq(java.sql.Timestamp.from(mismatch.createdAt())));
   }
 
   @Test
   void testResolveAllUnresolvedMismatchesForBot_executesUpdate() {
     Instant now = Instant.now();
     store.resolveAllUnresolvedMismatchesForBot("bot-123", now);
-    verify(jdbc).update(startsWith("update reconciliation_mismatches set resolution_state = 'RESOLVED'"), eq(now), eq("bot-123"));
+    verify(jdbc).update(startsWith("update reconciliation_mismatches set resolution_state = 'RESOLVED'"), eq(java.sql.Timestamp.from(now)), eq("bot-123"));
   }
 
   @Test
@@ -74,6 +74,6 @@ public class JdbcReconciliationStoreTest {
     UUID runId = UUID.randomUUID();
     Instant now = Instant.now();
     store.saveRecovery(id, "bot-123", runId, "operator-1", "COMPLETED", "State matched", now);
-    verify(jdbc).update(startsWith("insert into reconciliation_recoveries"), eq(id), eq("bot-123"), eq(runId), eq("operator-1"), eq("COMPLETED"), eq("State matched"), eq(now));
+    verify(jdbc).update(startsWith("insert into reconciliation_recoveries"), eq(id), eq("bot-123"), eq(runId), eq("operator-1"), eq("COMPLETED"), eq("State matched"), eq(java.sql.Timestamp.from(now)));
   }
 }

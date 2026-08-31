@@ -13,12 +13,12 @@ public class JdbcStrategyStore implements StrategyStore {
   private final JdbcTemplate jdbc; private final ObjectMapper json;
   public JdbcStrategyStore(JdbcTemplate jdbc, ObjectMapper json) { this.jdbc = jdbc; this.json = json; }
   @Override public Strategy saveStrategy(Strategy strategy) {
-    jdbc.update("insert into strategies (id, name, status, created_at) values (?, ?, ?, ?)", strategy.id(), strategy.name(), strategy.status(), strategy.createdAt());
+    jdbc.update("insert into strategies (id, name, status, created_at) values (?, ?, ?, ?)", strategy.id(), strategy.name(), strategy.status(), java.sql.Timestamp.from(strategy.createdAt()));
     return strategy;
   }
   @Override public StrategyVersion saveVersion(StrategyVersion version) {
     try {
-      jdbc.update("insert into strategy_versions (id, strategy_id, version_number, definition, change_reason, created_at) values (?, ?, ?, cast(? as jsonb), ?, ?)", version.id(), version.strategyId(), version.versionNumber(), json.writeValueAsString(version.definition()), version.changeReason(), version.createdAt());
+      jdbc.update("insert into strategy_versions (id, strategy_id, version_number, definition, change_reason, created_at) values (?, ?, ?, cast(? as jsonb), ?, ?)", version.id(), version.strategyId(), version.versionNumber(), json.writeValueAsString(version.definition()), version.changeReason(), java.sql.Timestamp.from(version.createdAt()));
       return version;
     } catch (JsonProcessingException error) { throw new IllegalArgumentException("Strategy definition cannot be serialized", error); }
   }

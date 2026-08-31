@@ -10,7 +10,7 @@ public class JdbcRiskDecisionStore implements RiskDecisionStore {
   public JdbcRiskDecisionStore(JdbcTemplate jdbc) { this.jdbc = jdbc; }
   @Override public PersistedRiskDecision save(PersistedRiskDecision record) {
     String reasons = record.decision().reasons().stream().map(reason -> "\"" + reason.name() + "\"").collect(Collectors.joining(",", "[", "]"));
-    jdbc.update("insert into risk_decisions (id, client_order_id, bot_id, strategy_version_id, status, reasons, evaluated_at, request_snapshot) values (?, ?, ?, ?, ?, cast(? as jsonb), ?, cast(? as jsonb))", record.id(), record.clientOrderId(), record.botId(), record.strategyVersionId(), record.decision().status().name(), reasons, record.decision().evaluatedAt(), record.requestSnapshot());
+    jdbc.update("insert into risk_decisions (id, client_order_id, bot_id, strategy_version_id, status, reasons, evaluated_at, request_snapshot) values (?, ?, ?, ?, ?, cast(? as jsonb), ?, cast(? as jsonb))", record.id(), record.clientOrderId(), record.botId(), record.strategyVersionId(), record.decision().status().name(), reasons, java.sql.Timestamp.from(record.decision().evaluatedAt()), record.requestSnapshot());
     return record;
   }
 }

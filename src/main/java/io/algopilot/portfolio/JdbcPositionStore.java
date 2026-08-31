@@ -27,7 +27,7 @@ public class JdbcPositionStore implements PositionStore {
 
   @Override public Position save(Position p) {
     jdbc.update("insert into positions (id, bot_id, symbol, quantity, average_entry_price, realized_pnl, updated_at) values (?, ?, ?, ?, ?, ?, ?) on conflict (bot_id, symbol) do update set quantity = excluded.quantity, average_entry_price = excluded.average_entry_price, realized_pnl = excluded.realized_pnl, updated_at = excluded.updated_at",
-        p.id(), p.botId(), p.symbol(), p.quantity(), p.averageEntryPrice(), p.realizedPnl(), p.updatedAt());
+        p.id(), p.botId(), p.symbol(), p.quantity(), p.averageEntryPrice(), p.realizedPnl(), java.sql.Timestamp.from(p.updatedAt()));
     return p;
   }
 
