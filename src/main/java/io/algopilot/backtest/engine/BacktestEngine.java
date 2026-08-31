@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 public class BacktestEngine {
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public BacktestEngine() {
     this(Clock.systemUTC());
   }

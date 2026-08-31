@@ -29,6 +29,7 @@ public class ReconciliationRecoveryService {
   private final AuditEventWriter audit;
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public ReconciliationRecoveryService(
       ReconciliationStore store,
       BotStore botStore,

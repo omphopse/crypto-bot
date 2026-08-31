@@ -48,6 +48,7 @@ public class BybitDemoAdapter implements BrokerOrderAdapter, BrokerStateProvider
   private final HttpClient httpClient;
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public BybitDemoAdapter(BybitConfig config, ObjectMapper json) {
     this(config, json, HttpClient.newHttpClient(), Clock.systemUTC());
   }

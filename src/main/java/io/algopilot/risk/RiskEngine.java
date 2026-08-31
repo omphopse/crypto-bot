@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class RiskEngine {
   private final Clock clock;
   private final RiskLimits limits;
+  @org.springframework.beans.factory.annotation.Autowired
   public RiskEngine() { this(Clock.systemUTC(), RiskLimits.defaults()); }
   RiskEngine(Clock clock, RiskLimits limits) { this.clock = clock; this.limits = limits; }
 

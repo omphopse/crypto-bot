@@ -39,6 +39,7 @@ import org.springframework.stereotype.Service;
 public class ReconciliationEngine {
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public ReconciliationEngine() {
     this(Clock.systemUTC());
   }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuditEventWriter {
   private final JdbcTemplate jdbc; private final ObjectMapper json; private final Clock clock;
+  @org.springframework.beans.factory.annotation.Autowired
   public AuditEventWriter(JdbcTemplate jdbc, ObjectMapper json) { this(jdbc, json, Clock.systemUTC()); }
   AuditEventWriter(JdbcTemplate jdbc, ObjectMapper json, Clock clock) { this.jdbc = jdbc; this.json = json; this.clock = clock; }
   public void record(String actorType, String actorId, String type, String aggregateType, String aggregateId, Map<String, ?> payload) {

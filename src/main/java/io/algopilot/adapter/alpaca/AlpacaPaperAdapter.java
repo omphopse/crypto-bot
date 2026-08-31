@@ -44,6 +44,7 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
   private final HttpClient httpClient;
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public AlpacaPaperAdapter(AlpacaConfig config, ObjectMapper json) {
     this(config, json, HttpClient.newHttpClient(), Clock.systemUTC());
   }

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class StrategyService {
   private final StrategyStore store; private final AuditEventWriter audit; private final Clock clock;
+  @org.springframework.beans.factory.annotation.Autowired
   public StrategyService(StrategyStore store, AuditEventWriter audit) { this(store, audit, Clock.systemUTC()); }
   StrategyService(StrategyStore store, AuditEventWriter audit, Clock clock) { this.store = store; this.audit = audit; this.clock = clock; }
   @Transactional public StrategyVersion create(CreateStrategyRequest request) {

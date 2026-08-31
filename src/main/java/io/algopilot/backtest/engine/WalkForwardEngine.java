@@ -21,6 +21,7 @@ public class WalkForwardEngine {
   private final BacktestEngine backtestEngine;
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public WalkForwardEngine(BacktestEngine backtestEngine) {
     this(backtestEngine, Clock.systemUTC());
   }

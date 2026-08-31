@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BotService {
   private final BotStore store; private final AuditEventWriter audit; private final Clock clock;
+  @org.springframework.beans.factory.annotation.Autowired
   public BotService(BotStore store, AuditEventWriter audit) { this(store, audit, Clock.systemUTC()); }
   BotService(BotStore store, AuditEventWriter audit, Clock clock) { this.store = store; this.audit = audit; this.clock = clock; }
   @Transactional public Bot deploy(DeployBotRequest request) {
