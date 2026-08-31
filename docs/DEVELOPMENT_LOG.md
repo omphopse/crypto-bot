@@ -138,3 +138,41 @@
 - **Security Review:** Live trading is strictly rejected. AI, browser, and research components have no execution authority and receive no credentials. Broker state provider abstraction is read-only and credentials cannot be queried via API.
 - **Remaining Limitations:** Authenticated exchange adapter implementations (Alpaca Paper, Bybit Demo) with live WebSocket streaming, backtesting engine, and multi-factor research integrations belong to subsequent milestones.
 - **Next Recommended Phase:** Exchange Adapters (Alpaca Paper and Bybit Demo connectivity) or Event-Driven Backtesting Engine.
+
+## 2026-08-31 — Exchange Adapters and Execution Gateway
+
+- **Phase:** Exchange Adapters and Execution Gateway
+- **Objective:** Connect the platform to real paper and demo exchange APIs (Alpaca Paper and Bybit Demo) through a secure, non-bypassable `ExecutionGateway`, ensuring strict credential isolation, live-trading blocking, and complete state reconciliation routing.
+- **Files Changed:**
+  - `src/main/java/io/algopilot/adapter/BrokerOrderAdapter.java`
+  - `src/main/java/io/algopilot/adapter/OrderSubmissionResult.java`
+  - `src/main/java/io/algopilot/adapter/OrderCancellationResult.java`
+  - `src/main/java/io/algopilot/adapter/BrokerAdapterException.java`
+  - `src/main/java/io/algopilot/adapter/alpaca/AlpacaConfig.java`
+  - `src/main/java/io/algopilot/adapter/alpaca/AlpacaPaperAdapter.java`
+  - `src/main/java/io/algopilot/adapter/bybit/BybitConfig.java`
+  - `src/main/java/io/algopilot/adapter/bybit/BybitDemoAdapter.java`
+  - `src/main/java/io/algopilot/adapter/CompositeBrokerStateProvider.java`
+  - `src/main/java/io/algopilot/adapter/ExecutionGateway.java`
+  - `src/main/java/io/algopilot/adapter/AdapterController.java`
+  - `src/main/resources/application.yml`
+  - `src/test/java/io/algopilot/adapter/alpaca/AlpacaPaperAdapterTest.java`
+  - `src/test/java/io/algopilot/adapter/bybit/BybitDemoAdapterTest.java`
+  - `src/test/java/io/algopilot/adapter/ExecutionGatewayTest.java`
+  - `src/test/java/io/algopilot/adapter/CompositeBrokerStateProviderTest.java`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `docs/SECURITY.md`
+- **Database Migrations:** None (existing schema supports execution lifecycle).
+- **Implementation Summary:** Built `ExecutionGateway` to enforce bot status verification, live-trading rejection, and order lifecycle transition on dispatch. Implemented `AlpacaPaperAdapter` for paper trading REST endpoints with full state provider normalization, and `BybitDemoAdapter` for Bybit V5 demo trading with HMAC-SHA256 request signing. Connected both through `CompositeBrokerStateProvider` to power reconciliation directly from exchange state.
+- **Tests Executed:** 75 automated tests (21 dedicated new tests covering Alpaca paper submission/cancellation/normalization, Bybit demo submission/cancellation/signing, execution gateway bot checks, live trading rejection, and composite routing).
+- **Test Results:** 75 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven compilation and test suite succeeded with exit code 0.
+- **Security Review:** Credentials isolated in backend adapter beans via environment variables; never exposed to AI/browser or API responses. Live trading categorically blocked across config and execution boundaries.
+- **Remaining Limitations:** WebSocket streaming feeds and event-driven backtesting engine belong to subsequent milestones.
+- **Next Recommended Phase:** Event-Driven Backtesting & Walk-Forward Validation Engine or Real-Time WebSocket Streaming.
+

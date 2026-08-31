@@ -19,3 +19,14 @@ management:
 server:
   error:
     include-message: never
+
+algopilot:
+  alpaca:
+    base-url: ${ALPACA_BASE_URL:https://paper-api.alpaca.markets/v2}
+    key-id: ${ALPACA_API_KEY:}
+    secret-key: ${ALPACA_API_SECRET:}
+  bybit:
+    base-url: ${BYBIT_BASE_URL:https://api-demo.bybit.com}
+    api-key: ${BYBIT_API_KEY:}
+    api-secret: ${BYBIT_API_SECRET:}
+    recv-window: "5000"

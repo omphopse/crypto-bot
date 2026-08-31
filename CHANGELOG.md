@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 — 2026-08-31
+
+- Added non-bypassable `ExecutionGateway` that validates bot execution state, enforces `LIVE_TRADING_DISABLED`, dispatches orders to registered broker adapters, updates order lifecycle states, and records append-only audit events.
+- Added `AlpacaPaperAdapter` implementing `BrokerOrderAdapter` and `BrokerStateProvider` for Alpaca Paper Trading (`https://paper-api.alpaca.markets/v2`).
+- Added `BybitDemoAdapter` implementing `BrokerOrderAdapter` and `BrokerStateProvider` with HMAC-SHA256 request signing for Bybit Demo Trading (`https://api-demo.bybit.com`).
+- Added `CompositeBrokerStateProvider` delegating reconciliation queries to active broker adapters.
+- Added operational endpoints under `/api/execution` (`/dispatch/{orderId}`, `/cancel/{orderId}`, `/adapters`).
+- Added strict credential isolation ensuring AI and browser components cannot access API keys or secrets.
+- Added automated test suite covering order dispatching, cancellation, payload normalization, HMAC signing, and live-trading rejection (75 total passing tests).
+
 ## 0.2.0 — 2026-08-31
 
 - Added modular broker-state abstraction (`BrokerStateProvider`) and canonical models (`BrokerAccountBalance`, `BrokerOrder`, `BrokerFill`, `BrokerPosition`, `BrokerStateSnapshot`).

@@ -1,6 +1,6 @@
 # ALGOPILOT
 
-ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus the first real backend boundary: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, a typed deterministic risk evaluation API, and a deterministic broker state reconciliation and recovery subsystem. The console is deliberately locked to **PAPER** execution; it does not place live broker orders.
+ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus real backend boundaries: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, typed deterministic risk evaluation, broker state reconciliation, and real Paper/Demo broker adapters (Alpaca Paper & Bybit Demo) wired through a non-bypassable Execution Gateway. The console is deliberately locked to **PAPER** execution; live broker trading is strictly disabled.
 
 ## Run locally
 
@@ -14,11 +14,13 @@ Then open `http://localhost:8080`.
 
 ## API development
 
-Run `docker compose up postgres`, then `mvn test` and `mvn spring-boot:run`. The health endpoint is `GET /actuator/health`; the typed risk gate is `POST /api/risk/evaluate`, and `POST /api/orders` creates an idempotent internal order only after approval.
+Run `docker compose up postgres`, then `mvn test` and `mvn spring-boot:run`. The health endpoint is `GET /actuator/health`; the typed risk gate is `POST /api/risk/evaluate`, and `POST /api/orders` creates an idempotent internal order only after risk approval.
 
 - `POST /api/bots`: Deploys a persisted bot against an immutable strategy version. Only `ALPACA_PAPER`/`PAPER` and `BYBIT_DEMO`/`DEMO` pairs are accepted; live trading is rejected.
 - `POST /api/agent/decisions`: Journals typed agent intent and evidence. It does not execute; an order must separately pass the risk and order boundaries.
-- `POST /api/orders/{orderId}/status`: Applies the explicit order lifecycle state machine. It is intended for an authenticated execution adapter, not agent or browser access.
+- `POST /api/execution/dispatch/{orderId}`: Dispatches an approved order through `ExecutionGateway` to the appropriate paper/demo broker adapter (`AlpacaPaperAdapter` or `BybitDemoAdapter`).
+- `POST /api/execution/cancel/{orderId}`: Requests order cancellation on the broker adapter.
+- `GET /api/execution/adapters`: Lists registered broker adapters and their supported modes.
 - `POST /api/reconciliation/run`: Runs deterministic reconciliation comparing local ledger (balance, active orders, fills, positions) against broker state.
 - `GET /api/reconciliation/runs`: Lists recent reconciliation runs and results.
 - `GET /api/reconciliation/runs/{id}`: Retrieves reconciliation run details and specific mismatch records.
