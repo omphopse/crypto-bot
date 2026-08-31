@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OrderService {
   private final RiskDecisionService risk; private final OrderStore orders; private final AuditEventWriter audit; private final Clock clock;
+  @org.springframework.beans.factory.annotation.Autowired
   public OrderService(RiskDecisionService risk, OrderStore orders, AuditEventWriter audit) { this(risk, orders, audit, Clock.systemUTC()); }
   OrderService(RiskDecisionService risk, OrderStore orders, AuditEventWriter audit, Clock clock) { this.risk = risk; this.orders = orders; this.audit = audit; this.clock = clock; }
   @Transactional public OrderRecord create(RiskDecisionRequest command) {

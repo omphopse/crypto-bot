@@ -31,6 +31,7 @@ public class PortfolioAllocationService {
   private final AuditEventWriter audit;
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public PortfolioAllocationService(PortfolioAllocationStore store, AuditEventWriter audit) {
     this(store, audit, Clock.systemUTC());
   }

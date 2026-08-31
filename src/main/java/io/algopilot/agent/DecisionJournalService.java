@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class DecisionJournalService {
   private final AgentDecisionStore store; private final AuditEventWriter audit; private final ObjectMapper json; private final Clock clock;
+  @org.springframework.beans.factory.annotation.Autowired
   public DecisionJournalService(AgentDecisionStore store, AuditEventWriter audit, ObjectMapper json) { this(store, audit, json, Clock.systemUTC()); }
   DecisionJournalService(AgentDecisionStore store, AuditEventWriter audit, ObjectMapper json, Clock clock) { this.store = store; this.audit = audit; this.json = json; this.clock = clock; }
   @Transactional public AgentDecision journal(StructuredDecisionRequest request) {

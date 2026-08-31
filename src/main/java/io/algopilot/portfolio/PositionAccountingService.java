@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class PositionAccountingService {
   private final PositionStore store; private final Clock clock;
+  @org.springframework.beans.factory.annotation.Autowired
   public PositionAccountingService(PositionStore store) { this(store, Clock.systemUTC()); }
   PositionAccountingService(PositionStore store, Clock clock) { this.store = store; this.clock = clock; }
   public Position apply(OrderRecord order, BigDecimal fillQuantity, BigDecimal fillPrice, BigDecimal fee) {

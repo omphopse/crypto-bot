@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RiskDecisionService {
   private final RiskEngine engine; private final RiskDecisionStore store; private final AuditEventWriter audit; private final ObjectMapper json; private final Clock clock;
+  @org.springframework.beans.factory.annotation.Autowired
   public RiskDecisionService(RiskEngine engine, RiskDecisionStore store, AuditEventWriter audit, ObjectMapper json) { this(engine, store, audit, json, Clock.systemUTC()); }
   RiskDecisionService(RiskEngine engine, RiskDecisionStore store, AuditEventWriter audit, ObjectMapper json, Clock clock) { this.engine = engine; this.store = store; this.audit = audit; this.json = json; this.clock = clock; }
   @Transactional public RiskDecision evaluate(RiskDecisionRequest request) {

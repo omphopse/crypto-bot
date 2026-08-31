@@ -51,6 +51,7 @@ public class ReconciliationService {
   private final AuditEventWriter audit;
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public ReconciliationService(
       ReconciliationEngine engine,
       ReconciliationStore store,

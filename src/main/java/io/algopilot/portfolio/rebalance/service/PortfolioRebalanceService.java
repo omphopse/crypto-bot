@@ -40,6 +40,7 @@ public class PortfolioRebalanceService {
   private final AuditEventWriter audit;
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public PortfolioRebalanceService(
       PortfolioAllocationStore allocationStore,
       RebalanceStore rebalanceStore,

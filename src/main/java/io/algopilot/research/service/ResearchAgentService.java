@@ -59,6 +59,7 @@ public class ResearchAgentService {
       String status
   ) {}
 
+  @org.springframework.beans.factory.annotation.Autowired
   public ResearchAgentService(
       FactorEngine factorEngine,
       ResearchStore researchStore,

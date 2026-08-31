@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class FillIngestionService {
   private final FillStore fills; private final OrderStore orders; private final OrderLifecycleService lifecycle; private final PositionAccountingService positions; private final AuditEventWriter audit; private final Clock clock;
+  @org.springframework.beans.factory.annotation.Autowired
   public FillIngestionService(FillStore fills, OrderStore orders, OrderLifecycleService lifecycle, PositionAccountingService positions, AuditEventWriter audit) { this(fills, orders, lifecycle, positions, audit, Clock.systemUTC()); }
   FillIngestionService(FillStore fills, OrderStore orders, OrderLifecycleService lifecycle, PositionAccountingService positions, AuditEventWriter audit, Clock clock) { this.fills = fills; this.orders = orders; this.lifecycle = lifecycle; this.positions = positions; this.audit = audit; this.clock = clock; }
   @Transactional public Fill ingest(FillReport report) {

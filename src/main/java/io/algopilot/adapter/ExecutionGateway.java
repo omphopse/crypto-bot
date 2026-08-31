@@ -37,6 +37,7 @@ public class ExecutionGateway {
   private final AuditEventWriter audit;
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public ExecutionGateway(
       List<BrokerOrderAdapter> adapters,
       BotStore botStore,

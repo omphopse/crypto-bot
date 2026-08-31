@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OrderLifecycleService {
   private final OrderStore store; private final OrderEventStore events; private final AuditEventWriter audit; private final Clock clock;
+  @org.springframework.beans.factory.annotation.Autowired
   public OrderLifecycleService(OrderStore store, OrderEventStore events, AuditEventWriter audit) { this(store, events, audit, Clock.systemUTC()); }
   OrderLifecycleService(OrderStore store, OrderEventStore events, AuditEventWriter audit, Clock clock) { this.store = store; this.events = events; this.audit = audit; this.clock = clock; }
   @Transactional public OrderRecord transition(UUID orderId, OrderTransitionRequest request) {
