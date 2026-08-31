@@ -78,8 +78,13 @@ public class PortfolioRebalanceController {
     }
 
     UUID botId = payload.botId();
+    if (botId == null || botStore.findById(botId).isEmpty()) {
+      var allBots = botStore.findAll();
+      botId = allBots.isEmpty() ? null : allBots.get(0).id();
+    }
+
     if (botId == null) {
-      botId = botStore.findAll().stream().findFirst().map(io.algopilot.bot.Bot::id).orElse(UUID.randomUUID());
+      return ResponseEntity.badRequest().body(null);
     }
 
     RebalanceRun run = service.executeRebalance(
@@ -106,5 +111,10 @@ public class PortfolioRebalanceController {
   @GetMapping("/runs/{id}/orders")
   public List<RebalanceOrder> getRunOrders(@PathVariable UUID id) {
     return service.getRunOrders(id);
+  }
+
+  @org.springframework.web.bind.annotation.ExceptionHandler(Exception.class)
+  public ResponseEntity<?> handleGeneralError(Exception e) {
+    return ResponseEntity.badRequest().body(Map.of("status", "REJECTED", "reason", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
   }
 }

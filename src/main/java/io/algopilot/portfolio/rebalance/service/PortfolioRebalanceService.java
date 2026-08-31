@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PortfolioRebalanceService {
   private static final Logger log = LoggerFactory.getLogger(PortfolioRebalanceService.class);
 
+  private final io.algopilot.bot.BotStore botStore;
   private final PortfolioAllocationStore allocationStore;
   private final RebalanceStore rebalanceStore;
   private final OrderService orderService;
@@ -46,8 +47,9 @@ public class PortfolioRebalanceService {
       RebalanceStore rebalanceStore,
       OrderService orderService,
       ExecutionGateway executionGateway,
-      AuditEventWriter audit) {
-    this(allocationStore, rebalanceStore, orderService, executionGateway, audit, Clock.systemUTC());
+      AuditEventWriter audit,
+      io.algopilot.bot.BotStore botStore) {
+    this(allocationStore, rebalanceStore, orderService, executionGateway, audit, botStore, Clock.systemUTC());
   }
 
   public PortfolioRebalanceService(
@@ -56,12 +58,14 @@ public class PortfolioRebalanceService {
       OrderService orderService,
       ExecutionGateway executionGateway,
       AuditEventWriter audit,
+      io.algopilot.bot.BotStore botStore,
       Clock clock) {
     this.allocationStore = allocationStore;
     this.rebalanceStore = rebalanceStore;
     this.orderService = orderService;
     this.executionGateway = executionGateway;
     this.audit = audit;
+    this.botStore = botStore;
     this.clock = clock;
   }
 
@@ -180,6 +184,9 @@ public class PortfolioRebalanceService {
     int executed = 0;
     int failed = 0;
 
+    io.algopilot.bot.Bot targetBot = (botStore != null) ? botStore.findById(botId).orElse(null) : null;
+    String stratVerId = (targetBot != null && targetBot.strategyVersionId() != null) ? targetBot.strategyVersionId().toString() : UUID.randomUUID().toString();
+
     for (RebalanceOrderIntent intent : drift.proposedOrders()) {
       String clientOrderId = "reb-" + runId.toString().substring(0, 8) + "-" + intent.symbol().replace("/", "").toLowerCase() + "-" + System.currentTimeMillis();
 
@@ -187,7 +194,7 @@ public class PortfolioRebalanceService {
       RiskDecisionRequest riskReq = new RiskDecisionRequest(
           clientOrderId,
           botId.toString(),
-          UUID.randomUUID().toString(),
+          stratVerId,
           intent.symbol(),
           RiskDecisionRequest.Side.valueOf(intent.side()),
           intent.quantity(),

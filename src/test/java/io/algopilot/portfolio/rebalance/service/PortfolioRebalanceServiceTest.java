@@ -31,6 +31,7 @@ public class PortfolioRebalanceServiceTest {
   private OrderService orderService;
   private ExecutionGateway executionGateway;
   private AuditEventWriter audit;
+  private io.algopilot.bot.BotStore botStore;
   private PortfolioRebalanceService service;
 
   @BeforeEach
@@ -40,9 +41,10 @@ public class PortfolioRebalanceServiceTest {
     orderService = mock(OrderService.class);
     executionGateway = mock(ExecutionGateway.class);
     audit = mock(AuditEventWriter.class);
+    botStore = mock(io.algopilot.bot.BotStore.class);
 
     service = new PortfolioRebalanceService(
-        allocationStore, rebalanceStore, orderService, executionGateway, audit
+        allocationStore, rebalanceStore, orderService, executionGateway, audit, botStore
     );
   }
 

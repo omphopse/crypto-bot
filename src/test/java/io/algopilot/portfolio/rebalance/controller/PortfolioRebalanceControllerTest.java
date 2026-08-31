@@ -63,9 +63,13 @@ public class PortfolioRebalanceControllerTest {
     UUID runId = UUID.randomUUID();
     Instant now = Instant.now();
 
+    io.algopilot.bot.Bot mockBot = new io.algopilot.bot.Bot(
+        botId, "Test Bot", UUID.randomUUID(), io.algopilot.bot.Broker.ALPACA_PAPER, io.algopilot.bot.ExecutionMode.PAPER, io.algopilot.bot.BotStatus.RUNNING, now
+    );
     RebalanceRun run = new RebalanceRun(
         runId, planId, "COMPLETED", new BigDecimal("12.5"), 2, 2, 0, "Test", now, now
     );
+    when(botStore.findById(botId)).thenReturn(Optional.of(mockBot));
     when(service.executeRebalance(any(), any(), any(), any())).thenReturn(run);
 
     ResponseEntity<RebalanceRun> response = controller.execute(
