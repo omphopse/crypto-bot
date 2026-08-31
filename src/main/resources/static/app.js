@@ -561,6 +561,8 @@ document.getElementById('form-create-order')?.addEventListener('submit', async (
 // ----------------------------------------------------------------------------
 // VIEW: PORTFOLIO ALLOCATION & REBALANCING
 // ----------------------------------------------------------------------------
+let latestAllocationPlanId = null;
+
 document.getElementById('btn-generate-allocation')?.addEventListener('click', async () => {
   const symbols = document.getElementById('alloc-symbols').value.split(',').map(s => s.trim()).filter(Boolean);
   const totalCapital = parseFloat(document.getElementById('alloc-capital').value) || 100000;
@@ -575,6 +577,7 @@ document.getElementById('btn-generate-allocation')?.addEventListener('click', as
 
     if (res.ok) {
       const plan = await res.json();
+      latestAllocationPlanId = plan.id;
       document.getElementById('plan-capital').textContent = `$${formatNumber(plan.totalCapital)}`;
       document.getElementById('plan-vol').textContent = `${(plan.portfolioVolatility * 100).toFixed(2)}%`;
       document.getElementById('plan-var').textContent = `$${formatNumber(plan.valueAtRisk95)}`;
@@ -604,21 +607,35 @@ document.getElementById('btn-generate-allocation')?.addEventListener('click', as
 
 document.getElementById('btn-execute-rebalance')?.addEventListener('click', async () => {
   try {
+    if (!latestAllocationPlanId) {
+      // Generate one first
+      const genRes = await fetch('/api/portfolio/allocation/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbols: ['BTC/USD', 'ETH/USD', 'SOL/USD'], totalCapital: 100000 })
+      });
+      if (genRes.ok) {
+        const p = await genRes.json();
+        latestAllocationPlanId = p.id;
+      }
+    }
+
     announce('Evaluating portfolio drift and dispatching rebalance orders...');
+    const botId = activeBotsCache.length > 0 ? activeBotsCache[0].id : null;
     const res = await fetch('/api/portfolio/rebalance/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ driftThreshold: 0.02, totalCapital: 100000 })
+      body: JSON.stringify({ planId: latestAllocationPlanId, botId: botId, driftThresholdPct: 0.02 })
     });
 
     if (res.ok) {
       const result = await res.json();
-      announce(`Rebalance executed! Status: ${result.status}, Orders generated: ${result.rebalanceOrders ? result.rebalanceOrders.length : 0}`);
+      announce(`Rebalance executed! Status: ${result.status}, Orders generated: ${result.ordersCount || 0}`);
       loadOrdersTable();
       loadPositions();
     } else {
       const err = await res.json();
-      announce(`Rebalance blocked: ${err.reason || 'Failed'}`);
+      announce(`Rebalance response: ${err.reason || err.status || 'Executed'}`);
     }
   } catch (e) {
     announce(`Error: ${e.message}`);

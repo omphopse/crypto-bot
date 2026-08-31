@@ -21,13 +21,17 @@ import org.springframework.http.ResponseEntity;
 public class PortfolioRebalanceControllerTest {
   private PortfolioRebalanceService service;
   private PortfolioAllocationStore allocationStore;
+  private io.algopilot.bot.BotStore botStore;
+  private io.algopilot.portfolio.allocation.service.PortfolioAllocationService allocationService;
   private PortfolioRebalanceController controller;
 
   @BeforeEach
   void setUp() {
     service = mock(PortfolioRebalanceService.class);
     allocationStore = mock(PortfolioAllocationStore.class);
-    controller = new PortfolioRebalanceController(service, allocationStore);
+    botStore = mock(io.algopilot.bot.BotStore.class);
+    allocationService = mock(io.algopilot.portfolio.allocation.service.PortfolioAllocationService.class);
+    controller = new PortfolioRebalanceController(service, allocationStore, botStore, allocationService);
   }
 
   @Test

@@ -35,8 +35,9 @@ public class PortfolioAllocationController {
     this.service = service;
   }
 
-  @PostMapping("/allocate")
-  public ResponseEntity<PortfolioAllocationPlan> allocate(@RequestBody AllocatePayload payload) {
+  @PostMapping({"/allocate", "/generate"})
+  public ResponseEntity<PortfolioAllocationPlan> allocate(@RequestBody(required = false) AllocatePayload payload) {
+    if (payload == null) payload = new AllocatePayload(null, null, null);
     List<String> symbols = payload.symbols() != null && !payload.symbols().isEmpty()
         ? payload.symbols()
         : List.of("BTC/USD", "ETH/USD", "SOL/USD");

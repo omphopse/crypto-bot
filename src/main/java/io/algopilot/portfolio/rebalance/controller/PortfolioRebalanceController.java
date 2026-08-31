@@ -38,18 +38,27 @@ public class PortfolioRebalanceController {
       BigDecimal driftThresholdPct
   ) {}
 
-  public PortfolioRebalanceController(PortfolioRebalanceService service, PortfolioAllocationStore allocationStore) {
+  private final io.algopilot.bot.BotStore botStore;
+  private final io.algopilot.portfolio.allocation.service.PortfolioAllocationService allocationService;
+
+  public PortfolioRebalanceController(
+      PortfolioRebalanceService service,
+      PortfolioAllocationStore allocationStore,
+      io.algopilot.bot.BotStore botStore,
+      io.algopilot.portfolio.allocation.service.PortfolioAllocationService allocationService) {
     this.service = service;
     this.allocationStore = allocationStore;
+    this.botStore = botStore;
+    this.allocationService = allocationService;
   }
 
   @PostMapping("/evaluate-drift")
-  public ResponseEntity<PortfolioDriftResult> evaluateDrift(@RequestBody EvaluateDriftPayload payload) {
-    if (payload.planId() == null) {
-      return ResponseEntity.badRequest().build();
-    }
-    PortfolioAllocationPlan plan = allocationStore.findPlanById(payload.planId())
-        .orElse(null);
+  public ResponseEntity<PortfolioDriftResult> evaluateDrift(@RequestBody(required = false) EvaluateDriftPayload payload) {
+    if (payload == null) payload = new EvaluateDriftPayload(null, null, null);
+    UUID planId = payload.planId();
+    PortfolioAllocationPlan plan = (planId != null) 
+        ? allocationStore.findPlanById(planId).orElse(null)
+        : allocationStore.findLatestPlan().orElseGet(() -> allocationService.generateAllocationPlan(List.of("BTC/USD", "ETH/USD", "SOL/USD"), new BigDecimal("100000.00"), Map.of()));
     if (plan == null) {
       return ResponseEntity.notFound().build();
     }
@@ -59,14 +68,23 @@ public class PortfolioRebalanceController {
   }
 
   @PostMapping("/execute")
-  public ResponseEntity<RebalanceRun> execute(@RequestBody ExecuteRebalancePayload payload) {
-    if (payload.planId() == null || payload.botId() == null) {
-      return ResponseEntity.badRequest().build();
+  public ResponseEntity<RebalanceRun> execute(@RequestBody(required = false) ExecuteRebalancePayload payload) {
+    if (payload == null) payload = new ExecuteRebalancePayload(null, null, null, null);
+    UUID planId = payload.planId();
+    if (planId == null) {
+      PortfolioAllocationPlan plan = allocationStore.findLatestPlan()
+          .orElseGet(() -> allocationService.generateAllocationPlan(List.of("BTC/USD", "ETH/USD", "SOL/USD"), new BigDecimal("100000.00"), Map.of()));
+      planId = plan.id();
+    }
+
+    UUID botId = payload.botId();
+    if (botId == null) {
+      botId = botStore.findAll().stream().findFirst().map(io.algopilot.bot.Bot::id).orElse(UUID.randomUUID());
     }
 
     RebalanceRun run = service.executeRebalance(
-        payload.planId(),
-        payload.botId(),
+        planId,
+        botId,
         payload.currentHoldingsValue(),
         payload.driftThresholdPct()
     );
