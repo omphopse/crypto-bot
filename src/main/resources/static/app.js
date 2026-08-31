@@ -80,7 +80,8 @@ document.getElementById('btn-open-create-strategy')?.addEventListener('click', (
   createStrategyDialog.showModal();
 });
 
-document.getElementById('btn-open-journal-modal')?.addEventListener('click', () => {
+document.getElementById('btn-open-journal-modal')?.addEventListener('click', async () => {
+  await loadBots();
   populateBotSelect('jd-bot-id');
   journalDecisionDialog.showModal();
 });
@@ -295,11 +296,19 @@ async function openDeployBotModal() {
   activeStrategiesCache.forEach(s => { stratNameMap[s.id] = s.name; });
 
   const select = document.getElementById('deploy-bot-strategy');
-  if (select && activeVersionsCache.length > 0) {
-    select.innerHTML = activeVersionsCache.map(v => {
-      const stratName = stratNameMap[v.strategyId] || 'Strategy';
-      return `<option value="${v.id}">${escapeHtml(stratName)} (v${v.versionNumber} - ${escapeHtml(v.changeReason || '')})</option>`;
-    }).join('');
+  if (select) {
+    if (activeVersionsCache.length > 0) {
+      select.innerHTML = activeVersionsCache.map(v => {
+        const stratName = stratNameMap[v.strategyId] || 'Strategy';
+        return `<option value="${v.id}">${escapeHtml(stratName)} (v${v.versionNumber} - ${escapeHtml(v.changeReason || 'Active')})</option>`;
+      }).join('');
+    } else if (activeStrategiesCache.length > 0) {
+      select.innerHTML = activeStrategiesCache.map(s => {
+        return `<option value="${s.id}">${escapeHtml(s.name)}</option>`;
+      }).join('');
+    } else {
+      select.innerHTML = `<option value="">No strategies available</option>`;
+    }
   }
   deployBotDialog.showModal();
 }
@@ -503,10 +512,14 @@ async function openCreateOrderModal() {
 
 function populateBotSelect(selectId) {
   const select = document.getElementById(selectId);
-  if (select && activeBotsCache.length > 0) {
-    select.innerHTML = activeBotsCache.map(b => `
-      <option value="${b.id}">${escapeHtml(b.name)} (${b.broker} - ${b.status})</option>
-    `).join('');
+  if (select) {
+    if (activeBotsCache.length > 0) {
+      select.innerHTML = activeBotsCache.map(b => `
+        <option value="${b.id}">${escapeHtml(b.name)} (${b.broker} - ${b.status})</option>
+      `).join('');
+    } else {
+      select.innerHTML = '<option value="">No bots available</option>';
+    }
   }
 }
 
