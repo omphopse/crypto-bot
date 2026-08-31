@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-08-31
+
+- Added deterministic event-driven `BacktestEngine` simulating historical OHLCV bar replay with indicator updates, signal generation, and realistic slippage and broker fee deduction.
+- Added quantitative technical indicators (`Indicators`) for Simple Moving Average (SMA), Exponential Moving Average (EMA), Relative Strength Index (RSI), and Average True Range (ATR).
+- Added `PerformanceMetricsCalculator` computing Max Drawdown %, Sharpe Ratio, Sortino Ratio, Profit Factor, Win Rate %, and marked-to-market equity curves using exact `BigDecimal` math.
+- Added `WalkForwardEngine` conducting rolling In-Sample (optimization) and Out-Of-Sample (validation) window analysis to calculate Walk-Forward Efficiency (WFE) and prevent curve fitting.
+- Added Flyway migration `V9__backtesting.sql` and PostgreSQL persistence (`JdbcBacktestStore`) for storing backtest runs, trade histories, and walk-forward evaluations.
+- Added REST APIs under `/api/backtests` (`/run`, `/{id}`, `/walk-forward`, `/walk-forward/{id}`).
+- Added 14 unit and integration tests covering indicator math, performance metrics, backtesting replay, walk-forward efficiency, and controller endpoints (89 total passing tests).
+
 ## 0.3.0 — 2026-08-31
 
 - Added non-bypassable `ExecutionGateway` that validates bot execution state, enforces `LIVE_TRADING_DISABLED`, dispatches orders to registered broker adapters, updates order lifecycle states, and records append-only audit events.

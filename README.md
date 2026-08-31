@@ -1,6 +1,6 @@
 # ALGOPILOT
 
-ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus real backend boundaries: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, typed deterministic risk evaluation, broker state reconciliation, and real Paper/Demo broker adapters (Alpaca Paper & Bybit Demo) wired through a non-bypassable Execution Gateway. The console is deliberately locked to **PAPER** execution; live broker trading is strictly disabled.
+ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus real backend boundaries: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, typed deterministic risk evaluation, broker state reconciliation, real Paper/Demo broker adapters (Alpaca Paper & Bybit Demo) wired through a non-bypassable Execution Gateway, and an event-driven backtesting and walk-forward validation engine. The console is deliberately locked to **PAPER** execution; live broker trading is strictly disabled.
 
 ## Run locally
 
@@ -21,6 +21,11 @@ Run `docker compose up postgres`, then `mvn test` and `mvn spring-boot:run`. The
 - `POST /api/execution/dispatch/{orderId}`: Dispatches an approved order through `ExecutionGateway` to the appropriate paper/demo broker adapter (`AlpacaPaperAdapter` or `BybitDemoAdapter`).
 - `POST /api/execution/cancel/{orderId}`: Requests order cancellation on the broker adapter.
 - `GET /api/execution/adapters`: Lists registered broker adapters and their supported modes.
+- `POST /api/backtests/run`: Runs an event-driven backtest on historical/candle series with realistic slippage and broker fee deduction.
+- `GET /api/backtests`: Lists recent backtest execution runs.
+- `GET /api/backtests/{id}`: Retrieves complete backtest report, trades, and marked-to-market equity curve.
+- `POST /api/backtests/walk-forward`: Executes rolling In-Sample / Out-Of-Sample walk-forward validation to assess strategy robustness.
+- `GET /api/backtests/walk-forward/{id}`: Retrieves walk-forward efficiency report and window results.
 - `POST /api/reconciliation/run`: Runs deterministic reconciliation comparing local ledger (balance, active orders, fills, positions) against broker state.
 - `GET /api/reconciliation/runs`: Lists recent reconciliation runs and results.
 - `GET /api/reconciliation/runs/{id}`: Retrieves reconciliation run details and specific mismatch records.

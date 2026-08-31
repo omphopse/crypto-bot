@@ -7,6 +7,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 - Bybit: `DEMO` only (`https://api-demo.bybit.com`)
 - `LIVE`: Strictly disabled and rejected at all configuration and execution boundaries.
 
+## Backtesting & Quantitative Simulation Invariants
+1. **Isolated Sandbox**: Backtesting simulation runs entirely offline and in-memory/database without network connection to broker trading endpoints.
+2. **Realistic Friction Enforced**: Slippage and fee modeling are mandatory parameters in simulation to prevent ungrounded or curve-fitted equity returns.
+3. **Walk-Forward Validation**: Multi-window In-Sample / Out-Of-Sample analysis validates parameter stability before strategy deployment.
+
 ## Execution Gateway Safety Invariants
 1. **No Direct Execution**: Neither bots, agents, strategies, nor UI can interact directly with broker adapters. All execution MUST flow through `ExecutionGateway` which enforces persisted risk approval.
 2. **Bot Operational State Check**: `ExecutionGateway` strictly refuses to dispatch orders for bots in `PAUSED`, `STOPPED`, or `EMERGENCY_STOPPED` states.

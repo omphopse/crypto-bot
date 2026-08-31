@@ -176,3 +176,51 @@
 - **Remaining Limitations:** WebSocket streaming feeds and event-driven backtesting engine belong to subsequent milestones.
 - **Next Recommended Phase:** Event-Driven Backtesting & Walk-Forward Validation Engine or Real-Time WebSocket Streaming.
 
+## 2026-08-31 — Event-Driven Backtesting and Walk-Forward Validation Engine
+
+- **Phase:** Event-Driven Backtesting and Walk-Forward Validation Engine
+- **Objective:** Provide robust, deterministic historical simulation and walk-forward efficiency analysis for strategy versions, incorporating realistic market frictions (slippage and broker fees) before deploying to paper/demo execution.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V9__backtesting.sql`
+  - `src/main/java/io/algopilot/backtest/model/Candle.java`
+  - `src/main/java/io/algopilot/backtest/model/SimulatedTrade.java`
+  - `src/main/java/io/algopilot/backtest/model/EquityPoint.java`
+  - `src/main/java/io/algopilot/backtest/model/BacktestRequest.java`
+  - `src/main/java/io/algopilot/backtest/model/BacktestResult.java`
+  - `src/main/java/io/algopilot/backtest/model/WalkForwardRequest.java`
+  - `src/main/java/io/algopilot/backtest/model/WalkForwardWindowResult.java`
+  - `src/main/java/io/algopilot/backtest/model/WalkForwardResult.java`
+  - `src/main/java/io/algopilot/backtest/engine/Indicators.java`
+  - `src/main/java/io/algopilot/backtest/engine/PerformanceMetricsCalculator.java`
+  - `src/main/java/io/algopilot/backtest/engine/BacktestEngine.java`
+  - `src/main/java/io/algopilot/backtest/engine/WalkForwardEngine.java`
+  - `src/main/java/io/algopilot/backtest/persistence/BacktestStore.java`
+  - `src/main/java/io/algopilot/backtest/persistence/JdbcBacktestStore.java`
+  - `src/main/java/io/algopilot/backtest/service/BacktestService.java`
+  - `src/main/java/io/algopilot/backtest/controller/BacktestController.java`
+  - `src/main/java/io/algopilot/strategy/StrategyStore.java`
+  - `src/main/java/io/algopilot/strategy/JdbcStrategyStore.java`
+  - `src/test/java/io/algopilot/backtest/engine/IndicatorMathTest.java`
+  - `src/test/java/io/algopilot/backtest/engine/PerformanceMetricsCalculatorTest.java`
+  - `src/test/java/io/algopilot/backtest/engine/BacktestEngineTest.java`
+  - `src/test/java/io/algopilot/backtest/engine/WalkForwardEngineTest.java`
+  - `src/test/java/io/algopilot/backtest/service/BacktestServiceTest.java`
+  - `src/test/java/io/algopilot/backtest/controller/BacktestControllerTest.java`
+  - `src/test/java/io/algopilot/strategy/StrategyServiceTest.java`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `docs/SECURITY.md`
+- **Database Migrations:** `V9__backtesting.sql` creating `backtest_runs`, `backtest_trades`, and `walk_forward_runs`.
+- **Implementation Summary:** Built a complete, deterministic backtesting subsystem. `Indicators` provides SMA, EMA, RSI, and ATR mathematical calculations. `PerformanceMetricsCalculator` computes exact Max Drawdown %, Sharpe, Sortino, Win Rate %, and Profit Factor using `BigDecimal`. `BacktestEngine` executes bar-by-bar historical replay, deducting configurable slippage and fees. `WalkForwardEngine` segments data into sequential In-Sample / Out-Of-Sample windows to calculate the Walk-Forward Efficiency (WFE) ratio. `JdbcBacktestStore` persists runs, trade records, and equity curves. `BacktestController` exposes REST endpoints.
+- **Tests Executed:** 89 automated tests (14 dedicated new tests covering indicators, metrics, engine simulation, walk-forward windows, service persistence, and REST endpoints).
+- **Test Results:** 89 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven compilation and test suite succeeded with exit code 0.
+- **Security Review:** Backtesting operates strictly offline in historical sandbox; zero live/paper broker execution permissions or credentials required.
+- **Remaining Limitations:** Real-time WebSocket market streaming feeds and autonomous multi-agent research reasoning belong to subsequent milestones.
+- **Next Recommended Phase:** Real-Time WebSocket Streaming (Market Data & Order Streams) or Autonomous Research & Decision Agent.
+
+

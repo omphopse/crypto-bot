@@ -2,7 +2,7 @@
 
 ## Service boundary
 
-The deployable system is a Spring Boot service with PostgreSQL/Flyway, Redis for idempotency and stream coordination, a web operations console, and broker adapters for Alpaca Paper and Bybit Demo. It exposes REST resources under `/api` and actuator operational health endpoints under `/actuator`.
+The deployable system is a Spring Boot service with PostgreSQL/Flyway, Redis for idempotency and stream coordination, a web operations console, broker adapters for Alpaca Paper and Bybit Demo, and an event-driven backtesting and walk-forward validation engine. It exposes REST resources under `/api` and actuator operational health endpoints under `/actuator`.
 
 ```text
 Market adapters + research gateway
@@ -18,6 +18,8 @@ Portfolio state ─────────── deterministic risk engine
                    Deterministic Reconciliation Engine
                                         ↓
 PostgreSQL audit journal + Reconciliation store + Actuator Health
+
+Historical Candles → Indicators → BacktestEngine → WalkForwardEngine → BacktestStore
 ```
 
 ## Critical invariants
@@ -30,6 +32,15 @@ PostgreSQL audit journal + Reconciliation store + Actuator Health
 6. A deployed strategy version is immutable. Changes create a new version and deployment record. The current API provides `POST /api/strategies` and `POST /api/strategies/{strategyId}/versions` for these append-only definitions.
 7. Emergency-stopped bots cannot resume through ordinary controls or through reconciliation matching alone; they require dedicated emergency-recovery procedures.
 8. Live trading remains disabled and rejected across all API and adapter boundaries.
+9. Backtesting and walk-forward simulations operate in an offline, isolated sandbox with zero broker connectivity or execution authority.
+
+## Event-Driven Backtesting & Walk-Forward Validation
+
+- **Indicators Engine (`Indicators`)**: High-precision mathematical calculations for SMA, EMA, RSI, and ATR.
+- **Performance Metrics (`PerformanceMetricsCalculator`)**: Quantitative computation of Maximum Drawdown %, Sharpe Ratio, Sortino Ratio, Profit Factor, Win Rate %, and equity curve time series.
+- **Backtest Engine (`BacktestEngine`)**: Bar-by-bar historical replay deducting realistic friction (configurable slippage basis points and broker fees).
+- **Walk-Forward Validation (`WalkForwardEngine`)**: Rolling In-Sample (optimization) and Out-Of-Sample (validation) window analysis computing the Walk-Forward Efficiency (WFE) ratio to prevent overfitting.
+- **Backtest Persistence (`JdbcBacktestStore`)**: Stores backtest runs, trade journals, and walk-forward evaluations.
 
 ## Execution Gateway & Broker Adapters
 
@@ -52,4 +63,4 @@ The reconciliation architecture is composed of:
 
 ## Persistence
 
-Flyway migrations create domain tables: audit events, risk decisions, orders, order events, strategies, strategy versions, bots, agent decisions, fills, positions, reconciliation runs, reconciliation mismatches, and recovery records. High-frequency state is indexed by `bot_id`, `strategy_version_id`, `symbol`, `status`, and descending occurrence timestamp.
+Flyway migrations create domain tables: audit events, risk decisions, orders, order events, strategies, strategy versions, bots, agent decisions, fills, positions, reconciliation runs, reconciliation mismatches, recovery records, backtest runs, backtest trades, and walk-forward runs. High-frequency state is indexed by `bot_id`, `strategy_version_id`, `symbol`, `status`, and descending occurrence timestamp.

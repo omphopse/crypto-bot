@@ -3,6 +3,7 @@ package io.algopilot.strategy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -20,6 +21,25 @@ public class JdbcStrategyStore implements StrategyStore {
       jdbc.update("insert into strategy_versions (id, strategy_id, version_number, definition, change_reason, created_at) values (?, ?, ?, cast(? as jsonb), ?, ?)", version.id(), version.strategyId(), version.versionNumber(), json.writeValueAsString(version.definition()), version.changeReason(), version.createdAt());
       return version;
     } catch (JsonProcessingException error) { throw new IllegalArgumentException("Strategy definition cannot be serialized", error); }
+  }
+  @Override public Optional<StrategyVersion> findVersionById(UUID id) {
+    String sql = "select id, strategy_id, version_number, definition, change_reason, created_at from strategy_versions where id = ?";
+    var list = jdbc.query(sql, (rs, rowNum) -> {
+      try {
+        JsonNode definitionNode = json.readTree(rs.getString("definition"));
+        return new StrategyVersion(
+            (UUID) rs.getObject("id"),
+            (UUID) rs.getObject("strategy_id"),
+            rs.getInt("version_number"),
+            definitionNode,
+            rs.getString("change_reason"),
+            rs.getTimestamp("created_at").toInstant()
+        );
+      } catch (JsonProcessingException e) {
+        throw new IllegalStateException("Failed to parse strategy definition", e);
+      }
+    }, id);
+    return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
   }
   @Override public int latestVersionNumber(UUID strategyId) {
     Integer number = jdbc.queryForObject("select coalesce(max(version_number), 0) from strategy_versions where strategy_id = ?", Integer.class, strategyId);
