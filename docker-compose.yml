@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: algopilot
+      POSTGRES_USER: algopilot
+      POSTGRES_PASSWORD: algopilot_dev_only
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U algopilot -d algopilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build: .
+    environment:
+      ALGOPILOT_DATABASE_URL: jdbc:postgresql://postgres:5432/algopilot
+      ALGOPILOT_DATABASE_USER: algopilot
+      ALGOPILOT_DATABASE_PASSWORD: algopilot_dev_only
+    ports: ["8080:8080"]
+    depends_on:
+      postgres:
+        condition: service_healthy

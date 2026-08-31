@@ -1,0 +1,40 @@
+# ALGOPILOT
+
+ALGOPILOT is a safety-first autonomous algorithmic-trading operations platform. This delivery includes a control console plus the first real backend boundary: Spring Boot, Flyway/PostgreSQL configuration, actuator health endpoints, a typed deterministic risk evaluation API, and a deterministic broker state reconciliation and recovery subsystem. The console is deliberately locked to **PAPER** execution; it does not place live broker orders.
+
+## Run locally
+
+No dependency installation is required for the control console. Open `index.html` in a browser, or run:
+
+```sh
+python3 -m http.server 8080
+```
+
+Then open `http://localhost:8080`.
+
+## API development
+
+Run `docker compose up postgres`, then `mvn test` and `mvn spring-boot:run`. The health endpoint is `GET /actuator/health`; the typed risk gate is `POST /api/risk/evaluate`, and `POST /api/orders` creates an idempotent internal order only after approval.
+
+- `POST /api/bots`: Deploys a persisted bot against an immutable strategy version. Only `ALPACA_PAPER`/`PAPER` and `BYBIT_DEMO`/`DEMO` pairs are accepted; live trading is rejected.
+- `POST /api/agent/decisions`: Journals typed agent intent and evidence. It does not execute; an order must separately pass the risk and order boundaries.
+- `POST /api/orders/{orderId}/status`: Applies the explicit order lifecycle state machine. It is intended for an authenticated execution adapter, not agent or browser access.
+- `POST /api/reconciliation/run`: Runs deterministic reconciliation comparing local ledger (balance, active orders, fills, positions) against broker state.
+- `GET /api/reconciliation/runs`: Lists recent reconciliation runs and results.
+- `GET /api/reconciliation/runs/{id}`: Retrieves reconciliation run details and specific mismatch records.
+- `GET /api/reconciliation/mismatches`: Lists unresolved discrepancies across bots and assets.
+- `GET /api/reconciliation/status/{botId}`: Returns current reconciliation health, active discrepancies, and recovery requirements for a bot.
+- `POST /api/reconciliation/recover`: Executes explicit operator recovery for a paused bot once reconciliation state is matched.
+- Bot controls: `POST /api/bots/{id}/pause`, `/stop`, `/emergency-stop`, and `/resume`. Emergency-stopped bots reject ordinary resume requests pending dedicated emergency recovery procedures.
+
+## Safety boundary
+
+No UI action is an execution authority. Production order flow must be:
+
+`agent/strategy → typed decision → deterministic risk engine → idempotent execution gateway → broker adapter`
+
+The browser/research layer is an untrusted information source only. Live trading is disabled by design until separately implemented with explicit deployment gates.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the service design, [docs/TRADING_SAFETY.md](docs/TRADING_SAFETY.md) for non-negotiable controls, and [docs/SECURITY.md](docs/SECURITY.md) for security boundaries.
+
+Milestone status and test evidence are recorded in [docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md) and [docs/TEST_REPORT.md](docs/TEST_REPORT.md).

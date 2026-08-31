@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: algopilot-api
+  datasource:
+    url: ${ALGOPILOT_DATABASE_URL:jdbc:postgresql://localhost:5432/algopilot}
+    username: ${ALGOPILOT_DATABASE_USER:algopilot}
+    password: ${ALGOPILOT_DATABASE_PASSWORD:algopilot_dev_only}
+  flyway:
+    locations: classpath:db/migration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+server:
+  error:
+    include-message: never

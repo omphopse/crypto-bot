@@ -1,0 +1,3 @@
+CREATE TABLE fills (id UUID PRIMARY KEY, order_id UUID NOT NULL REFERENCES orders(id), exchange_fill_id VARCHAR(128) NOT NULL UNIQUE, quantity NUMERIC(30,12) NOT NULL, price NUMERIC(30,12) NOT NULL, fee NUMERIC(30,12) NOT NULL, filled_at TIMESTAMPTZ NOT NULL);
+CREATE INDEX fills_order_time_idx ON fills (order_id, filled_at DESC);
+CREATE TABLE positions (id UUID PRIMARY KEY, bot_id VARCHAR(128) NOT NULL, symbol VARCHAR(64) NOT NULL, quantity NUMERIC(30,12) NOT NULL, average_entry_price NUMERIC(30,12) NOT NULL, realized_pnl NUMERIC(30,12) NOT NULL, updated_at TIMESTAMPTZ NOT NULL, CONSTRAINT positions_bot_symbol_unique UNIQUE (bot_id, symbol));
