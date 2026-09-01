@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.20.0 — 2026-09-01
+
+- Implemented Autonomous Intelligence Layer — Phase H (Heartbeat Watchdog, Health Probes & Automated Fault Recovery):
+  - Added Flyway migration `V21__heartbeats_watchdog_leases.sql` creating `component_heartbeats`, `bot_runtime_leases`, `health_events`, and `ops_recovery_runs` tables.
+  - Implemented 10-component heartbeat tracking (`ComponentType`, `HealthState`, `HeartbeatRecord`, `JdbcHeartbeatStore`).
+  - Implemented multi-instance distributed runtime leases (`BotRuntimeLease`, `LeaseStore`, `LeaseManager`) using atomic PostgreSQL locking.
+  - Implemented `WatchdogService` detecting stale bot heartbeats ($>30\text{s}$), expired runtime leases, and stuck in-flight orders ($>30\text{s}$), with automatic bot pausing and reconciliation triggers.
+  - Implemented `RecoveryService` providing deterministic recovery flows and ensuring previously running bots default to safe/paused upon process restart.
+  - Added `HealthWatchdogController` REST endpoints (`/api/health`, `/api/health/components`, `/api/health/bots/{botId}`, `/api/health/watchdog`, `/api/health/recovery/{botId}`, `/api/health/recovery/trigger/{botId}`).
+  - Updated web operations dashboard with real-time Component Heartbeats & Watchdog Probes table.
+  - Added `docs/RELIABILITY_AND_RECOVERY.md`.
+  - Added comprehensive automated unit and failure recovery tests (`WatchdogServiceTest`, `LeaseManagerTest`, `RecoveryServiceTest`) passing 196 total tests.
+
 ## 0.19.0 — 2026-09-01
 
 - Implemented Autonomous Intelligence Layer — Phase G (Autonomous Position Monitoring & Dynamic Exits):

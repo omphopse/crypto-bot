@@ -1,0 +1,14 @@
+package io.algopilot.ops.health;
+
+public enum ComponentType {
+  APPLICATION,
+  AGENT_SESSION,
+  BOT_RUNTIME,
+  MARKET_DATA,
+  BROKER_CONNECTION,
+  POSITION_MONITOR,
+  RECONCILIATION,
+  EXECUTION_PIPELINE,
+  WATCHDOG,
+  DATABASE
+}

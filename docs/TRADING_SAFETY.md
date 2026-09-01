@@ -56,6 +56,12 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 3. **Inventory-Bounded Reductions**: `CLOSE` and `REDUCE` orders are strictly clamped to authoritative position quantities to prevent unintended position reversal.
 4. **Post-Exit Position Reconciliation**: Reconciles broker state following every exit execution to guarantee zero remaining position discrepancy.
 
+## Watchdog, Health & Fault Recovery Invariants
+1. **Fail-Safe Principle**: When operational uncertainty exists (stale heartbeats, missing broker acknowledgments, stuck orders), the system halts new trading and transitions affected bots to `PAUSED`.
+2. **Dead-Man Execution Gating**: Autonomous order creation requires active component heartbeats and valid PostgreSQL runtime leases (`bot_runtime_leases`).
+3. **Restart Safe Default**: On application restart, previously running bots default to `PAUSED` and require clean broker reconciliation before resuming.
+4. **Stuck Order Surveillance**: Orders remaining in `CREATED` or `SUBMITTED` beyond threshold ($> 30\text{s}$) trigger automatic bot pausing and broker reconciliation.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

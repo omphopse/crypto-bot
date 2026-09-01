@@ -1,5 +1,52 @@
 # Development log
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase H (Heartbeat Watchdog, Health Probes & Automated Fault Recovery)
+
+- **Phase:** Phase H — Heartbeat Watchdog, Health Probes & Automated Fault Recovery
+- **Objective:** Establish comprehensive 10-component heartbeat monitoring, distributed runtime leases for multi-instance safety, a centralized WatchdogService for fail-safe pausing, dead-man safety execution gating, and automated deterministic recovery workflows.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V21__heartbeats_watchdog_leases.sql`
+  - `src/main/java/io/algopilot/ops/health/ComponentType.java`
+  - `src/main/java/io/algopilot/ops/health/HealthState.java`
+  - `src/main/java/io/algopilot/ops/health/HeartbeatRecord.java`
+  - `src/main/java/io/algopilot/ops/health/HealthEvent.java`
+  - `src/main/java/io/algopilot/ops/health/HeartbeatStore.java`
+  - `src/main/java/io/algopilot/ops/health/JdbcHeartbeatStore.java`
+  - `src/main/java/io/algopilot/ops/lease/BotRuntimeLease.java`
+  - `src/main/java/io/algopilot/ops/lease/LeaseStore.java`
+  - `src/main/java/io/algopilot/ops/lease/JdbcLeaseStore.java`
+  - `src/main/java/io/algopilot/ops/lease/LeaseManager.java`
+  - `src/main/java/io/algopilot/ops/recovery/RecoveryStatus.java`
+  - `src/main/java/io/algopilot/ops/recovery/RecoveryRun.java`
+  - `src/main/java/io/algopilot/ops/recovery/RecoveryStore.java`
+  - `src/main/java/io/algopilot/ops/recovery/JdbcRecoveryStore.java`
+  - `src/main/java/io/algopilot/ops/recovery/RecoveryService.java`
+  - `src/main/java/io/algopilot/ops/watchdog/WatchdogAlert.java`
+  - `src/main/java/io/algopilot/ops/watchdog/WatchdogService.java`
+  - `src/main/java/io/algopilot/ops/HealthWatchdogController.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/ops/WatchdogServiceTest.java`
+  - `src/test/java/io/algopilot/ops/LeaseManagerTest.java`
+  - `src/test/java/io/algopilot/ops/RecoveryServiceTest.java`
+  - `docs/RELIABILITY_AND_RECOVERY.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V21__heartbeats_watchdog_leases.sql` (`component_heartbeats`, `bot_runtime_leases`, `health_events`, `ops_recovery_runs`).
+- **Implementation Summary:**
+  1. Implemented heartbeat tracking across 10 components with upsert deduplication.
+  2. Implemented distributed multi-instance runtime leases (`BotRuntimeLease`, `LeaseManager`).
+  3. Implemented centralized `WatchdogService` detecting stale heartbeats, expired leases, and stuck orders ($>30\text{s}$).
+  4. Implemented `RecoveryService` executing automated recovery runs with broker reconciliation and process-restart safe pausing.
+  5. Added web dashboard table for component heartbeats and watchdog probes.
+- **Tests Executed:** 196 automated tests across 62 test classes (7 dedicated new tests for Phase H).
+- **Test Results:** 196 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero live trading paths, fail-safe dead-man enforcement, multi-instance lease locking.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase G (Autonomous Position Monitoring & Dynamic Exits)
 
 - **Phase:** Phase G — Autonomous Position Monitoring & Dynamic Exits

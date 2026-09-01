@@ -962,6 +962,42 @@ async function loadAgentDecisionsTable() {
 
   loadAutonomousExecutionsTable();
   loadMonitoredPositionsTable();
+  loadComponentHeartbeatsTable();
+}
+
+async function loadComponentHeartbeatsTable() {
+  try {
+    const tbody = document.getElementById('ops-heartbeats-body');
+    if (!tbody) return;
+
+    const res = await fetch('/api/health/components');
+    if (!res.ok) return;
+
+    const heartbeats = await res.json();
+    if (heartbeats.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="recon-empty">No component heartbeats registered.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = heartbeats.map(hb => {
+      let statusClass = 'running';
+      if (hb.status === 'DEAD' || hb.status === 'STALE') statusClass = 'error';
+      else if (hb.status === 'DEGRADED') statusClass = 'paused';
+
+      const target = hb.botId ? 'Bot: ' + hb.botId.substring(0, 8) + '...' : hb.instanceId;
+      return `
+        <tr>
+          <td><b>${escapeHtml(hb.component)}</b></td>
+          <td><code>${escapeHtml(target)}</code></td>
+          <td><span class="status-pill ${statusClass}">${escapeHtml(hb.status)}</span></td>
+          <td><code>#${hb.sequenceNumber}</code></td>
+          <td>${new Date(hb.timestamp).toLocaleTimeString()}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load heartbeats', e);
+  }
 }
 
 async function loadAutonomousExecutionsTable() {

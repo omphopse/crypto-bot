@@ -1,5 +1,28 @@
 # Test report
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase H (Heartbeat Watchdog, Health Probes & Automated Fault Recovery)
+
+Command: `mvn test -q`
+
+Result: **passed** (196 tests executed across 62 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Watchdog Surveillance (`WatchdogServiceTest`):**
+   - Verified that when bot heartbeat is stale ($> 30\text{s}$), Watchdog transitions bot to `PAUSED` and records critical health event (`BOT_STALE`).
+   - Verified that when runtime lease expires, Watchdog transitions bot to `PAUSED` (`RUNTIME_LEASE_LOST`).
+   - Verified that when order is stuck in `SUBMITTED` ($> 30\text{s}$), Watchdog transitions bot to `PAUSED` and triggers reconciliation (`ORDER_STUCK`).
+
+2. **Distributed Runtime Leases (`LeaseManagerTest`):**
+   - Single instance successfully acquires bot lease.
+   - Second instance attempting to acquire active lease for same bot is rejected.
+   - Expired lease allows takeover by new instance.
+
+3. **Automated Recovery & Restart Safety (`RecoveryServiceTest`):**
+   - Clean broker reconciliation results in `COMPLETED` recovery run.
+   - Discrepant broker reconciliation results in `FAILED` recovery run and keeps bot safely paused.
+   - Application startup recovery sweeps previously running bots and sets them to `PAUSED`/safe state without auto-trading.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase G (Autonomous Position Monitoring & Dynamic Exits)
 
 Command: `mvn test -q`
