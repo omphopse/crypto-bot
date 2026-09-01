@@ -1,5 +1,38 @@
 # Test report
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase C (Research Service & Secure Browser Abstraction)
+
+Command: `mvn test -q`
+
+Result: **passed** (161 tests executed across 51 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **SSRF & Domain Security Validation (`DomainSecurityValidatorTest`):**
+   - Valid HTTPS URLs accepted (`https://www.sec.gov`).
+   - Insecure non-HTTPS schemes rejected (`http://`, `file://`, `javascript:`, `data:`).
+   - Loopback and local hosts rejected (`localhost`, `127.0.0.1`, `foo.localhost`).
+   - Cloud metadata endpoints rejected (`metadata.google.internal`, `instance-data`, `169.254.169.254`).
+   - RFC 1918 private subnets identified and rejected (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`).
+   - Non-standard ports rejected for SSRF protection (`https://example.com:8080`).
+
+2. **Multi-Vector Prompt Injection Defense (`PromptInjectionDetectorTest`):**
+   - Clean financial articles classified `CLEAN`.
+   - Single instruction override attempts classified `SUSPICIOUS`.
+   - Multi-vector instruction and credential exfiltration attacks classified `BLOCKED`.
+   - Embedded `<script>` tags detected and isolated.
+
+3. **HTML Sanitization & Document Normalization (`ContentSanitizerTest`):**
+   - Script and style blocks completely removed.
+   - HTML tags stripped and HTML entities decoded.
+   - Whitespace collapsed and max character length enforced.
+
+4. **Structured Evidence & Execution Isolation (`ResearchServiceTest`):**
+   - Ingests raw pages, computes SHA-256 hashes, extracts structured `ResearchEvidence`, and records audit trails.
+   - Prompt injection attempts trigger `RESEARCH_PROMPT_INJECTION_DETECTED` audit logs and quarantine.
+   - Rate limiting strictly enforced (`RATE_LIMITED`).
+   - Verified that `ResearchService` contains **zero trading methods** and cannot create orders.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase B (Market Observation & Scanner)
 
 Command: `mvn test -q`

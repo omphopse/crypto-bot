@@ -1,5 +1,55 @@
 # Development log
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase C (Research Service and Secure Browser Abstraction)
+
+- **Phase:** Phase C — Research Service and Secure Browser Abstraction
+- **Objective:** Implement sandboxed web research, strict SSRF protection, domain allowlisting, prompt-injection defense, HTML sanitization, evidence extraction, rate limiting, and PostgreSQL persistence with zero trading execution authority.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V16__research_service_and_evidence.sql`
+  - `src/main/java/io/algopilot/research/model/SourceType.java`
+  - `src/main/java/io/algopilot/research/model/SecurityStatus.java`
+  - `src/main/java/io/algopilot/research/model/ResearchRequest.java`
+  - `src/main/java/io/algopilot/research/model/ResearchSource.java`
+  - `src/main/java/io/algopilot/research/model/ResearchDocument.java`
+  - `src/main/java/io/algopilot/research/model/ResearchEvidence.java`
+  - `src/main/java/io/algopilot/research/model/ResearchResult.java`
+  - `src/main/java/io/algopilot/research/security/DomainSecurityValidator.java`
+  - `src/main/java/io/algopilot/research/security/SourcePolicy.java`
+  - `src/main/java/io/algopilot/research/security/PromptInjectionDetector.java`
+  - `src/main/java/io/algopilot/research/security/ContentSanitizer.java`
+  - `src/main/java/io/algopilot/research/security/ResearchRateLimiter.java`
+  - `src/main/java/io/algopilot/research/provider/ResearchProvider.java`
+  - `src/main/java/io/algopilot/research/provider/ControlledHttpResearchProvider.java`
+  - `src/main/java/io/algopilot/research/service/ResearchStore.java`
+  - `src/main/java/io/algopilot/research/service/JdbcResearchStore.java`
+  - `src/main/java/io/algopilot/research/service/ResearchService.java`
+  - `src/main/java/io/algopilot/research/service/ResearchController.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/research/DomainSecurityValidatorTest.java`
+  - `src/test/java/io/algopilot/research/PromptInjectionDetectorTest.java`
+  - `src/test/java/io/algopilot/research/ContentSanitizerTest.java`
+  - `src/test/java/io/algopilot/research/ResearchServiceTest.java`
+  - `docs/AI_SAFETY.md`
+  - `docs/RESEARCH_SECURITY.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V16__research_service_and_evidence.sql` (`research_requests`, `research_sources`, `research_documents`, `research_evidence`).
+- **Implementation Summary:**
+  1. Implemented `DomainSecurityValidator` rejecting non-HTTPS, localhost, RFC 1918 subnets, and cloud metadata IPs.
+  2. Implemented `SourcePolicy` for domain allowlisting.
+  3. Implemented multi-vector `PromptInjectionDetector` detecting instruction-override patterns and classifying `CLEAN`, `SUSPICIOUS`, `BLOCKED`.
+  4. Implemented `ContentSanitizer` stripping HTML and script elements.
+  5. Implemented `ResearchService` extracting traceable structured evidence without order execution capabilities.
+  6. Added web console panel for Autonomous Web Research & Evidence.
+- **Tests Executed:** 161 automated tests across 51 test classes (16 dedicated new tests for Phase C).
+- **Test Results:** 161 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero broker credential access, zero order submission paths, SSRF protection verified.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase B (Market Observation and Scanner)
 
 - **Phase:** Phase B — Market Observation and Scanner

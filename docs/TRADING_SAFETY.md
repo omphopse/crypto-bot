@@ -25,6 +25,12 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 3. **Deterministic Stale Data Gating**: Observations older than the configured freshness threshold ($60,000ms$) are marked `STALE` and categorically abort scanner candidate generation.
 4. **Warm-up History Invariant**: Technical indicators require a minimum of 20 historical bars; scans with insufficient history output `NO_CANDIDATE` and are flagged as not warmed up.
 
+## Autonomous Web Research & Evidence Invariants
+1. **Information-Only Classification**: External web pages and search documents are strictly classified as untrusted data. They possess zero execution authority and cannot create orders or bypass risk limits.
+2. **SSRF & Private Network Isolation**: HTTP requests to `localhost`, `127.0.0.1`, RFC 1918 private subnets, link-local IPs, cloud metadata endpoints (`169.254.169.254`), non-standard ports, and non-HTTPS schemes are rejected unconditionally.
+3. **Prompt Injection Quarantine**: Content containing instruction-override triggers ("ignore previous instructions", "system prompt", "reveal credentials") is quarantined and tagged as `SUSPICIOUS` or `BLOCKED` to prevent malicious prompt manipulation.
+4. **Zero Credential Exposure**: The research subsystem does not receive or store broker API keys, API secrets, or exchange credentials.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

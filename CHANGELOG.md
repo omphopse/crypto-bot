@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.15.0 — 2026-09-01
+
+- Implemented Autonomous Intelligence Layer — Phase C (Research Service and Secure Browser Abstraction):
+  - Added Flyway migration `V16__research_service_and_evidence.sql` creating `research_requests`, `research_sources`, `research_documents`, and `research_evidence`.
+  - Implemented `DomainSecurityValidator` for strict SSRF protection (rejection of non-HTTPS schemes, localhost, private IP subnets, link-local IPs, and metadata service addresses).
+  - Implemented `SourcePolicy` supporting allowlist/blocklist configurations for authoritative financial & regulatory domains.
+  - Implemented multi-vector `PromptInjectionDetector` detecting instruction-override triggers ("ignore previous instructions", "system message", "reveal credentials") with typed security statuses (`CLEAN`, `SUSPICIOUS`, `BLOCKED`).
+  - Implemented `ContentSanitizer` stripping HTML/script/style elements and enforcing maximum document length limits.
+  - Implemented `ResearchRateLimiter` preventing runaway research loops.
+  - Implemented `ResearchService`, `ResearchStore`, and `JdbcResearchStore` for structured evidence extraction and persistence.
+  - Added `ResearchController` REST endpoints under `/api/research`.
+  - Added Autonomous Web Research & Evidence panel to web operations console.
+  - Added comprehensive security unit tests in `DomainSecurityValidatorTest`, `PromptInjectionDetectorTest`, `ContentSanitizerTest`, and `ResearchServiceTest` (161 total passing tests).
+  - Added `docs/AI_SAFETY.md` and `docs/RESEARCH_SECURITY.md`.
+
 ## 0.14.0 — 2026-09-01
 
 - Implemented Autonomous Intelligence Layer — Phase B (Market Observation and Scanner):

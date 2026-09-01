@@ -110,7 +110,8 @@ async function loadDashboardData() {
     loadPositions(),
     loadAgentActivityTimeline(),
     loadReconciliationState(),
-    loadMarketScanner()
+    loadMarketScanner(),
+    loadResearchEvidence()
   ]);
 }
 
@@ -301,6 +302,45 @@ async function loadMarketScanner() {
     }).join('');
   } catch (e) {
     console.error('Failed to load market scanner observations', e);
+  }
+}
+
+async function loadResearchEvidence() {
+  try {
+    const res = await fetch('/api/research/evidence?asset=BTC&limit=10');
+    const tbody = document.getElementById('dash-research-evidence-body');
+    if (!tbody) return;
+
+    if (!res.ok) {
+      tbody.innerHTML = '<tr><td colspan="6" class="recon-empty">No external research evidence ingested yet.</td></tr>';
+      return;
+    }
+
+    const evidenceList = await res.json();
+    if (evidenceList.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="recon-empty">No external research evidence ingested yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = evidenceList.map(e => {
+      let secClass = 'running';
+      if (e.securityStatus === 'SUSPICIOUS') secClass = 'paused';
+      if (e.securityStatus === 'BLOCKED') secClass = 'error';
+
+      const timeStr = new Date(e.retrievedAt).toLocaleTimeString();
+      return `
+        <tr>
+          <td><b>${escapeHtml(e.asset)}</b> <small class="muted">(${escapeHtml(e.topic)})</small></td>
+          <td><code>${escapeHtml(e.source)}</code></td>
+          <td><span class="status-pill ${secClass}">${escapeHtml(e.securityStatus)}</span></td>
+          <td><b>${formatNumber(e.relevanceScore)}</b></td>
+          <td><small class="muted" title="${escapeHtml(e.excerpt)}">${escapeHtml(e.excerpt.length > 80 ? e.excerpt.substring(0, 80) + '...' : e.excerpt)}</small></td>
+          <td><small>${timeStr}</small></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load research evidence', e);
   }
 }
 

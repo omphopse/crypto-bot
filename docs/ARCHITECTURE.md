@@ -103,7 +103,8 @@ WebSocket Topics (/topic/*)               AlphaHypothesis & Strategy Synthesis
   `IDLE` ➔ `OBSERVING` ➔ `SCANNING` ➔ `RESEARCHING` ➔ `ANALYZING` ➔ `DECIDING` ➔ `RISK_CHECK` ➔ `EXECUTING` ➔ `MONITORING` ➔ `EXIT_EVALUATION` ➔ `PAUSED` ➔ `ERROR` ➔ `STOPPED`.
 - **Market Observation Service (`MarketObservationService`)**: Ingests, normalizes, and validates quote/candle observations from Alpaca Paper and Bybit Demo. Enforces price integrity, bid/ask sanity ($ask \ge bid$), OHLC structural validity, and freshness thresholds ($freshnessMs \le 60,000ms$).
 - **Deterministic Market Scanner (`MarketScanner`)**: Evaluates multi-factor quantitative trigger conditions (Momentum, Breakout, Volume Spike, Oversold, Overbought, Mean Reversion) over warmed-up candle histories ($\ge 20$ bars). Produces strongly typed `ScanResult` candidate records with zero execution authority.
-- **Agent Persistence (`JdbcAgentStateStore`, `JdbcMarketDataStore`, `JdbcMarketScanStore`)**: Persists `agent_sessions`, `agent_state_events`, `market_observations`, and `market_scan_results`.
+- **Autonomous Web Research & Security (`ResearchService`)**: Sandboxed web evidence ingestion pipeline. Enforces strict SSRF protection (`DomainSecurityValidator`), domain allowlisting (`SourcePolicy`), prompt injection pattern defense (`PromptInjectionDetector`), HTML sanitization (`ContentSanitizer`), and rate limiting (`ResearchRateLimiter`). Contains zero execution authority.
+- **Agent Persistence (`JdbcAgentStateStore`, `JdbcMarketDataStore`, `JdbcMarketScanStore`, `JdbcResearchStore`)**: Persists `agent_sessions`, `agent_state_events`, `market_observations`, `market_scan_results`, `research_requests`, `research_sources`, `research_documents`, and `research_evidence`.
 
 ## Source of Truth Matrix
 
