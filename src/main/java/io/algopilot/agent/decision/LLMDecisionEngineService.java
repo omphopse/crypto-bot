@@ -29,6 +29,7 @@ public class LLMDecisionEngineService {
   private final AuditEventWriter audit;
   private final Clock clock;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public LLMDecisionEngineService(
       ContextBuilderService contextBuilder,
       TradingContextStore contextStore,
@@ -36,9 +37,9 @@ public class LLMDecisionEngineService {
       StructuredDecisionValidator validator,
       StructuredDecisionStore decisionStore,
       AiCostLimiter costLimiter,
-      io.algopilot.cost.AiCostGovernanceService costGovernance,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) io.algopilot.cost.AiCostGovernanceService costGovernance,
       AuditEventWriter audit,
-      Clock clock
+      @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock
   ) {
     this.contextBuilder = contextBuilder;
     this.contextStore = contextStore;

@@ -45,15 +45,16 @@ public class AgentStateMachine {
   private final Clock clock;
   private final ObjectMapper json;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public AgentStateMachine(
       AgentStateStore store,
       AuditEventWriter audit,
-      Clock clock,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock,
       ObjectMapper json) {
     this.store = store;
     this.audit = audit;
-    this.clock = clock;
-    this.json = json;
+    this.clock = clock != null ? clock : Clock.systemUTC();
+    this.json = json != null ? json : new ObjectMapper();
   }
 
   public AgentStateMachine(AgentStateStore store, AuditEventWriter audit) {

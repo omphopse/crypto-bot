@@ -49,6 +49,7 @@ public class AutonomousBotRunner {
 
   private RuntimeCadence cadence = RuntimeCadence.NORMAL;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public AutonomousBotRunner(
       BotStore botStore,
       AutonomousExecutionOrchestrator executionOrchestrator,
@@ -56,7 +57,7 @@ public class AutonomousBotRunner {
       LeaseManager leaseManager,
       HeartbeatStore heartbeatStore,
       AuditEventWriter audit,
-      Clock clock,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock,
       @Value("${algopilot.runtime.instance-id:runtime-primary}") String instanceId
   ) {
     this.botStore = botStore;

@@ -26,16 +26,16 @@ public class PortfolioAccountingService {
   private final Clock clock;
   private final Map<String, BigDecimal> verifiedMarketPrices = new ConcurrentHashMap<>();
 
-  @Autowired
+  @org.springframework.beans.factory.annotation.Autowired
   public PortfolioAccountingService(
       PositionStore positionStore,
       FillStore fillStore,
       OrderStore orderStore,
-      Clock clock) {
+      @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
     this.positionStore = positionStore;
     this.fillStore = fillStore;
     this.orderStore = orderStore;
-    this.clock = clock;
+    this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
   public PortfolioAccountingService(

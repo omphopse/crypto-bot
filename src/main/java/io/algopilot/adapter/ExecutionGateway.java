@@ -48,25 +48,15 @@ public class ExecutionGateway {
       OrderStore orderStore,
       OrderLifecycleService lifecycleService,
       AuditEventWriter audit,
-      @org.springframework.lang.Nullable ReconciliationStore reconciliationStore) {
-    this(adapters, botStore, orderStore, lifecycleService, audit, reconciliationStore, Clock.systemUTC());
-  }
-
-  public ExecutionGateway(
-      List<BrokerOrderAdapter> adapters,
-      BotStore botStore,
-      OrderStore orderStore,
-      OrderLifecycleService lifecycleService,
-      AuditEventWriter audit,
-      ReconciliationStore reconciliationStore,
-      Clock clock) {
+      @org.springframework.lang.Nullable ReconciliationStore reconciliationStore,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
     this.adapters = adapters;
     this.botStore = botStore;
     this.orderStore = orderStore;
     this.lifecycleService = lifecycleService;
     this.audit = audit;
     this.reconciliationStore = reconciliationStore;
-    this.clock = clock;
+    this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
   public ExecutionGateway(

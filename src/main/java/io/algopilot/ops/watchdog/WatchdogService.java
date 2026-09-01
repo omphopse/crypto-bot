@@ -43,6 +43,7 @@ public class WatchdogService {
   private final long botTimeoutMs;
   private final long orderStuckTimeoutMs;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public WatchdogService(
       HeartbeatStore heartbeatStore,
       LeaseStore leaseStore,
@@ -50,7 +51,7 @@ public class WatchdogService {
       OrderStore orderStore,
       ReconciliationService reconciliationService,
       AuditEventWriter audit,
-      Clock clock,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock,
       @Value("${algopilot.watchdog.bot-timeout-ms:30000}") long botTimeoutMs,
       @Value("${algopilot.watchdog.order-stuck-timeout-ms:30000}") long orderStuckTimeoutMs
   ) {
