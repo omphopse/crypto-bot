@@ -50,6 +50,12 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 4. **Observe-Only Enforcement**: In `OBSERVE_ONLY` mode, order creation and broker dispatch are strictly blocked, recording `OBSERVE_ONLY_RECORDED` records for simulation and audit.
 5. **Post-Execution Reconciliation**: Every autonomous order dispatch triggers automatic reconciliation via `ReconciliationService.reconcile(...)`.
 
+## Autonomous Position Monitoring & Dynamic Exit Invariants
+1. **Deterministic Exit Precedence**: Safety conditions (`EMERGENCY_STOP` ➔ `RECONCILIATION_SAFETY` ➔ `HARD_STOP_LOSS` ➔ `RISK_LIMIT` ➔ `STRATEGY_INVALIDATION` ➔ `TAKE_PROFIT` ➔ `TRAILING_STOP`) execute unconditionally and cannot be overridden by advisory AI proposals.
+2. **Risk-Monotonic Stop Movement**: Stop losses can only be modified in a direction that reduces downside risk ($newStop > oldStop$ for long positions). Moves increasing risk or setting stops beyond market price are strictly rejected.
+3. **Inventory-Bounded Reductions**: `CLOSE` and `REDUCE` orders are strictly clamped to authoritative position quantities to prevent unintended position reversal.
+4. **Post-Exit Position Reconciliation**: Reconciles broker state following every exit execution to guarantee zero remaining position discrepancy.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

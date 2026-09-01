@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.19.0 — 2026-09-01
+
+- Implemented Autonomous Intelligence Layer — Phase G (Autonomous Position Monitoring & Dynamic Exits):
+  - Added Flyway migration `V20__position_monitoring_and_exits.sql` creating `position_lifecycle_records`, `position_snapshots`, `position_stop_history`, and `position_exit_events` tables.
+  - Implemented `PositionLifecycleState` enum (`OPENING`, `OPEN`, `MONITORING`, `REDUCE_PENDING`, `CLOSING`, `CLOSED`, `ERROR`, `RECOVERY_REQUIRED`).
+  - Implemented `ExitReason` enum and deterministic exit precedence in `ExitConditionEvaluator` (`EMERGENCY_STOP` ➔ `RECONCILIATION_SAFETY` ➔ `HARD_STOP_LOSS` ➔ `RISK_LIMIT` ➔ `STRATEGY_INVALIDATION` ➔ `TAKE_PROFIT` ➔ `TRAILING_STOP` ➔ `AI_DECISION`).
+  - Implemented `StopLossManager`, `TakeProfitManager`, and `TrailingStopManager` with high-water-mark ratchet and risk-monotonic stop validation.
+  - Implemented `PositionMonitorService` orchestrating position surveillance, snapshot recording with MFE/MAE metrics, deterministic exit triggers, and automated post-exit reconciliation.
+  - Implemented `DefaultPositionDecisionService` evaluating AI proposals (`HOLD`, `REDUCE`, `CLOSE`, `MOVE_STOP`) without permitting AI to override safety stops.
+  - Added `PositionMonitorController` REST endpoints (`/api/agent/position/monitor/{botId}`, `/api/agent/position/open/{botId}`, `/api/agent/position/snapshots/{positionId}`, `/api/agent/position/history/{positionId}`).
+  - Updated web operations dashboard with live Position Monitor table.
+  - Added `docs/POSITION_MANAGEMENT.md`.
+  - Added comprehensive automated unit and integration tests (`StopLossManagerTest`, `ExitConditionEvaluatorTest`, `PositionMonitorServiceTest`, `CriticalEndToEndPositionMonitoringTest`) passing 189 total tests.
+
 ## 0.18.0 — 2026-09-01
 
 - Implemented Autonomous Intelligence Layer — Phase F (Strategy Validation, Risk Alignment & Autonomous Paper/Demo Execution):

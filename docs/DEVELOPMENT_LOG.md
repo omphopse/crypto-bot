@@ -1,5 +1,51 @@
 # Development log
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase G (Autonomous Position Monitoring & Dynamic Exits)
+
+- **Phase:** Phase G — Autonomous Position Monitoring & Dynamic Exits
+- **Objective:** Provide continuous autonomous surveillance of open positions across paper/demo bots, evaluating deterministic exit conditions (Stop Loss, Take Profit, Trailing Stop, Strategy Invalidation, Emergency Stop, Risk Limits) before AI proposals, with non-invertible stop management and automated post-exit reconciliation.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V20__position_monitoring_and_exits.sql`
+  - `src/main/java/io/algopilot/agent/position/PositionLifecycleState.java`
+  - `src/main/java/io/algopilot/agent/position/ExitReason.java`
+  - `src/main/java/io/algopilot/agent/position/PositionLifecycleRecord.java`
+  - `src/main/java/io/algopilot/agent/position/PositionSnapshot.java`
+  - `src/main/java/io/algopilot/agent/position/PositionStopRecord.java`
+  - `src/main/java/io/algopilot/agent/position/PositionExitEvent.java`
+  - `src/main/java/io/algopilot/agent/position/PositionExitEvaluation.java`
+  - `src/main/java/io/algopilot/agent/position/StopLossManager.java`
+  - `src/main/java/io/algopilot/agent/position/TakeProfitManager.java`
+  - `src/main/java/io/algopilot/agent/position/TrailingStopManager.java`
+  - `src/main/java/io/algopilot/agent/position/ExitConditionEvaluator.java`
+  - `src/main/java/io/algopilot/agent/position/PositionLifecycleStore.java`
+  - `src/main/java/io/algopilot/agent/position/JdbcPositionLifecycleStore.java`
+  - `src/main/java/io/algopilot/agent/position/DefaultPositionDecisionService.java`
+  - `src/main/java/io/algopilot/agent/position/PositionMonitorService.java`
+  - `src/main/java/io/algopilot/agent/position/PositionMonitorController.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/agent/position/StopLossManagerTest.java`
+  - `src/test/java/io/algopilot/agent/position/ExitConditionEvaluatorTest.java`
+  - `src/test/java/io/algopilot/agent/position/PositionMonitorServiceTest.java`
+  - `src/test/java/io/algopilot/agent/position/CriticalEndToEndPositionMonitoringTest.java`
+  - `docs/POSITION_MANAGEMENT.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V20__position_monitoring_and_exits.sql` (`position_lifecycle_records`, `position_snapshots`, `position_stop_history`, `position_exit_events`).
+- **Implementation Summary:**
+  1. Implemented lifecycle states (`OPENING`, `OPEN`, `MONITORING`, `REDUCE_PENDING`, `CLOSING`, `CLOSED`).
+  2. Implemented deterministic exit precedence in `ExitConditionEvaluator` guaranteeing safety conditions cannot be overridden by AI `HOLD` proposals.
+  3. Implemented `StopLossManager`, `TakeProfitManager`, and `TrailingStopManager` with risk-monotonic stop adjustments.
+  4. Implemented `PositionMonitorService` orchestrating position surveillance, snapshot capture with MFE/MAE, exit dispatch via `ExecutionGateway`, and post-exit reconciliation.
+  5. Updated dashboard with live position monitoring table.
+- **Tests Executed:** 189 automated tests across 59 test classes (8 dedicated new tests for Phase G).
+- **Test Results:** 189 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero live trading paths, strict risk engine gating, full causal traceability (`position` ➔ `snapshot` ➔ `exitEvaluator` ➔ `order` ➔ `reconciliation`).
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase F (Strategy Validation, Risk Alignment & Autonomous Paper/Demo Execution)
 
 - **Phase:** Phase F — Strategy Validation, Risk Alignment & Autonomous Paper/Demo Execution

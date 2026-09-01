@@ -961,6 +961,7 @@ async function loadAgentDecisionsTable() {
   }
 
   loadAutonomousExecutionsTable();
+  loadMonitoredPositionsTable();
 }
 
 async function loadAutonomousExecutionsTable() {
@@ -996,6 +997,44 @@ async function loadAutonomousExecutionsTable() {
     }).join('');
   } catch (e) {
     console.error('Failed to load autonomous executions', e);
+  }
+}
+
+async function loadMonitoredPositionsTable() {
+  try {
+    const tbody = document.getElementById('agent-positions-body');
+    if (!tbody || !activeBotsCache || activeBotsCache.length === 0) return;
+
+    const botId = activeBotsCache[0].id;
+    const res = await fetch(`/api/agent/position/open/${botId}`);
+    if (!res.ok) return;
+
+    const positions = await res.json();
+    if (positions.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="recon-empty">No active monitored positions for current bot.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = positions.map(pos => {
+      let stateClass = 'running';
+      if (pos.state === 'ERROR' || pos.state === 'RECOVERY_REQUIRED') stateClass = 'error';
+      else if (pos.state === 'CLOSING' || pos.state === 'REDUCE_PENDING') stateClass = 'paused';
+
+      return `
+        <tr>
+          <td><b>${escapeHtml(pos.symbol)}</b></td>
+          <td><b>${escapeHtml(pos.side)}</b> ${formatNumber(pos.currentQuantity)}</td>
+          <td>$${formatNumber(pos.entryPrice)}</td>
+          <td><b class="negative">$${pos.currentStopLoss ? formatNumber(pos.currentStopLoss) : '-'}</b></td>
+          <td><b class="positive">$${pos.takeProfit ? formatNumber(pos.takeProfit) : '-'}</b></td>
+          <td>${pos.trailingStopPct ? (pos.trailingStopPct * 100).toFixed(1) + '%' : '-'}</td>
+          <td><span class="status-pill ${stateClass}">${escapeHtml(pos.state)}</span></td>
+          <td>${new Date(pos.updatedAt).toLocaleTimeString()}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load monitored positions', e);
   }
 }
 

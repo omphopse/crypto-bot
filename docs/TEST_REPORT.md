@@ -1,5 +1,31 @@
 # Test report
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase G (Autonomous Position Monitoring & Dynamic Exits)
+
+Command: `mvn test -q`
+
+Result: **passed** (189 tests executed across 59 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Stop Loss & Trailing Stop Managers (`StopLossManagerTest`):**
+   - Valid stop move (raising stop for long position) validated.
+   - Risky stop move (lowering stop for long position) rejected.
+   - Setting stop above market price rejected.
+   - Long & short stop trigger boundary detection.
+
+2. **Deterministic Exit Precedence (`ExitConditionEvaluatorTest`):**
+   - Nominal market price returns `HOLD` (no exit).
+   - Hard stop loss trigger detection.
+   - Take profit trigger detection.
+   - Trailing stop ratchet trigger detection.
+
+3. **Position Monitor & Safety Override (`PositionMonitorServiceTest`, `CriticalEndToEndPositionMonitoringTest`):**
+   - Verified that when hard stop loss is triggered, exit order executes through `RiskEngine` ➔ `ExecutionGateway` ➔ `ReconciliationService` and records `POSITION_EXIT_EXECUTED`.
+   - In `OBSERVE_ONLY` mode, exit is recorded as `POSITION_EXIT_OBSERVE_ONLY` and zero orders are dispatched.
+   - **Safety Invariant**: When AI proposes `HOLD`, but hard stop loss is breached, hard stop **unconditionally overrides AI and closes position**.
+   - **Critical End-to-End Test**: Open Position ➔ Market Moves Down ➔ Monitor Cycle ➔ Hard Stop Loss Triggered ➔ Exit Order Evaluated by `RiskEngine` ➔ Order Dispatched via `ExecutionGateway` ➔ Position Closed ➔ `ReconciliationService` Post-Execution Check ➔ Forensic Audit Logging.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase F (Strategy Validation, Risk Alignment & Autonomous Paper/Demo Execution)
 
 Command: `mvn test -q`
