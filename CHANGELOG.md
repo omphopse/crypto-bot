@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.22.0 — 2026-09-02
+
+- Implemented Autonomous Intelligence Layer — Phase J (Full Autonomous Canary Validation & End-to-End Operational Hardening):
+  - Built persistent background scheduler `AutonomousBotRunner` for continuous autonomous execution loops without manual per-trade interventions.
+  - Implemented configurable runtime cadences (`FAST`, `NORMAL`, `CONSERVATIVE`) with overlapping cycle prevention and multi-instance lease coordination.
+  - Built `CanaryService` and `CanaryController` (`GET /api/canary/status`, `POST /api/canary/start`, `POST /api/canary/stop`, `POST /api/canary/cycle/{botId}`) tracking paper/demo canary operational metrics.
+  - Implemented full multi-bot concurrent account safety stress test (`MultiBotAccountSafetyStressTest`) proving global exposure bounds are preserved under high concurrent load.
+  - Implemented comprehensive chaos fault-injection tests (`ChaosFaultInjectionTest`) covering stale market data, broker API timeouts, order submission disconnects, process restarts, lease collisions, and emergency stops.
+  - Implemented end-to-end forensic traceability test (`EndToEndForensicTraceabilityTest`) verifying 100% causal chain from `TradingContext` to broker order dispatch, reconciliation, and audit logs.
+  - Updated web operations dashboard with live Autonomous Canary Validation table.
+  - Added `docs/CANARY_CERTIFICATION.md`, `docs/PRODUCTION_READINESS.md`, and `docs/CANARY_RUNBOOK.md`.
+  - Passing **204 automated tests across 67 test classes** with 0 failures, 0 errors, and 0 skipped.
+
 ## 0.21.0 — 2026-09-01
 
 - Implemented Autonomous Intelligence Layer — Phase I (AI Cost Controls, Token Attribution & Rate Gating):

@@ -67,6 +67,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 2. **Safety Exemption**: AI budget exhaustion never disables or weakens deterministic position stop loss, trailing stop, take profit, or risk management safeguards.
 3. **Non-Elevated Governance**: AI reasoning engines possess zero authority to alter or expand their own budgets or rate limits.
 
+## Autonomous Canary & Continuous Runtime Invariants
+1. **Continuous Autonomous Scheduling**: `AutonomousBotRunner` orchestrates non-blocking scheduled cycles with mutual exclusion per bot, preventing race conditions or overlapping trade executions.
+2. **Deterministic Risk Precedence**: Even under high concurrent multi-bot capital contention, global portfolio exposure and single-symbol caps are atomized and strictly enforced by `RiskEngine`.
+3. **Zero Live Execution Boundary**: `LIVE_TRADING_DISABLED` is strictly hardcoded and immutable; all autonomous canary executions are confined exclusively to `Alpaca Paper` and `Bybit Demo`.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

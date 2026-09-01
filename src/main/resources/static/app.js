@@ -964,6 +964,44 @@ async function loadAgentDecisionsTable() {
   loadMonitoredPositionsTable();
   loadComponentHeartbeatsTable();
   loadAiCostEventsTable();
+  loadCanaryStatusTable();
+}
+
+async function loadCanaryStatusTable() {
+  try {
+    const tbody = document.getElementById('canary-status-body');
+    if (!tbody) return;
+
+    const res = await fetch('/api/canary/status');
+    if (!res.ok) return;
+
+    const statuses = await res.json();
+    if (statuses.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="recon-empty">No active canary bots registered.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = statuses.map(c => {
+      let statusClass = 'running';
+      if (c.status === 'ERROR' || c.errorCount > 0) statusClass = 'error';
+      else if (c.status === 'PAUSED') statusClass = 'paused';
+
+      return `
+        <tr>
+          <td><b>${escapeHtml(c.provider)}</b> <small class="muted">(${escapeHtml(c.mode)})</small></td>
+          <td><b>${escapeHtml(c.symbol)}</b></td>
+          <td><code>#${c.totalCycles}</code></td>
+          <td>${c.totalDecisions}</td>
+          <td><b>${c.totalOrders}</b> / ${c.totalFills}</td>
+          <td><b class="${c.riskRejections > 0 ? 'negative' : ''}">${c.riskRejections}</b></td>
+          <td>$${Number(c.totalAiCostUsd).toFixed(4)}</td>
+          <td><span class="status-pill ${statusClass}">${escapeHtml(c.status)}</span></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load canary status', e);
+  }
 }
 
 async function loadAiCostEventsTable() {
