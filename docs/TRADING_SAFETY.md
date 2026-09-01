@@ -31,6 +31,12 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 3. **Prompt Injection Quarantine**: Content containing instruction-override triggers ("ignore previous instructions", "system prompt", "reveal credentials") is quarantined and tagged as `SUSPICIOUS` or `BLOCKED` to prevent malicious prompt manipulation.
 4. **Zero Credential Exposure**: The research subsystem does not receive or store broker API keys, API secrets, or exchange credentials.
 
+## Context Builder Safety Invariants
+1. **Data Assembly Only**: `ContextBuilderService` aggregates system state and external research into typed, immutable `TradingContext` structures without modifying state or executing orders.
+2. **Deterministic Safety Gating**: Evaluates safety gates (`marketDataValid`, `marketDataFresh`, `riskStateValid`, `reconciliationHealthy`, `strategyActive`, `executionAllowed`). Stale market data ($>300,000\text{ ms}$) or reconciliation critical mismatches categorically set `executionAllowed = false`.
+3. **Zero Hallucination / No Fabrication**: Missing data is explicitly typed as `UNAVAILABLE` or `UNKNOWN`; zero values are never substituted for absent observations.
+4. **Context Hashing & Provenance**: Every context generates a SHA-256 fingerprint over time buckets and financial marks for decision reproducibility.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

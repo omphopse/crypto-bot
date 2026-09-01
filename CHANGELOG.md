@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.16.0 — 2026-09-01
+
+- Implemented Autonomous Intelligence Layer — Phase D (Typed, Prompt-Safe Context Builder):
+  - Added Flyway migration `V17__trading_contexts.sql` creating `trading_contexts` table for persistent context snapshots and SHA-256 fingerprinting.
+  - Implemented strongly typed context domain records (`MarketContext`, `IndicatorContext`, `ScannerContext`, `StrategyContext`, `PortfolioContext`, `PositionContext`, `OpenOrderContext`, `RiskContext`, `ReconciliationContext`, `ResearchEvidenceContext`, `PerformanceContext`, `FreshnessSummary`, `SafetySummary`, `TradingContext`).
+  - Implemented `ContextBuilderService` aggregating verified market data, indicator snapshots, scanner candidates, immutable strategy parameters, authoritative portfolio accounting, positions, orders, risk limits, reconciliation state, and isolated untrusted research evidence.
+  - Implemented deterministic SHA-256 `contextHash` over time buckets and portfolio marks.
+  - Implemented deterministic safety gates (`marketDataValid`, `marketDataFresh`, `riskStateValid`, `reconciliationHealthy`, `strategyActive`, `executionAllowed`).
+  - Implemented `JdbcTradingContextStore` and `ContextController` exposing `/api/context/{botId}` REST endpoints.
+  - Added Live Trading Context Snapshot panel to the web operations console (`index.html` & `app.js`).
+  - Added `docs/CONTEXT_MODEL.md`.
+  - Added comprehensive automated unit tests in `ContextBuilderServiceTest` (166 total passing tests).
+
 ## 0.15.0 — 2026-09-01
 
 - Implemented Autonomous Intelligence Layer — Phase C (Research Service and Secure Browser Abstraction):

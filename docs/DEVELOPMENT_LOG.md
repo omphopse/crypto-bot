@@ -1,5 +1,52 @@
 # Development log
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase D (Typed, Prompt-Safe Context Builder)
+
+- **Phase:** Phase D — Typed, Prompt-Safe Context Builder
+- **Objective:** Assemble unified, deterministic, strongly-typed `TradingContext` structures combining real-time market data, indicators, scanner candidates, immutable strategy parameters, authoritative portfolio accounting, open positions, active orders, risk limits, reconciliation state, and isolated untrusted research evidence with SHA-256 fingerprinting and deterministic safety gates.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V17__trading_contexts.sql`
+  - `src/main/java/io/algopilot/agent/context/FreshnessStatus.java`
+  - `src/main/java/io/algopilot/agent/context/MarketContext.java`
+  - `src/main/java/io/algopilot/agent/context/IndicatorContext.java`
+  - `src/main/java/io/algopilot/agent/context/ScannerContext.java`
+  - `src/main/java/io/algopilot/agent/context/StrategyContext.java`
+  - `src/main/java/io/algopilot/agent/context/PortfolioContext.java`
+  - `src/main/java/io/algopilot/agent/context/PositionContext.java`
+  - `src/main/java/io/algopilot/agent/context/OpenOrderContext.java`
+  - `src/main/java/io/algopilot/agent/context/RiskContext.java`
+  - `src/main/java/io/algopilot/agent/context/ReconciliationContext.java`
+  - `src/main/java/io/algopilot/agent/context/ResearchEvidenceContext.java`
+  - `src/main/java/io/algopilot/agent/context/PerformanceContext.java`
+  - `src/main/java/io/algopilot/agent/context/SafetySummary.java`
+  - `src/main/java/io/algopilot/agent/context/FreshnessSummary.java`
+  - `src/main/java/io/algopilot/agent/context/TradingContext.java`
+  - `src/main/java/io/algopilot/agent/context/TradingContextStore.java`
+  - `src/main/java/io/algopilot/agent/context/JdbcTradingContextStore.java`
+  - `src/main/java/io/algopilot/agent/context/ContextBuilderService.java`
+  - `src/main/java/io/algopilot/agent/context/ContextController.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/agent/context/ContextBuilderServiceTest.java`
+  - `docs/CONTEXT_MODEL.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V17__trading_contexts.sql` (`trading_contexts`).
+- **Implementation Summary:**
+  1. Created typed immutable records for all 12 sub-contexts and `TradingContext`.
+  2. Implemented `ContextBuilderService` collecting state across portfolio accounting, market observation, deterministic scanner, orders, risk, reconciliation, and isolated research evidence.
+  3. Implemented deterministic SHA-256 `contextHash` fingerprinting.
+  4. Implemented explicit safety gate evaluation (`marketDataValid`, `marketDataFresh`, `riskStateValid`, `reconciliationHealthy`, `strategyActive`, `executionAllowed`).
+  5. Implemented `JdbcTradingContextStore` and REST endpoints under `/api/context`.
+  6. Added Live Trading Context Snapshot panel to the web operations console.
+- **Tests Executed:** 166 automated tests across 52 test classes (5 dedicated new tests for Phase D).
+- **Test Results:** 166 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero broker credential access, zero order submission paths, untrusted research strictly isolated as data.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase C (Research Service and Secure Browser Abstraction)
 
 - **Phase:** Phase C — Research Service and Secure Browser Abstraction

@@ -1,5 +1,30 @@
 # Test report
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase D (Typed, Prompt-Safe Context Builder)
+
+Command: `mvn test -q`
+
+Result: **passed** (166 tests executed across 52 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Complete Context Assembly (`ContextBuilderServiceTest`):**
+   - Verified that `ContextBuilderService` builds all 12 sub-contexts and a top-level `TradingContext`.
+   - Verified that SHA-256 `contextHash` fingerprint is deterministically computed.
+   - Verified that `ResearchEvidenceContext` carries `isUntrustedExternalData = true`.
+   - Verified that `CONTEXT_BUILD_COMPLETED` audit event is published.
+
+2. **Stale Market Data Handling (`ContextBuilderServiceTest`):**
+   - Verified that observations older than 5 minutes trigger `FreshnessStatus.STALE`.
+   - Verified that stale market data sets `safety.marketDataFresh = false` and `safety.executionAllowed = false` with block reason `MARKET_DATA_STALE`.
+
+3. **Reconciliation Discrepancy Gating (`ContextBuilderServiceTest`):**
+   - Verified that active critical reconciliation mismatches flag `reconciliation.isTradingBlocked = true`.
+   - Verified that `safety.reconciliationHealthy = false` and `safety.executionAllowed = false` with block reason `RECONCILIATION_MISMATCH_PRESENT`.
+
+4. **Zero Execution Authority Invariant (`ContextBuilderServiceTest`):**
+   - Verified via reflection that `ContextBuilderService` contains **zero trading/order dispatch methods** and cannot place orders.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase C (Research Service & Secure Browser Abstraction)
 
 Command: `mvn test -q`

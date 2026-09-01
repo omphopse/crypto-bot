@@ -111,7 +111,8 @@ async function loadDashboardData() {
     loadAgentActivityTimeline(),
     loadReconciliationState(),
     loadMarketScanner(),
-    loadResearchEvidence()
+    loadResearchEvidence(),
+    loadTradingContext()
   ]);
 }
 
@@ -341,6 +342,46 @@ async function loadResearchEvidence() {
     }).join('');
   } catch (e) {
     console.error('Failed to load research evidence', e);
+  }
+}
+
+async function loadTradingContext() {
+  try {
+    if (!activeBotsCache || activeBotsCache.length === 0) return;
+    const botId = activeBotsCache[0].id;
+    const res = await fetch(`/api/context/${botId}/latest`);
+    if (!res.ok) return;
+    const ctx = await res.json();
+
+    const hashElem = document.getElementById('ctx-hash');
+    const execElem = document.getElementById('ctx-execution-allowed');
+    const freshElem = document.getElementById('ctx-freshness');
+    const reconElem = document.getElementById('ctx-recon');
+    const badgeElem = document.getElementById('context-status-badge');
+
+    if (hashElem) hashElem.textContent = ctx.contextHash ? ctx.contextHash.substring(0, 16) + '...' : 'UNKNOWN';
+    if (execElem) {
+      if (ctx.safety && ctx.safety.executionAllowed) {
+        execElem.textContent = 'EXECUTION ALLOWED';
+        execElem.className = 'positive';
+      } else {
+        const reason = ctx.safety && ctx.safety.safetyBlockReasons && ctx.safety.safetyBlockReasons.length > 0
+          ? ctx.safety.safetyBlockReasons[0] : 'BLOCKED';
+        execElem.textContent = `BLOCKED (${reason})`;
+        execElem.className = 'negative';
+      }
+    }
+    if (freshElem && ctx.freshness) {
+      freshElem.textContent = `${ctx.freshness.overallStatus} (${Math.round(ctx.freshness.marketFreshnessMs / 1000)}s)`;
+    }
+    if (reconElem && ctx.reconciliation) {
+      reconElem.textContent = `${ctx.reconciliation.status} (${ctx.reconciliation.criticalMismatchCount} mismatches)`;
+    }
+    if (badgeElem && ctx.freshness) {
+      badgeElem.textContent = ctx.freshness.overallStatus;
+    }
+  } catch (e) {
+    console.error('Failed to load trading context snapshot', e);
   }
 }
 
