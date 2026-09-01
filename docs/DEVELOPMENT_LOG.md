@@ -1,5 +1,43 @@
 # Development log
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase F (Strategy Validation, Risk Alignment & Autonomous Paper/Demo Execution)
+
+- **Phase:** Phase F — Strategy Validation, Risk Alignment & Autonomous Paper/Demo Execution
+- **Objective:** Connect structured LLM decision engine hypotheses to deterministic strategy validation, authoritative RiskEngine approvals, ExecutionGateway paper/demo order dispatches, and automated post-execution reconciliation.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V19__autonomous_execution_pipeline.sql`
+  - `src/main/java/io/algopilot/agent/execution/ValidatedTradeIntent.java`
+  - `src/main/java/io/algopilot/agent/execution/StrategyValidationResult.java`
+  - `src/main/java/io/algopilot/agent/execution/AutonomousExecutionResult.java`
+  - `src/main/java/io/algopilot/agent/execution/PositionDecisionService.java`
+  - `src/main/java/io/algopilot/agent/execution/AutonomousExecutionStore.java`
+  - `src/main/java/io/algopilot/agent/execution/JdbcAutonomousExecutionStore.java`
+  - `src/main/java/io/algopilot/agent/execution/StrategyValidationService.java`
+  - `src/main/java/io/algopilot/agent/execution/AutonomousExecutionOrchestrator.java`
+  - `src/main/java/io/algopilot/agent/execution/AutonomousExecutionController.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/agent/execution/StrategyValidationServiceTest.java`
+  - `src/test/java/io/algopilot/agent/execution/AutonomousExecutionPipelineE2ETest.java`
+  - `docs/AUTONOMOUS_EXECUTION.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V19__autonomous_execution_pipeline.sql` (`validated_trade_intents`, `strategy_validation_results`, `autonomous_execution_results`).
+- **Implementation Summary:**
+  1. Implemented strongly typed `ValidatedTradeIntent`, `StrategyValidationResult`, and `AutonomousExecutionResult` domain records.
+  2. Implemented `StrategyValidationService` enforcing version matching, price deviation bounds ($\le 0.25\%$), position exit requirements, and safety gates.
+  3. Implemented `AutonomousExecutionOrchestrator` linking context, decision engine, strategy validator, `RiskEngine`, `ExecutionGateway`, and `ReconciliationService`.
+  4. Implemented `OBSERVE_ONLY` mode (no orders executed), `PAPER_AUTONOMOUS` mode (Alpaca Paper), and `DEMO_AUTONOMOUS` mode (Bybit Demo).
+  5. Implemented `PositionDecisionService` interface for future position exit rules.
+  6. Added dashboard execution trace table in web console.
+- **Tests Executed:** 181 automated tests across 56 test classes (7 dedicated new tests for Phase F).
+- **Test Results:** 181 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero live trading paths, strict risk engine gating, full causal traceability (`decision` ➔ `intent` ➔ `strategyValidation` ➔ `order` ➔ `reconciliation`).
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase E (Structured LLM Decision Engine)
 
 - **Phase:** Phase E — Structured LLM Decision Engine

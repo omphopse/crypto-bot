@@ -43,6 +43,13 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 3. **Evidence Provenance Verification**: All evidence references in decisions must match persisted research evidence; synthetic/hallucinated evidence IDs trigger immediate decision rejection.
 4. **Rate & Budget Controls**: Decisions are capped by request rate limits (20 req/min, 500 req/day) and daily token cost budgets ($10.00 USD/day); limit exhaustion triggers `ValidationStatus.FAILED`.
 
+## Autonomous Strategy Validation & Execution Invariants
+1. **Deterministic Strategy Verification**: `StrategyValidationService` re-computes indicator conditions and independently validates deployed strategy version matching (`bot.strategyVersionId()`).
+2. **Price Deviation Guard**: Prohibits execution if decision reference price deviates from verified real-time market price by $> 0.25\%$.
+3. **Authoritative Risk Engine Gating**: Orders are only dispatched to `ExecutionGateway` after passing the single authoritative `RiskEngine` (`RiskDecisionService.evaluate(...)`).
+4. **Observe-Only Enforcement**: In `OBSERVE_ONLY` mode, order creation and broker dispatch are strictly blocked, recording `OBSERVE_ONLY_RECORDED` records for simulation and audit.
+5. **Post-Execution Reconciliation**: Every autonomous order dispatch triggers automatic reconciliation via `ReconciliationService.reconcile(...)`.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

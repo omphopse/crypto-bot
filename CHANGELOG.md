@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.18.0 — 2026-09-01
+
+- Implemented Autonomous Intelligence Layer — Phase F (Strategy Validation, Risk Alignment & Autonomous Paper/Demo Execution):
+  - Added Flyway migration `V19__autonomous_execution_pipeline.sql` creating `validated_trade_intents`, `strategy_validation_results`, and `autonomous_execution_results` tables.
+  - Implemented immutable `ValidatedTradeIntent`, `StrategyValidationResult`, and `AutonomousExecutionResult` domain records.
+  - Implemented `StrategyValidationService` validating strategy version identity, price deviation thresholds ($\le 0.25\%$), position inventory constraints, deterministic indicator rules, and safety gate status.
+  - Implemented `AutonomousExecutionOrchestrator` linking context assembly, structured decision analysis, strategy validation, deterministic `RiskEngine` approval, `ExecutionGateway` order dispatch, and automated post-execution reconciliation.
+  - Implemented execution modes: `OBSERVE_ONLY` (non-executing simulation), `PAPER_AUTONOMOUS` (Alpaca Paper), and `DEMO_AUTONOMOUS` (Bybit Demo).
+  - Implemented `PositionDecisionService` interface for forward compatibility with position monitoring/exit evaluations.
+  - Added `AutonomousExecutionController` endpoints (`/api/agent/autonomous/run/{botId}`, `/api/agent/autonomous/history/{botId}`, `/api/agent/autonomous/latest/{botId}`).
+  - Updated web operations dashboard with autonomous execution history table and operational status pills.
+  - Added `docs/AUTONOMOUS_EXECUTION.md`.
+  - Added automated unit and integration tests (`StrategyValidationServiceTest`, `AutonomousExecutionPipelineE2ETest`) passing 181 total tests.
+
 ## 0.17.0 — 2026-09-01
 
 - Implemented Autonomous Intelligence Layer — Phase E (Structured LLM Decision Engine):

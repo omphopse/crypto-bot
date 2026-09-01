@@ -1,5 +1,24 @@
 # Test report
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase F (Strategy Validation, Risk Alignment & Autonomous Paper/Demo Execution)
+
+Command: `mvn test -q`
+
+Result: **passed** (181 tests executed across 56 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Deterministic Strategy Validation (`StrategyValidationServiceTest`):**
+   - Valid trade intent correctly verified and passed against deployed strategy definition.
+   - Expired trade intent rejected (`DECISION_EXPIRED`).
+   - Strategy version mismatch rejected (`STRATEGY_VERSION_MISMATCH`).
+   - Market price deviation $> 0.25\%$ rejected (`DECISION_PRICE_DEVIATION_EXCEEDED`).
+   - Position exit / reduction intent without active position rejected (`POSITION_NOT_FOUND_FOR_EXIT`).
+
+2. **Autonomous End-to-End Pipeline & Observe-Only Gating (`AutonomousExecutionPipelineE2ETest`):**
+   - **Full End-to-End Simulation**: Market observation ➔ Scanner candidate ➔ Research evidence ➔ `TradingContext` ➔ Fake LLM reasoner ➔ Decision validation ➔ Strategy validation ➔ `RiskEngine` evaluation ➔ `ExecutionGateway` order dispatch ➔ Paper order acknowledgment ➔ `ReconciliationService` post-execution check ➔ Audit trail recording.
+   - **Observe-Only Mode**: In `OBSERVE_ONLY` mode, validated that `OBSERVE_ONLY_RECORDED` status is generated and zero orders are created or dispatched to brokers.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase E (Structured LLM Decision Engine)
 
 Command: `mvn test -q`

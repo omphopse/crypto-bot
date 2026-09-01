@@ -959,6 +959,44 @@ async function loadAgentDecisionsTable() {
   } catch (e) {
     console.error('Failed to load decisions', e);
   }
+
+  loadAutonomousExecutionsTable();
+}
+
+async function loadAutonomousExecutionsTable() {
+  try {
+    const tbody = document.getElementById('agent-executions-body');
+    if (!tbody || !activeBotsCache || activeBotsCache.length === 0) return;
+
+    const botId = activeBotsCache[0].id;
+    const res = await fetch(`/api/agent/autonomous/history/${botId}?limit=10`);
+    if (!res.ok) return;
+
+    const executions = await res.json();
+    if (executions.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="recon-empty">No autonomous executions recorded yet for active bot.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = executions.map(ex => {
+      let statusClass = 'running';
+      if (ex.status.startsWith('REJECTED')) statusClass = 'error';
+      else if (ex.status === 'OBSERVE_ONLY_RECORDED') statusClass = 'paused';
+      else if (ex.status === 'FAILED_BROKER') statusClass = 'error';
+
+      return `
+        <tr>
+          <td>${new Date(ex.executedAt).toLocaleString()}</td>
+          <td><code>${ex.intentId ? ex.intentId.substring(0, 8) + '...' : '-'}</code></td>
+          <td><code>${ex.orderId ? ex.orderId.substring(0, 8) + '...' : '-'}</code></td>
+          <td><span class="status-pill ${statusClass}">${escapeHtml(ex.status)}</span></td>
+          <td><small class="muted">${escapeHtml(ex.detail || '-')}</small></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load autonomous executions', e);
+  }
 }
 
 document.getElementById('form-journal-decision')?.addEventListener('submit', async (e) => {
