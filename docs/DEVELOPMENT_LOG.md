@@ -1,5 +1,35 @@
 # Development log
 
+## 2026-09-01 — Execution Incident Root Cause Fix, Global Portfolio Risk Concurrency & Remote Deployment
+
+- **Phase:** Execution Safety Review, Incident Resolution & Global Portfolio Risk Concurrency
+- **Objective:** Reconstruct root causes of repeated order execution on Alpaca Paper, eliminate reliance on caller-supplied exposure, enforce authoritative settled + pending order accounting, implement atomic concurrency control in `OrderService`, add regression tests, pause development canary fleet, and configure GitHub remote.
+- **Files Changed:**
+  - `src/main/java/io/algopilot/order/OrderStore.java`
+  - `src/main/java/io/algopilot/order/JdbcOrderStore.java`
+  - `src/main/java/io/algopilot/order/OrderService.java`
+  - `src/main/java/io/algopilot/seed/DataSeeder.java`
+  - `src/test/java/io/algopilot/order/OrderServiceTest.java`
+  - `docs/EXECUTION_INCIDENT_2026-09-01.md`
+  - `docs/TRADING_SAFETY.md`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+  - `docs/ARCHITECTURE.md`
+- **Database Migrations:** None (utilizes existing `orders` and `positions` indexes).
+- **Implementation Summary:**
+  1. Published `docs/EXECUTION_INCIDENT_2026-09-01.md` addressing all 13 forensic questions regarding repeated orders on TSLA, AAPL, and NVDA.
+  2. Implemented authoritative global exposure synthesis in `OrderService.create`: aggregates settled positions from `PositionStore` plus all open/in-flight orders from `OrderStore.findAllOpenOrders()`.
+  3. Guarded order creation with a fair `ReentrantLock` ensuring atomic exposure evaluation, risk verification, and order creation.
+  4. Added regression tests verifying that pending in-flight orders block subsequent orders exceeding single position (10%) or portfolio exposure (50%) limits.
+  5. Added multi-threaded concurrency test (10 parallel bots requesting $20,000 positions on a $100,000 account) verifying that exactly 2 orders are approved ($40,000 exposure) and 8 are deterministically rejected with `MAX_PORTFOLIO_EXPOSURE`.
+  6. Configured GitHub remote `origin` to `https://github.com/omphopse/crypto-bot.git`.
+- **Tests Executed:** 123 automated tests (3 dedicated new tests covering pending symbol exposure, pending portfolio exposure, and 10-thread concurrent order requests).
+- **Test Results:** 123 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven compilation and test suite succeeded with exit code 0.
+- **Security Review:** Live trading remains disabled (`LIVE_TRADING_DISABLED`). Zero secrets exposed. All bots paused by default in seeding.
+
 ## 2026-09-01 — Data Integrity, Reconciliation Gating, Canary Validation, and Execution Provenance
 
 - **Phase:** Data Integrity, Reconciliation Gating, Canary Validation, and Execution Provenance

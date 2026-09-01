@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.0 — 2026-09-01
+
+- Published execution incident forensic report `docs/EXECUTION_INCIDENT_2026-09-01.md` analyzing repeated order bursts on Alpaca Paper and exposure breaches.
+- Implemented architectural root-cause fix in `OrderService`:
+  - Authoritative calculation of settled positions (`PositionStore`) + in-flight pending orders (`OrderStore.findAllOpenOrders()`).
+  - Fair atomic concurrency lock (`ReentrantLock`) preventing race conditions during concurrent order requests.
+  - Strict enforcement of global portfolio exposure (50% max) and symbol position limits (10% max) including in-flight orders.
+  - All automated bots in `DataSeeder.java` set to `PAUSED` by default to prevent unmonitored order loops.
+- Added regression tests for symbol pending order breaches, portfolio exposure breaches, and 10-thread concurrent order spam (123 total passing tests).
+- Configured GitHub remote `origin` to `https://github.com/omphopse/crypto-bot.git`.
+
 ## 0.10.0 — 2026-09-01
 
 - Added complete Data Integrity Audit and published `docs/DATA_INTEGRITY_REPORT.md` classifying all production, seed, test, mock, and simulated execution paths.

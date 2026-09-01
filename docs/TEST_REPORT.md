@@ -1,5 +1,23 @@
 # Test report
 
+## 2026-09-01 — Execution Incident Regression & Global Portfolio Risk Concurrency Suite
+
+Command: `mvn test -q`
+
+Result: **passed** (123 tests executed across 43 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Pending Order Exposure Regression on Single Symbol:**
+   - Verified that rapid successive orders for the same symbol (TSLA) are blocked by pending in-flight order exposure before fills arrive, preventing single-position limit breaches (`MAX_POSITION_SIZE`).
+
+2. **Pending Order Exposure Regression on Global Portfolio:**
+   - Verified that rapid orders across multiple symbols (TSLA, AAPL, NVDA, MSFT, GOOG, AMZN) are blocked when cumulative in-flight order exposure reaches the 50% max portfolio exposure cap (`MAX_PORTFOLIO_EXPOSURE`).
+
+3. **Multi-Threaded Concurrency Risk Gate (10 Parallel Bots):**
+   - Verified that 10 concurrent threads simultaneously requesting $20,000 positions on a $100,000 account (50% max exposure limit) result in exactly 2 approved orders ($40,000 exposure) and 8 deterministic rejections with `MAX_PORTFOLIO_EXPOSURE`.
+   - Proved that total portfolio exposure can never exceed the 50% limit under concurrent execution.
+
 ## 2026-09-01 — Data Integrity, Reconciliation Gating & Canary Validation Milestone
 
 Command: `mvn test -q`

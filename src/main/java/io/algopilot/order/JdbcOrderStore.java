@@ -30,6 +30,14 @@ public class JdbcOrderStore implements OrderStore {
     return jdbc.query("select * from orders where bot_id = ? and status in ('CREATED', 'SUBMITTED', 'ACKNOWLEDGED', 'PARTIALLY_FILLED', 'CANCEL_REQUESTED') order by created_at desc", this::map, botId);
   }
 
+  @Override public List<OrderRecord> findAllOpenOrders() {
+    return jdbc.query("select * from orders where status in ('CREATED', 'SUBMITTED', 'ACKNOWLEDGED', 'PARTIALLY_FILLED', 'CANCEL_REQUESTED') order by created_at desc", this::map);
+  }
+
+  @Override public List<OrderRecord> findOpenOrdersBySymbol(String symbol) {
+    return jdbc.query("select * from orders where symbol = ? and status in ('CREATED', 'SUBMITTED', 'ACKNOWLEDGED', 'PARTIALLY_FILLED', 'CANCEL_REQUESTED') order by created_at desc", this::map, symbol);
+  }
+
   @Override public List<OrderRecord> findAll(int limit) {
     return jdbc.query("select * from orders order by created_at desc limit ?", this::map, Math.max(1, limit));
   }

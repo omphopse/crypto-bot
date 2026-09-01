@@ -7,6 +7,13 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 - Bybit: `DEMO` only (`https://api-demo.bybit.com`)
 - `LIVE`: Strictly disabled and rejected at all configuration and execution boundaries.
 
+## Global Portfolio Risk & Concurrency Invariants
+1. **Authoritative State Synthesis**: `OrderService` evaluates exposure authoritatively from settled positions in `PositionStore` PLUS all open/in-flight orders (`CREATED`, `SUBMITTED`, `ACKNOWLEDGED`, `PARTIALLY_FILLED`) in `OrderStore`. Caller-supplied exposure numbers cannot bypass backend accounting.
+2. **Atomic Concurrency Gate**: Order creation is guarded by an atomic fair concurrency lock (`ReentrantLock`) preventing race conditions across concurrent bot requests.
+3. **Hard Portfolio Exposure Cap**: Global portfolio exposure cannot exceed `maxPortfolioExposurePercent` (default 50% of account equity).
+4. **Hard Symbol Position Cap**: Single-symbol exposure cannot exceed `maxPositionPercent` (default 10% of account equity).
+5. **Default Paused Fleet**: All automated bot runtimes in development configuration start in `PAUSED` status by default to prevent runaway signal execution.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

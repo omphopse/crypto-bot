@@ -68,9 +68,9 @@ public class DataSeeder implements ApplicationRunner {
         Instant.now()
     ));
     UUID bot1Id = UUID.randomUUID();
-    botStore.save(new Bot(bot1Id, "Canary Alpaca Paper", strat1VerId, Broker.ALPACA_PAPER, ExecutionMode.PAPER, BotStatus.RUNNING, Instant.now()));
+    botStore.save(new Bot(bot1Id, "Canary Alpaca Paper", strat1VerId, Broker.ALPACA_PAPER, ExecutionMode.PAPER, BotStatus.PAUSED, Instant.now()));
 
-    // 2. Create US Equity Trend Strategy & Bot (Paused by default for canary isolation)
+    // 2. Create US Equity Trend Strategy & Bot (Paused by default for safety isolation)
     UUID strat2Id = UUID.randomUUID();
     strategyStore.saveStrategy(new Strategy(strat2Id, "US Equity Trend", "DEPLOYED", Instant.now()));
     UUID strat2VerId = UUID.randomUUID();
@@ -85,7 +85,7 @@ public class DataSeeder implements ApplicationRunner {
     UUID bot2Id = UUID.randomUUID();
     botStore.save(new Bot(bot2Id, "US Equity Trend", strat2VerId, Broker.ALPACA_PAPER, ExecutionMode.PAPER, BotStatus.PAUSED, Instant.now()));
 
-    // 3. Create Canary Bybit Demo Strategy & Bot
+    // 3. Create Canary Bybit Demo Strategy & Bot (Paused by default for safety isolation)
     UUID strat3Id = UUID.randomUUID();
     strategyStore.saveStrategy(new Strategy(strat3Id, "Canary Bybit Demo", "DEPLOYED", Instant.now()));
     UUID strat3VerId = UUID.randomUUID();
@@ -98,7 +98,7 @@ public class DataSeeder implements ApplicationRunner {
         Instant.now()
     ));
     UUID bot3Id = UUID.randomUUID();
-    botStore.save(new Bot(bot3Id, "Canary Bybit Demo", strat3VerId, Broker.BYBIT_DEMO, ExecutionMode.DEMO, BotStatus.RUNNING, Instant.now()));
+    botStore.save(new Bot(bot3Id, "Canary Bybit Demo", strat3VerId, Broker.BYBIT_DEMO, ExecutionMode.DEMO, BotStatus.PAUSED, Instant.now()));
 
     // 4. Seed Open Positions
     positionStore.save(new Position(UUID.randomUUID(), bot1Id.toString(), "BTC/USD", new BigDecimal("0.184"), new BigDecimal("112408.20"), new BigDecimal("146.52"), Instant.now()));
