@@ -901,27 +901,61 @@ document.getElementById('btn-execute-rebalance')?.addEventListener('click', asyn
 // ----------------------------------------------------------------------------
 async function loadAgentDecisionsTable() {
   try {
-    const res = await fetch('/api/agent/decisions?limit=50');
-    if (!res.ok) return;
-    const decisions = await res.json();
-
+    const res = await fetch('/api/agent/decisions/structured?limit=50');
     const tbody = document.getElementById('agent-decisions-body');
     if (!tbody) return;
 
-    if (decisions.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="recon-empty">No decision journal records found.</td></tr>';
-      return;
+    if (res.ok) {
+      const decisions = await res.json();
+      if (decisions.length > 0) {
+        tbody.innerHTML = decisions.map(d => {
+          let actClass = '';
+          if (d.decision === 'BUY') actClass = 'positive';
+          else if (d.decision === 'SELL' || d.decision === 'REDUCE' || d.decision === 'CLOSE') actClass = 'negative';
+
+          let valClass = 'running';
+          if (d.validationStatus === 'REJECTED') valClass = 'error';
+          else if (d.validationStatus === 'FAILED') valClass = 'paused';
+
+          const hashShort = d.contextHash ? d.contextHash.substring(0, 10) + '...' : '-';
+          return `
+            <tr>
+              <td>${new Date(d.decisionTimestamp).toLocaleString()}</td>
+              <td><b class="${actClass}">${escapeHtml(d.decision)}</b> <small class="muted">(${escapeHtml(d.side)})</small></td>
+              <td><b>${escapeHtml(d.symbol || '-')}</b></td>
+              <td><b>${formatNumber(d.confidence || 0)}</b></td>
+              <td><small title="${escapeHtml(d.thesis)}">${escapeHtml(d.thesis && d.thesis.length > 80 ? d.thesis.substring(0, 80) + '...' : d.thesis)}</small></td>
+              <td><code>${hashShort}</code></td>
+              <td><span class="status-pill ${valClass}">${escapeHtml(d.validationStatus)}</span></td>
+              <td><span class="status-pill paused" style="font-size:10px">DECISION ONLY — NOT EXECUTED</span></td>
+            </tr>
+          `;
+        }).join('');
+        return;
+      }
     }
 
-    tbody.innerHTML = decisions.map(d => `
-      <tr>
-        <td>${new Date(d.decidedAt).toLocaleString()}</td>
-        <td><code>${d.botId}</code></td>
-        <td><b class="${d.action === 'BUY' ? 'positive' : (d.action === 'SELL' ? 'negative' : '')}">${d.action}</b></td>
-        <td><b>${escapeHtml(d.symbol || '-')}</b></td>
-        <td><code>${escapeHtml(typeof d.payload === 'string' ? d.payload : JSON.stringify(d.payload))}</code></td>
-      </tr>
-    `).join('');
+    const legRes = await fetch('/api/agent/decisions?limit=50');
+    if (legRes.ok) {
+      const legDecisions = await legRes.json();
+      if (legDecisions.length > 0) {
+        tbody.innerHTML = legDecisions.map(d => `
+          <tr>
+            <td>${new Date(d.decidedAt).toLocaleString()}</td>
+            <td><b class="${d.action === 'BUY' ? 'positive' : (d.action === 'SELL' ? 'negative' : '')}">${d.action}</b></td>
+            <td><b>${escapeHtml(d.symbol || '-')}</b></td>
+            <td>1.00</td>
+            <td><code>${escapeHtml(typeof d.payload === 'string' ? d.payload : JSON.stringify(d.payload))}</code></td>
+            <td>-</td>
+            <td><span class="status-pill running">LEGACY</span></td>
+            <td><span class="status-pill paused" style="font-size:10px">DECISION ONLY — NOT EXECUTED</span></td>
+          </tr>
+        `).join('');
+        return;
+      }
+    }
+
+    tbody.innerHTML = '<tr><td colspan="8" class="recon-empty">No decision journal records found.</td></tr>';
   } catch (e) {
     console.error('Failed to load decisions', e);
   }

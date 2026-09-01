@@ -1,5 +1,26 @@
 # Test report
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase E (Structured LLM Decision Engine)
+
+Command: `mvn test -q`
+
+Result: **passed** (174 tests executed across 54 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Schema & Semantic Decision Validation (`StructuredDecisionValidatorTest`):**
+   - Valid BUY decision correctly validated with stop-loss/take-profit boundaries.
+   - Unsupported symbol proposal rejected (`UNSUPPORTED_SYMBOL`).
+   - Non-positive quantity or price rejected (`INVALID_NON_POSITIVE_QUANTITY`).
+   - Logically inverted stop-loss (BUY stop loss above entry price) rejected (`INVALID_BUY_STOP_LOSS_ABOVE_PRICE`).
+   - Synthetic/hallucinated research evidence reference rejected (`UNSUPPORTED_SYNTHETIC_EVIDENCE`).
+   - Context hash mismatch rejected (`CONTEXT_HASH_MISMATCH`).
+
+2. **Decision Engine & Budget Enforcement (`LLMDecisionEngineServiceTest`):**
+   - Verified that `analyzeBot` generates validated `StructuredTradeDecision` records and persists them to the store.
+   - Verified that exhausted AI rate limit or token budget gracefully returns a failed decision (`AI_RATE_OR_BUDGET_EXCEEDED`) without calling the provider.
+   - Verified via reflection that `LLMDecisionEngineService` possesses **zero order/dispatch execution authority**.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase D (Typed, Prompt-Safe Context Builder)
 
 Command: `mvn test -q`

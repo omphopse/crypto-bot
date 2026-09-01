@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.17.0 — 2026-09-01
+
+- Implemented Autonomous Intelligence Layer — Phase E (Structured LLM Decision Engine):
+  - Added Flyway migration `V18__structured_trade_decisions.sql` creating `structured_trade_decisions` table.
+  - Implemented `LLMDecisionProvider` interface and `FakeLLMDecisionProvider` for deterministic, offline testing.
+  - Implemented `StructuredTradeDecision` immutable record with typed action enums (`NO_ACTION`, `BUY`, `SELL`, `HOLD`, `CLOSE`, `REDUCE`).
+  - Implemented `DecisionPromptBuilder` structuring prompt sections (`[SYSTEM RULES]`, `[TRUSTED MARKET DATA]`, `[TRUSTED STRATEGY STATE]`, `[TRUSTED PORTFOLIO STATE]`, `[TRUSTED RISK STATE]`, `[TRUSTED RECONCILIATION STATE]`, `[DETERMINISTIC SCANNER RESULTS]`, `[UNTRUSTED EXTERNAL RESEARCH EVIDENCE]`).
+  - Implemented `StructuredDecisionValidator` enforcing symbol matching, strategy version matching, stop-loss/take-profit direction sanity, evidence provenance, context hash verification, and safety gate observance.
+  - Implemented `AiCostLimiter` tracking requests per minute/day and daily token cost budgets.
+  - Implemented `LLMDecisionEngineService` and `JdbcStructuredDecisionStore` with zero order execution capabilities.
+  - Added structured decision endpoints and updated web operations console table with `DECISION ONLY — NOT EXECUTED` indicators.
+  - Added `docs/DECISION_ENGINE.md`.
+  - Added comprehensive automated unit tests in `StructuredDecisionValidatorTest` and `LLMDecisionEngineServiceTest` (174 total passing tests).
+
 ## 0.16.0 — 2026-09-01
 
 - Implemented Autonomous Intelligence Layer — Phase D (Typed, Prompt-Safe Context Builder):

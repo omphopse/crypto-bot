@@ -37,6 +37,12 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 3. **Zero Hallucination / No Fabrication**: Missing data is explicitly typed as `UNAVAILABLE` or `UNKNOWN`; zero values are never substituted for absent observations.
 4. **Context Hashing & Provenance**: Every context generates a SHA-256 fingerprint over time buckets and financial marks for decision reproducibility.
 
+## Structured LLM Decision Engine Invariants
+1. **Hypothesis Generation Only**: `LLMDecisionEngineService` produces advisory `StructuredTradeDecision` records. It cannot place orders, cancel orders, or interact directly with broker execution interfaces.
+2. **Schema & Semantic Validation**: `StructuredDecisionValidator` rejects decisions with mismatched symbols, unsupported actions, negative quantities, invalid stop-loss/take-profit prices, or mismatched context hashes.
+3. **Evidence Provenance Verification**: All evidence references in decisions must match persisted research evidence; synthetic/hallucinated evidence IDs trigger immediate decision rejection.
+4. **Rate & Budget Controls**: Decisions are capped by request rate limits (20 req/min, 500 req/day) and daily token cost budgets ($10.00 USD/day); limit exhaustion triggers `ValidationStatus.FAILED`.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

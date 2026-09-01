@@ -1,5 +1,48 @@
 # Development log
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase E (Structured LLM Decision Engine)
+
+- **Phase:** Phase E — Structured LLM Decision Engine
+- **Objective:** Consume deterministic, prompt-safe `TradingContext` payloads and produce schema-validated `StructuredTradeDecision` hypothesis records with reasoning journals, evidence provenance checks, and zero direct execution capability.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V18__structured_trade_decisions.sql`
+  - `src/main/java/io/algopilot/agent/decision/TradeAction.java`
+  - `src/main/java/io/algopilot/agent/decision/ValidationStatus.java`
+  - `src/main/java/io/algopilot/agent/decision/StructuredTradeDecision.java`
+  - `src/main/java/io/algopilot/agent/decision/LLMDecisionProvider.java`
+  - `src/main/java/io/algopilot/agent/decision/FakeLLMDecisionProvider.java`
+  - `src/main/java/io/algopilot/agent/decision/DecisionPromptBuilder.java`
+  - `src/main/java/io/algopilot/agent/decision/StructuredDecisionValidator.java`
+  - `src/main/java/io/algopilot/agent/decision/AiCostLimiter.java`
+  - `src/main/java/io/algopilot/agent/decision/StructuredDecisionStore.java`
+  - `src/main/java/io/algopilot/agent/decision/JdbcStructuredDecisionStore.java`
+  - `src/main/java/io/algopilot/agent/decision/LLMDecisionEngineService.java`
+  - `src/main/java/io/algopilot/agent/AgentDecisionStore.java`
+  - `src/main/java/io/algopilot/agent/AgentDecisionController.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/agent/decision/StructuredDecisionValidatorTest.java`
+  - `src/test/java/io/algopilot/agent/decision/LLMDecisionEngineServiceTest.java`
+  - `docs/DECISION_ENGINE.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V18__structured_trade_decisions.sql` (`structured_trade_decisions`).
+- **Implementation Summary:**
+  1. Implemented typed `StructuredTradeDecision` record with action enums and metadata.
+  2. Implemented `LLMDecisionProvider` abstraction and `FakeLLMDecisionProvider` for deterministic testing.
+  3. Implemented `DecisionPromptBuilder` isolating untrusted web data.
+  4. Implemented `StructuredDecisionValidator` validating stop-loss/take-profit direction, evidence IDs, context hash, and safety gates.
+  5. Implemented `AiCostLimiter` tracking rate limits and daily USD budgets.
+  6. Implemented `LLMDecisionEngineService` and `JdbcStructuredDecisionStore`.
+  7. Updated dashboard with structured decision table and `DECISION ONLY — NOT EXECUTED` labels.
+- **Tests Executed:** 174 automated tests across 54 test classes (8 dedicated new tests for Phase E).
+- **Test Results:** 174 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero broker credential access, zero order submission paths, evidence provenance enforced.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase D (Typed, Prompt-Safe Context Builder)
 
 - **Phase:** Phase D — Typed, Prompt-Safe Context Builder
