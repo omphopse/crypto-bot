@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.13.0 — 2026-09-01
+
+- Implemented Autonomous Intelligence Layer — Phase A (Agent State Machine):
+  - Added Flyway migration `V14__autonomous_agent_state_machine.sql` creating `agent_sessions` and `agent_state_events`.
+  - Defined explicit canonical `AgentState` enum: `IDLE`, `OBSERVING`, `SCANNING`, `RESEARCHING`, `ANALYZING`, `DECIDING`, `RISK_CHECK`, `EXECUTING`, `MONITORING`, `EXIT_EVALUATION`, `PAUSED`, `ERROR`, `STOPPED`.
+  - Defined `AutonomousMode` enum: `OFF`, `OBSERVE_ONLY`, `PAPER_AUTONOMOUS`, `DEMO_AUTONOMOUS`, `LIVE_LOCKED`.
+  - Implemented `AgentStateMachine` validating legal lifecycle state transitions, managing sessions, and emitting audit events on every transition.
+  - Implemented `AgentStateStore` and `JdbcAgentStateStore` for PostgreSQL persistence of session states and transition events.
+  - Added `AgentStateController` REST endpoints under `/api/agent/state`.
+  - Added unit test suite `AgentStateMachineTest` verifying full autonomous lifecycle transitions, error recovery, pause/resume, and rejection of illegal transitions and `LIVE_LOCKED` mode (134 total passing tests).
+
 ## 0.12.0 — 2026-09-01
 
 - Implemented authoritative mark-to-market financial accounting engine (`PortfolioAccountingService`, `PortfolioSummary`, `PositionMark`):

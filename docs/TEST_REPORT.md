@@ -1,5 +1,32 @@
 # Test report
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase A (Agent State Machine)
+
+Command: `mvn test -q`
+
+Result: **passed** (134 tests executed across 45 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Full Autonomous Lifecycle State Machine Transitions:**
+   - Proved legal sequential transitions through all 13 canonical states (`IDLE` ➔ `OBSERVING` ➔ `SCANNING` ➔ `RESEARCHING` ➔ `ANALYZING` ➔ `DECIDING` ➔ `RISK_CHECK` ➔ `EXECUTING` ➔ `MONITORING` ➔ `EXIT_EVALUATION` ➔ `RISK_CHECK` ➔ `EXECUTING` ➔ `MONITORING` ➔ `OBSERVING` ➔ `IDLE`).
+   - Verified that all 14 transition events are accurately recorded in `AgentStateStore` with matching `fromState` and `toState`.
+
+2. **Rejection of Illegal State Transitions:**
+   - Proved that attempting an illegal skip (e.g. `IDLE` directly to `EXECUTING`) throws `InvalidStateTransitionException` and leaves session state intact.
+
+3. **Operator Pause & Resume:**
+   - Proved transitions between operational states and `PAUSED` / `IDLE`.
+
+4. **Error State Transition:**
+   - Proved transition to `ERROR` on failures and subsequent safe recovery to `PAUSED` / `IDLE`.
+
+5. **Terminal Stopped State:**
+   - Proved that stopped sessions cannot be transitioned to active states without explicit new session creation.
+
+6. **Safety Mode Enforcement:**
+   - Proved that attempting to start an agent session with `AutonomousMode.LIVE_LOCKED` throws `IllegalArgumentException` and blocks session initiation.
+
 ## 2026-09-01 — Mark-to-Market Financial Accounting & Multi-Instance Concurrency Suite
 
 Command: `mvn test -q`

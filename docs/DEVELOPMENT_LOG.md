@@ -1,5 +1,38 @@
 # Development log
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase A (Agent State Machine)
+
+- **Phase:** Phase A — Agent State Machine
+- **Objective:** Build the foundational lifecycle state machine, session management, and state event persistence for the Algopilot autonomous trading agent subsystem.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V14__autonomous_agent_state_machine.sql`
+  - `src/main/java/io/algopilot/agent/state/AgentState.java`
+  - `src/main/java/io/algopilot/agent/state/AutonomousMode.java`
+  - `src/main/java/io/algopilot/agent/state/AgentSession.java`
+  - `src/main/java/io/algopilot/agent/state/AgentStateEvent.java`
+  - `src/main/java/io/algopilot/agent/state/InvalidStateTransitionException.java`
+  - `src/main/java/io/algopilot/agent/state/AgentStateStore.java`
+  - `src/main/java/io/algopilot/agent/state/JdbcAgentStateStore.java`
+  - `src/main/java/io/algopilot/agent/state/AgentStateMachine.java`
+  - `src/main/java/io/algopilot/agent/state/AgentStateController.java`
+  - `src/test/java/io/algopilot/agent/state/AgentStateMachineTest.java`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V14__autonomous_agent_state_machine.sql` (`agent_sessions` and `agent_state_events` tables).
+- **Implementation Summary:**
+  1. Created explicit 13-state enum `AgentState` (`IDLE`, `OBSERVING`, `SCANNING`, `RESEARCHING`, `ANALYZING`, `DECIDING`, `RISK_CHECK`, `EXECUTING`, `MONITORING`, `EXIT_EVALUATION`, `PAUSED`, `ERROR`, `STOPPED`).
+  2. Implemented `AgentStateMachine` enforcing valid state transitions, preventing illegal skips (e.g. `IDLE` to `EXECUTING`), recording audit events on each transition, and tracking heartbeats.
+  3. Created `JdbcAgentStateStore` for database-backed session and state event persistence.
+  4. Added `AgentStateController` REST endpoints for session status, event timelines, and operator pause/resume/stop commands.
+  5. Implemented comprehensive test suite in `AgentStateMachineTest`.
+- **Tests Executed:** 134 automated tests across 45 test classes (6 dedicated new tests for Phase A).
+- **Test Results:** 134 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** `AutonomousMode.LIVE_LOCKED` strictly rejected at session start. Live trading remains disabled (`LIVE_TRADING_DISABLED`).
+
 ## 2026-09-01 — Mark-to-Market Financial Accounting & Multi-Instance Concurrency Hardening
 
 - **Phase:** Financial Accounting & Multi-Instance Concurrency Hardening
