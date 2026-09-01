@@ -23,6 +23,7 @@ public class CleanResetService {
   private static final List<String> EXPERIMENTAL_TABLES = List.of(
       "candidate_paper_validations",
       "candidate_stress_results",
+      "discovery_candidates",
       "strategy_candidates",
       "experiment_regime_results",
       "experiment_parameter_sweeps",

@@ -31,7 +31,7 @@ public class JdbcCandidateStore implements CandidateStore {
     } catch (Exception ignored) {}
 
     jdbc.update(
-        "INSERT INTO strategy_candidates (" +
+        "INSERT INTO discovery_candidates (" +
         "candidate_id, fingerprint, base_strategy_id, name, family, symbol, timeframe, " +
         "parameters_json, generation_method, status, robustness_classification, robustness_score, " +
         "net_expectancy, profit_factor, max_drawdown_pct, created_at) " +
@@ -51,28 +51,28 @@ public class JdbcCandidateStore implements CandidateStore {
 
   @Override
   public Optional<StrategyCandidate> findCandidateById(UUID candidateId) {
-    return jdbc.query("SELECT * FROM strategy_candidates WHERE candidate_id = ?", this::mapCandidateRow, candidateId).stream().findFirst();
+    return jdbc.query("SELECT * FROM discovery_candidates WHERE candidate_id = ?", this::mapCandidateRow, candidateId).stream().findFirst();
   }
 
   @Override
   public Optional<StrategyCandidate> findCandidateByFingerprint(String fingerprint) {
-    return jdbc.query("SELECT * FROM strategy_candidates WHERE fingerprint = ?", this::mapCandidateRow, fingerprint).stream().findFirst();
+    return jdbc.query("SELECT * FROM discovery_candidates WHERE fingerprint = ?", this::mapCandidateRow, fingerprint).stream().findFirst();
   }
 
   @Override
   public List<StrategyCandidate> findAllCandidates() {
-    return jdbc.query("SELECT * FROM strategy_candidates ORDER BY created_at DESC", this::mapCandidateRow);
+    return jdbc.query("SELECT * FROM discovery_candidates ORDER BY created_at DESC", this::mapCandidateRow);
   }
 
   @Override
   public List<StrategyCandidate> findCandidatesByFamily(StrategyFamily family) {
-    return jdbc.query("SELECT * FROM strategy_candidates WHERE family = ? ORDER BY created_at DESC", this::mapCandidateRow, family.name());
+    return jdbc.query("SELECT * FROM discovery_candidates WHERE family = ? ORDER BY created_at DESC", this::mapCandidateRow, family.name());
   }
 
   @Override
   public List<StrategyCandidate> findRankedCandidates(int limit) {
     return jdbc.query(
-        "SELECT * FROM strategy_candidates WHERE status != 'REJECTED' ORDER BY net_expectancy DESC NULLS LAST, robustness_score DESC NULLS LAST LIMIT ?",
+        "SELECT * FROM discovery_candidates WHERE status != 'REJECTED' ORDER BY net_expectancy DESC NULLS LAST, robustness_score DESC NULLS LAST LIMIT ?",
         this::mapCandidateRow, limit
     );
   }
