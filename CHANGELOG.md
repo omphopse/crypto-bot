@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.14.0 — 2026-09-01
+
+- Implemented Autonomous Intelligence Layer — Phase B (Market Observation and Scanner):
+  - Added Flyway migration `V15__market_observation_and_scanner.sql` creating `market_observations` and `market_scan_results`.
+  - Created `MarketObservation` domain model with strict validation rules (non-positive price, negative volume, inverted OHLC, crossed quotes rejection) and freshness tracking.
+  - Implemented `MarketObservationService`, `MarketDataStore`, and `JdbcMarketDataStore` for normalized market data ingestion and persistence.
+  - Extended `Indicators` with high-precision Bollinger Bands, MACD, and neutral flat-market RSI handling.
+  - Implemented deterministic `MarketScanner` producing `ScanResult` records (Momentum, Breakout, Volume Anomaly, Oversold, Overbought, Mean Reversion) with zero trading authority.
+  - Created `MarketController` exposing `/api/market/observations` and `/api/market/scans`.
+  - Added Market Observations & Scanner Detections panel to web dashboard.
+  - Added comprehensive unit tests in `MarketObservationServiceTest` and `MarketScannerTest` (145 total passing tests).
+
 ## 0.13.0 — 2026-09-01
 
 - Implemented Autonomous Intelligence Layer — Phase A (Agent State Machine):

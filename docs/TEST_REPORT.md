@@ -1,5 +1,30 @@
 # Test report
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase B (Market Observation & Scanner)
+
+Command: `mvn test -q`
+
+Result: **passed** (145 tests executed across 47 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Market Observation Ingestion & Validation:**
+   - Valid observations with price, volume, and quotes accepted and audited (`MARKET_OBSERVATION_RECEIVED`).
+   - Invalid non-positive price ($price \le 0$) rejected and audited (`MARKET_OBSERVATION_REJECTED`).
+   - Crossed market quotes ($bid > ask$) rejected with `CROSSED_MARKET`.
+   - Inverted OHLC bars ($high < open$ or $low > close$) rejected with `INVALID_HIGH`.
+   - Stale market observations ($freshnessMs > 60,000ms$) marked `STALE` and audited (`MARKET_DATA_STALE`).
+
+2. **Deterministic Market Scanner & Technical Indicators:**
+   - Enforced warm-up period ($\ge 20$ historical bars); short history yields `isWarmedUp=false` and `NO_CANDIDATE`.
+   - Stale observation inputs abort scanning with `SKIPPED_STALE_DATA`.
+   - Bullish momentum detection ($EMA9 > EMA21$ and $RSI > 50$ and $Price \ge EMA9$) outputs `MOMENTUM` candidate.
+   - Oversold condition ($RSI < 30$) outputs `OVERSOLD` candidate.
+   - 20-bar high breakout with volume expansion outputs `BREAKOUT` candidate.
+   - Volume spikes ($> 2.5\times$ average) output `VOLUME_ANOMALY` candidate.
+   - Quiet markets output `NO_CANDIDATE`.
+   - Verified that `MarketScanner` has zero trading dependencies and cannot place orders.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase A (Agent State Machine)
 
 Command: `mvn test -q`

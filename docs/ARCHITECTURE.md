@@ -97,17 +97,13 @@ WebSocket Topics (/topic/*)               AlphaHypothesis & Strategy Synthesis
 - **Bybit Demo Adapter (`BybitDemoAdapter`)**: REST client for Bybit V5 Demo (`https://api-demo.bybit.com`) with HMAC-SHA256 authenticated order execution and position tracking.
 - **Composite Broker State Provider (`CompositeBrokerStateProvider`)**: Routes reconciliation snapshot queries to the active adapter based on bot broker and mode.
 
-## Reconciliation & Recovery Subsystem
+## Autonomous Agent & Market Scanner Subsystem
 
-The reconciliation architecture is composed of:
-- **Broker State Provider Abstraction (`BrokerStateProvider`)**: Canonical adapter interface normalizing external broker account balances, open orders, executions/fills, and positions without leaking broker-specific structures into domain logic.
-- **Deterministic Reconciliation Engine (`ReconciliationEngine`)**: Pure, side-effect-free evaluator that compares local ledger state with broker snapshot across 4 dimensions:
-  1. *Account Balances* (cash, equity, buying power)
-  2. *Open Orders* (clientOrderId mapping, order status, quantities, prices)
-  3. *Fills* (exchangeFillId deduplication, fill prices, fees)
-  4. *Positions* (symbol matching, quantities, directional side, average entry prices)
-- **Persistence & Audit (`JdbcReconciliationStore`)**: Append-only records for `reconciliation_runs`, `reconciliation_mismatches`, and `reconciliation_recoveries`.
-- **Operational Health (`ReconciliationHealthIndicator`)**: Distinguishes current active critical discrepancies from historical resolved events for Spring Actuator health monitoring.
+- **Agent State Machine (`AgentStateMachine`)**: Governs the 13-stage autonomous agent lifecycle:
+  `IDLE` ➔ `OBSERVING` ➔ `SCANNING` ➔ `RESEARCHING` ➔ `ANALYZING` ➔ `DECIDING` ➔ `RISK_CHECK` ➔ `EXECUTING` ➔ `MONITORING` ➔ `EXIT_EVALUATION` ➔ `PAUSED` ➔ `ERROR` ➔ `STOPPED`.
+- **Market Observation Service (`MarketObservationService`)**: Ingests, normalizes, and validates quote/candle observations from Alpaca Paper and Bybit Demo. Enforces price integrity, bid/ask sanity ($ask \ge bid$), OHLC structural validity, and freshness thresholds ($freshnessMs \le 60,000ms$).
+- **Deterministic Market Scanner (`MarketScanner`)**: Evaluates multi-factor quantitative trigger conditions (Momentum, Breakout, Volume Spike, Oversold, Overbought, Mean Reversion) over warmed-up candle histories ($\ge 20$ bars). Produces strongly typed `ScanResult` candidate records with zero execution authority.
+- **Agent Persistence (`JdbcAgentStateStore`, `JdbcMarketDataStore`, `JdbcMarketScanStore`)**: Persists `agent_sessions`, `agent_state_events`, `market_observations`, and `market_scan_results`.
 
 ## Source of Truth Matrix
 

@@ -109,7 +109,8 @@ async function loadDashboardData() {
     loadBots(),
     loadPositions(),
     loadAgentActivityTimeline(),
-    loadReconciliationState()
+    loadReconciliationState(),
+    loadMarketScanner()
   ]);
 }
 
@@ -242,6 +243,64 @@ async function loadPositions() {
     }).join('');
   } catch (e) {
     console.error('Failed to load accounting positions', e);
+  }
+}
+
+async function loadMarketScanner() {
+  try {
+    const [obsRes, scanRes] = await Promise.all([
+      fetch('/api/market/observations'),
+      fetch('/api/market/scans?limit=10')
+    ]);
+
+    const observations = obsRes.ok ? await obsRes.json() : [];
+    const scans = scanRes.ok ? await scanRes.json() : [];
+
+    const countEl = document.getElementById('scan-candidates-count');
+    if (countEl) {
+      const candidates = scans.filter(s => s.candidateType !== 'NO_CANDIDATE');
+      countEl.textContent = candidates.length;
+    }
+
+    const tbody = document.getElementById('dash-market-scanner-body');
+    if (!tbody) return;
+
+    if (observations.length === 0 && scans.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="recon-empty">No market observations recorded yet.</td></tr>';
+      return;
+    }
+
+    const scanBySymbol = {};
+    scans.forEach(s => {
+      if (!scanBySymbol[s.symbol] || new Date(s.timestamp) > new Date(scanBySymbol[s.symbol].timestamp)) {
+        scanBySymbol[s.symbol] = s;
+      }
+    });
+
+    tbody.innerHTML = observations.map(o => {
+      const scan = scanBySymbol[o.symbol];
+      const candidateType = scan ? scan.candidateType : 'NONE';
+      const isCand = candidateType && candidateType !== 'NO_CANDIDATE' && candidateType !== 'NONE';
+      const candClass = isCand ? 'running' : 'paused';
+      const reason = scan ? scan.reason : (o.isStale ? 'Data marked stale' : 'Monitoring feed');
+      const freshnessSec = Math.round(o.freshnessMs / 1000);
+      const freshLabel = o.isStale ? `<span class="negative">STALE (${freshnessSec}s)</span>` : `<span class="positive">LIVE (${freshnessSec}s)</span>`;
+
+      return `
+        <tr>
+          <td><b>${escapeHtml(o.symbol)}</b></td>
+          <td><span class="badge" style="background:#f1f5f9;color:#334155;font-weight:700">${escapeHtml(o.provider)}</span></td>
+          <td><b>$${formatNumber(o.lastPrice)}</b></td>
+          <td>$${formatNumber(o.bid || 0)} / $${formatNumber(o.ask || 0)}</td>
+          <td>$${formatNumber(o.spread || 0)}</td>
+          <td>${freshLabel}</td>
+          <td><span class="status-pill ${candClass}">${escapeHtml(candidateType)}</span></td>
+          <td><small class="muted">${escapeHtml(reason)}</small></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load market scanner observations', e);
   }
 }
 

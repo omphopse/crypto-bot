@@ -19,6 +19,12 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 2. **Zero Double-Counting**: Realized P&L from closed positions, unrealized P&L from open inventory, and broker execution fees are strictly partitioned.
 3. **Reservation Lifecycle**: In-flight orders consume buying power immediately upon risk gating approval; cancelled, rejected, or filled orders release/update reservations synchronously.
 
+## Market Observation & Scanner Safety Invariants
+1. **Zero Execution Capability**: `MarketScanner` evaluates technical candidate conditions and produces `ScanResult` records only. It contains zero order submission logic, zero broker execution clients, and cannot place orders.
+2. **Untrusted Market Data Validation**: Observations with non-positive prices, negative volumes, inverted OHLC bars ($high < open$ or $low > close$), or crossed quotes ($bid > ask$) are automatically marked invalid and rejected.
+3. **Deterministic Stale Data Gating**: Observations older than the configured freshness threshold ($60,000ms$) are marked `STALE` and categorically abort scanner candidate generation.
+4. **Warm-up History Invariant**: Technical indicators require a minimum of 20 historical bars; scans with insufficient history output `NO_CANDIDATE` and are flagged as not warmed up.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

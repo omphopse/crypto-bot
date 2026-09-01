@@ -131,7 +131,89 @@ public final class Indicators {
     return sma(trList, period);
   }
 
+  public record BollingerBands(List<BigDecimal> upper, List<BigDecimal> middle, List<BigDecimal> lower) {}
+
+  public record MacdResult(List<BigDecimal> macd, List<BigDecimal> signal, List<BigDecimal> histogram) {}
+
+  public static BollingerBands bollingerBands(List<BigDecimal> prices, int period, double stdDevMultiplier) {
+    if (prices == null || prices.isEmpty() || period <= 0) {
+      return new BollingerBands(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+    }
+    List<BigDecimal> middle = sma(prices, period);
+    List<BigDecimal> upper = new ArrayList<>(prices.size());
+    List<BigDecimal> lower = new ArrayList<>(prices.size());
+
+    BigDecimal k = BigDecimal.valueOf(stdDevMultiplier);
+
+    for (int i = 0; i < prices.size(); i++) {
+      if (middle.get(i) == null || i < period - 1) {
+        upper.add(null);
+        lower.add(null);
+        continue;
+      }
+      BigDecimal mean = middle.get(i);
+      BigDecimal sumSq = BigDecimal.ZERO;
+      for (int j = i - period + 1; j <= i; j++) {
+        BigDecimal diff = prices.get(j).subtract(mean);
+        sumSq = sumSq.add(diff.multiply(diff));
+      }
+      BigDecimal variance = sumSq.divide(BigDecimal.valueOf(period), 8, RoundingMode.HALF_UP);
+      BigDecimal stdDev = BigDecimal.valueOf(Math.sqrt(variance.doubleValue())).setScale(8, RoundingMode.HALF_UP);
+
+      BigDecimal bandWidth = stdDev.multiply(k);
+      upper.add(mean.add(bandWidth).setScale(4, RoundingMode.HALF_UP));
+      lower.add(mean.subtract(bandWidth).setScale(4, RoundingMode.HALF_UP));
+    }
+    return new BollingerBands(upper, middle, lower);
+  }
+
+  public static MacdResult macd(List<BigDecimal> prices, int fastPeriod, int slowPeriod, int signalPeriod) {
+    if (prices == null || prices.isEmpty() || fastPeriod <= 0 || slowPeriod <= 0 || signalPeriod <= 0) {
+      return new MacdResult(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+    }
+    List<BigDecimal> fastEma = ema(prices, fastPeriod);
+    List<BigDecimal> slowEma = ema(prices, slowPeriod);
+
+    List<BigDecimal> macdLine = new ArrayList<>(prices.size());
+    List<BigDecimal> validMacdValues = new ArrayList<>();
+
+    for (int i = 0; i < prices.size(); i++) {
+      if (fastEma.get(i) == null || slowEma.get(i) == null) {
+        macdLine.add(null);
+      } else {
+        BigDecimal val = fastEma.get(i).subtract(slowEma.get(i)).setScale(8, RoundingMode.HALF_UP);
+        macdLine.add(val);
+        validMacdValues.add(val);
+      }
+    }
+
+    List<BigDecimal> signalEma = ema(validMacdValues, signalPeriod);
+    List<BigDecimal> signalLine = new ArrayList<>(prices.size());
+    List<BigDecimal> histogram = new ArrayList<>(prices.size());
+
+    int nullPrefixCount = prices.size() - validMacdValues.size();
+    for (int i = 0; i < nullPrefixCount; i++) {
+      signalLine.add(null);
+      histogram.add(null);
+    }
+
+    for (int i = 0; i < validMacdValues.size(); i++) {
+      BigDecimal sig = signalEma.get(i);
+      signalLine.add(sig);
+      if (sig != null && validMacdValues.get(i) != null) {
+        histogram.add(validMacdValues.get(i).subtract(sig).setScale(4, RoundingMode.HALF_UP));
+      } else {
+        histogram.add(null);
+      }
+    }
+
+    return new MacdResult(macdLine, signalLine, histogram);
+  }
+
   private static BigDecimal calculateRsiValue(BigDecimal avgGain, BigDecimal avgLoss) {
+    if (avgGain.signum() == 0 && avgLoss.signum() == 0) {
+      return BigDecimal.valueOf(50.00).setScale(4, RoundingMode.HALF_UP);
+    }
     if (avgLoss.signum() == 0) {
       return BigDecimal.valueOf(100.00).setScale(4, RoundingMode.HALF_UP);
     }

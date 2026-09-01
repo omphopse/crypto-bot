@@ -1,5 +1,44 @@
 # Development log
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase B (Market Observation and Scanner)
+
+- **Phase:** Phase B — Market Observation and Scanner
+- **Objective:** Implement verified, normalized, timestamped market data ingestion, validation rules, stale-data gating, indicator snapshotting, deterministic opportunity scanning, and UI dashboard visualization.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V15__market_observation_and_scanner.sql`
+  - `src/main/java/io/algopilot/market/observation/MarketObservation.java`
+  - `src/main/java/io/algopilot/market/observation/MarketDataStore.java`
+  - `src/main/java/io/algopilot/market/observation/JdbcMarketDataStore.java`
+  - `src/main/java/io/algopilot/market/observation/MarketObservationService.java`
+  - `src/main/java/io/algopilot/market/observation/MarketController.java`
+  - `src/main/java/io/algopilot/market/scanner/CandidateType.java`
+  - `src/main/java/io/algopilot/market/scanner/IndicatorSnapshot.java`
+  - `src/main/java/io/algopilot/market/scanner/ScanResult.java`
+  - `src/main/java/io/algopilot/market/scanner/MarketScanStore.java`
+  - `src/main/java/io/algopilot/market/scanner/JdbcMarketScanStore.java`
+  - `src/main/java/io/algopilot/market/scanner/MarketScanner.java`
+  - `src/main/java/io/algopilot/backtest/engine/Indicators.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/market/observation/MarketObservationServiceTest.java`
+  - `src/test/java/io/algopilot/market/scanner/MarketScannerTest.java`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V15__market_observation_and_scanner.sql` (`market_observations` and `market_scan_results` tables).
+- **Implementation Summary:**
+  1. Created `MarketObservation` validating price > 0, volume >= 0, valid OHLC, and non-crossed bid/ask.
+  2. Implemented `MarketObservationService` with configurable stale data threshold (60,000ms).
+  3. Extended `Indicators` with Bollinger Bands and MACD.
+  4. Implemented `MarketScanner` detecting Momentum, Breakout, Volume Anomaly, Oversold, and Mean Reversion with zero trading authority.
+  5. Added web dashboard panel for Market Observations & Scanner Detections.
+- **Tests Executed:** 145 automated tests across 47 test classes (11 dedicated new tests for Phase B).
+- **Test Results:** 145 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Scanner has zero access to order APIs or credentials. Live trading remains disabled (`LIVE_TRADING_DISABLED`).
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase A (Agent State Machine)
 
 - **Phase:** Phase A — Agent State Machine

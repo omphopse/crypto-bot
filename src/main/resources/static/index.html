@@ -193,6 +193,32 @@
                     <div class="recon-metric"><span>RECOVERY STATE</span><span id="recon-recovery-state">NORMAL</span></div>
                   </div>
                 </article>
+
+                <article class="panel market-scanner">
+                  <div class="panel-title">
+                    <div>
+                      <h2>Market Observations &amp; Scanner Detections <span class="badge" id="scan-candidates-count">0</span></h2>
+                      <p>Verified market feed observations &amp; deterministic candidate detections (Information only · No trade execution)</p>
+                    </div>
+                  </div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>SYMBOL</th>
+                        <th>PROVIDER</th>
+                        <th>LAST PRICE</th>
+                        <th>BID / ASK</th>
+                        <th>SPREAD</th>
+                        <th>FRESHNESS</th>
+                        <th>SCANNER CANDIDATE</th>
+                        <th>TRIGGER / REASON</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dash-market-scanner-body">
+                      <tr><td colspan="8" class="recon-empty">Loading verified market observations...</td></tr>
+                    </tbody>
+                  </table>
+                </article>
               </div>
 
               <div class="right-column">
