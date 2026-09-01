@@ -635,6 +635,37 @@
                 <div id="synth-results" class="mt-3" style="display:none;"></div>
               </div>
             </div>
+
+            <div class="panel" style="margin-top: 24px;">
+              <div class="panel-title">
+                <div>
+                  <h3>Strategy Candidate Discovery &amp; Robustness Rankings</h3>
+                  <p>Systematic grid generation, multi-tier cost/slippage stress tests &amp; paper qualification</p>
+                </div>
+                <div>
+                  <button class="btn sm primary" id="btn-generate-candidates" onclick="triggerCandidateGeneration()">Discover New Candidates</button>
+                </div>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>CANDIDATE</th>
+                      <th>FAMILY</th>
+                      <th>SYMBOL / TF</th>
+                      <th>NET EXPECTANCY</th>
+                      <th>PROFIT FACTOR</th>
+                      <th>ROBUSTNESS</th>
+                      <th>STATUS</th>
+                      <th>ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody id="candidates-body">
+                    <tr><td colspan="8" class="recon-empty">Loading discovered candidates...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <!-- VIEW: BACKTESTS -->

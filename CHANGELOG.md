@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.24.0 — 2026-09-02
+
+- Implemented Autonomous Intelligence Layer — Phase L (Strategy Discovery, Robustness Ranking & Paper Validation):
+  - Added Flyway migration `V24__strategy_discovery_and_ranking.sql` creating `strategy_candidates`, `candidate_stress_results`, and `candidate_paper_validations` tables.
+  - Built `CandidateGeneratorService` with reproducible grid parameter combinations and SHA-256 fingerprint de-duplication.
+  - Built `CandidateStressService` performing multi-tier cost stress ($1.0\times, 1.5\times, 2.0\times, 3.0\times$), slippage stress, and latency stress.
+  - Built `CandidateEvaluationService` with transparent robustness classification (`ROBUST`, `FRAGILE`, `OVERFIT`, `INSUFFICIENT_DATA`, `NEGATIVE_COST_EDGE`) and automated promotion gating to `PAPER_PENDING`.
+  - Built `EconomicScenarioCalculator` projecting capital requirements and drawdown metrics for user-defined daily income goals (e.g. $10/day) with clear scenario disclaimers.
+  - Added `StrategyDiscoveryController` REST API and updated web dashboard with Strategy Candidate Discovery & Robustness Rankings view.
+  - Added documentation: `docs/STRATEGY_DISCOVERY.md` and `docs/ROBUSTNESS_METHODOLOGY.md`.
+  - Passing **211 automated tests across 74 test classes** with 0 failures, 0 errors, and 0 skipped.
+
 ## 0.23.0 — 2026-09-02
 
 - Implemented Autonomous Intelligence Layer — Phase K (Strategy Research, Validation & Economic Edge Engine):

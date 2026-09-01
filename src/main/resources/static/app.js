@@ -39,6 +39,7 @@ function switchView(targetViewId) {
   else if (targetViewId === 'view-strategies') loadStrategiesTable();
   else if (targetViewId === 'view-trades') loadOrdersTable();
   else if (targetViewId === 'view-agent') loadAgentDecisionsTable();
+  else if (targetViewId === 'view-research') loadCandidatesTable();
   else if (targetViewId === 'view-backtests') loadStrategyExperimentsTable();
   else if (targetViewId === 'view-reconciliation') loadReconciliationView();
   else if (targetViewId === 'view-audit') loadAuditTable();
@@ -1643,6 +1644,71 @@ async function runExperiment(id) {
     }
   } catch (e) {
     console.error('Failed to run experiment', e);
+  }
+}
+
+async function loadCandidatesTable() {
+  try {
+    const tbody = document.getElementById('candidates-body');
+    if (!tbody) return;
+
+    const res = await fetch('/api/strategy-discovery/candidates');
+    if (!res.ok) return;
+
+    const candidates = await res.json();
+    if (candidates.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="recon-empty">No strategy candidates generated yet. Click Discover New Candidates to start.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = candidates.map(c => {
+      let statusClass = 'running';
+      if (c.status === 'PAPER_PENDING' || c.status === 'QUALIFIED') statusClass = 'active';
+      else if (c.status === 'REJECTED') statusClass = 'error';
+
+      let robClass = 'running';
+      if (c.robustnessClassification === 'ROBUST') robClass = 'positive';
+      else if (c.robustnessClassification === 'FRAGILE' || c.robustnessClassification === 'NEGATIVE_COST_EDGE') robClass = 'negative';
+
+      return `
+        <tr>
+          <td><b>${escapeHtml(c.name)}</b></td>
+          <td><span class="badge">${escapeHtml(c.family)}</span></td>
+          <td><b>${escapeHtml(c.symbol)}</b> <small class="muted">(${escapeHtml(c.timeframe)})</small></td>
+          <td>${c.netExpectancy !== null ? Number(c.netExpectancy).toFixed(4) : '-'}</td>
+          <td>${c.profitFactor !== null ? Number(c.profitFactor).toFixed(2) : '-'}</td>
+          <td><b class="${robClass}">${c.robustnessClassification || 'UNTESTED'}</b> (${c.robustnessScore || 0}%)</td>
+          <td><span class="status-pill ${statusClass}">${escapeHtml(c.status)}</span></td>
+          <td><button class="btn sm" onclick="evaluateCandidate('${c.candidateId}')">Evaluate</button></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load candidates', e);
+  }
+}
+
+async function triggerCandidateGeneration() {
+  try {
+    const res = await fetch('/api/strategy-discovery/generate', { method: 'POST' });
+    if (res.ok) {
+      announce('Grid candidates successfully generated.');
+      loadCandidatesTable();
+    }
+  } catch (e) {
+    console.error('Failed to generate candidates', e);
+  }
+}
+
+async function evaluateCandidate(id) {
+  try {
+    const res = await fetch(`/api/strategy-discovery/candidates/${id}/evaluate`, { method: 'POST' });
+    if (res.ok) {
+      announce('Candidate evaluated and stress-tested.');
+      loadCandidatesTable();
+    }
+  } catch (e) {
+    console.error('Failed to evaluate candidate', e);
   }
 }
 

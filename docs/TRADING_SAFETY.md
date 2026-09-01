@@ -77,6 +77,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 2. **Negative Cost Edge Guard**: If average gross edge is less than or equal to total transaction friction, the system flags `NEGATIVE_COST_EDGE` and prohibits automatic capital allocation.
 3. **Performance Drift Surveillance**: Live paper/demo execution metrics are continuously benchmarked against historical backtests; drift exceeding $-40\%$ triggers `STRATEGY_DEGRADATION`.
 
+## Strategy Discovery & Candidate Governance Invariants
+1. **Strict Lifecycle State Machine**: Strategy candidates must progress through `GENERATED` ➔ `BACKTESTING` ➔ `VALIDATING` ➔ `ROBUSTNESS_CHECK` ➔ `PAPER_PENDING` without state bypassing.
+2. **Deterministic Paper Qualification**: Only candidates classified as `ROBUST` under $1.5\times - 3.0\times$ cost/slippage stress tests qualify for paper validation.
+3. **Human Operator Supremacy**: Operators maintain absolute veto authority to reject, pause, or retire candidates regardless of AI recommendations.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.
