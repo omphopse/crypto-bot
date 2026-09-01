@@ -17,7 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-@Repository
+@Repository("hypothesisResearchStore")
 public class JdbcResearchStore implements ResearchStore {
   private final JdbcTemplate jdbc;
   private final ObjectMapper json;

@@ -15,7 +15,7 @@ import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-@Repository
+@Repository("evidenceResearchStore")
 public class JdbcResearchStore implements ResearchStore {
   private final JdbcTemplate jdbc;
 
