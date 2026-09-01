@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.23.0 — 2026-09-02
+
+- Implemented Autonomous Intelligence Layer — Phase K (Strategy Research, Validation & Economic Edge Engine):
+  - Added Flyway migration `V23__strategy_research_and_experiments.sql` creating `strategy_experiments`, `experiment_metrics`, `experiment_trades`, `experiment_walk_forward_windows`, `experiment_parameter_sweeps`, `experiment_regime_results`, and `strategy_health_metrics`.
+  - Built `RealisticCostBacktestEngine` with explicit maker/taker commissions, bid/ask spread, dynamic slippage models (`FIXED`, `PERCENT`, `VOLATILITY_BASED`, `VOLUME_BASED`), and simulated latency.
+  - Implemented mathematical Net Expectancy and True Economic Net Result (deducting AI reasoning, research scrape, and infrastructure overheads).
+  - Built `WalkForwardService` providing rolling In-Sample vs Out-of-Sample validation and degradation ratios.
+  - Built `ParameterSensitivityService` evaluating parameter grid stability and classifying parameter robustness (`ROBUST`, `FRAGILE`, `OVERFIT`).
+  - Built `MarketRegimeService` segmenting results across `BULL_TREND`, `BEAR_TREND`, `SIDEWAYS`, `HIGH_VOLATILITY`, and `LOW_VOLATILITY`.
+  - Built `StrategyHealthService` detecting live paper/demo performance drift against backtest baselines.
+  - Added `StrategyResearchController` REST API and updated web dashboard with Strategy Experiments & Economic Edge Engine view.
+  - Added documentation: `docs/STRATEGY_RESEARCH.md`, `docs/BACKTEST_METHODOLOGY.md`, and `docs/ECONOMIC_VIABILITY.md`.
+  - Passing **208 automated tests across 71 test classes** with 0 failures, 0 errors, and 0 skipped.
+
 ## 0.22.0 — 2026-09-02
 
 - Implemented Autonomous Intelligence Layer — Phase J (Full Autonomous Canary Validation & End-to-End Operational Hardening):

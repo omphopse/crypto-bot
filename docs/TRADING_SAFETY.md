@@ -72,6 +72,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 2. **Deterministic Risk Precedence**: Even under high concurrent multi-bot capital contention, global portfolio exposure and single-symbol caps are atomized and strictly enforced by `RiskEngine`.
 3. **Zero Live Execution Boundary**: `LIVE_TRADING_DISABLED` is strictly hardcoded and immutable; all autonomous canary executions are confined exclusively to `Alpaca Paper` and `Bybit Demo`.
 
+## Strategy Research & Economic Edge Invariants
+1. **Frictional Failsafe**: No strategy may be certified or promoted to autonomous execution without demonstrating positive Net Expectancy after realistic maker/taker fees, spread, and slippage.
+2. **Negative Cost Edge Guard**: If average gross edge is less than or equal to total transaction friction, the system flags `NEGATIVE_COST_EDGE` and prohibits automatic capital allocation.
+3. **Performance Drift Surveillance**: Live paper/demo execution metrics are continuously benchmarked against historical backtests; drift exceeding $-40\%$ triggers `STRATEGY_DEGRADATION`.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.

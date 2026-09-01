@@ -39,6 +39,7 @@ function switchView(targetViewId) {
   else if (targetViewId === 'view-strategies') loadStrategiesTable();
   else if (targetViewId === 'view-trades') loadOrdersTable();
   else if (targetViewId === 'view-agent') loadAgentDecisionsTable();
+  else if (targetViewId === 'view-backtests') loadStrategyExperimentsTable();
   else if (targetViewId === 'view-reconciliation') loadReconciliationView();
   else if (targetViewId === 'view-audit') loadAuditTable();
 }
@@ -1593,6 +1594,55 @@ function connectWebSocket() {
     };
   } catch (e) {
     console.warn('WebSocket connection fallback', e);
+  }
+}
+
+async function loadStrategyExperimentsTable() {
+  try {
+    const tbody = document.getElementById('experiments-body');
+    if (!tbody) return;
+
+    const res = await fetch('/api/research/experiments');
+    if (!res.ok) return;
+
+    const exps = await res.json();
+    if (exps.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="recon-empty">No strategy experiments recorded yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = exps.map(e => {
+      let statusClass = 'running';
+      if (e.status === 'COMPLETED') statusClass = 'active';
+      else if (e.status === 'FAILED') statusClass = 'error';
+
+      return `
+        <tr>
+          <td><code>${e.id.substring(0, 8)}</code></td>
+          <td><b>${escapeHtml(e.symbol)}</b> <small class="muted">(${escapeHtml(e.timeframe)})</small></td>
+          <td><b>$${Number(e.initialCapital).toLocaleString()}</b></td>
+          <td>${escapeHtml(e.slippageModel)}</td>
+          <td>${e.slippageBps} bps / ${e.takerFeeBps} bps</td>
+          <td>$${Number(e.fixedSpread).toFixed(2)}</td>
+          <td><span class="status-pill ${statusClass}">${escapeHtml(e.status)}</span></td>
+          <td><button class="btn sm" onclick="runExperiment('${e.id}')">Run</button></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load strategy experiments', e);
+  }
+}
+
+async function runExperiment(id) {
+  try {
+    const res = await fetch(`/api/research/experiments/${id}/run`, { method: 'POST' });
+    if (res.ok) {
+      announce('Strategy experiment simulation completed.');
+      loadStrategyExperimentsTable();
+    }
+  } catch (e) {
+    console.error('Failed to run experiment', e);
   }
 }
 
