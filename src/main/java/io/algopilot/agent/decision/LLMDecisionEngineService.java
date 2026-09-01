@@ -25,8 +25,31 @@ public class LLMDecisionEngineService {
   private final StructuredDecisionValidator validator;
   private final StructuredDecisionStore decisionStore;
   private final AiCostLimiter costLimiter;
+  private final io.algopilot.cost.AiCostGovernanceService costGovernance;
   private final AuditEventWriter audit;
   private final Clock clock;
+
+  public LLMDecisionEngineService(
+      ContextBuilderService contextBuilder,
+      TradingContextStore contextStore,
+      LLMDecisionProvider provider,
+      StructuredDecisionValidator validator,
+      StructuredDecisionStore decisionStore,
+      AiCostLimiter costLimiter,
+      io.algopilot.cost.AiCostGovernanceService costGovernance,
+      AuditEventWriter audit,
+      Clock clock
+  ) {
+    this.contextBuilder = contextBuilder;
+    this.contextStore = contextStore;
+    this.provider = provider;
+    this.validator = validator;
+    this.decisionStore = decisionStore;
+    this.costLimiter = costLimiter;
+    this.costGovernance = costGovernance;
+    this.audit = audit;
+    this.clock = clock;
+  }
 
   public LLMDecisionEngineService(
       ContextBuilderService contextBuilder,
@@ -38,14 +61,7 @@ public class LLMDecisionEngineService {
       AuditEventWriter audit,
       Clock clock
   ) {
-    this.contextBuilder = contextBuilder;
-    this.contextStore = contextStore;
-    this.provider = provider;
-    this.validator = validator;
-    this.decisionStore = decisionStore;
-    this.costLimiter = costLimiter;
-    this.audit = audit;
-    this.clock = clock;
+    this(contextBuilder, contextStore, provider, validator, decisionStore, costLimiter, null, audit, clock);
   }
 
   public StructuredTradeDecision analyzeBot(UUID botId) {
@@ -59,7 +75,39 @@ public class LLMDecisionEngineService {
       throw new IllegalArgumentException("TradingContext cannot be null");
     }
 
-    // 1. Rate Limiting & Cost Budget Checks
+    // 1. Deduplication Check
+    if (costGovernance != null && costGovernance.isDuplicateRequest(context)) {
+      Optional<StructuredTradeDecision> cachedOpt = costGovernance.getCachedDecision(context);
+      if (cachedOpt.isPresent()) {
+        log.info("Returning cached decision for duplicate context hash {}", context.contextHash());
+        return cachedOpt.get();
+      }
+    }
+
+    // 2. Budget Governance Gate
+    if (costGovernance != null) {
+      UUID stratId = context.strategy() != null ? context.strategy().strategyId() : null;
+      io.algopilot.cost.BudgetStatus budgetStatus = costGovernance.evaluateBudgetStatus(context.botId(), stratId);
+      if (budgetStatus == io.algopilot.cost.BudgetStatus.BLOCKED) {
+        log.warn("AI decision analysis blocked by budget governance for bot {}", context.botId());
+        StructuredTradeDecision failedDecision = new StructuredTradeDecision(
+            UUID.randomUUID(), context.contextId(), context.contextHash(), context.botId(),
+            context.agentSessionId(), context.strategy() != null ? context.strategy().strategyVersionId() : UUID.randomUUID(),
+            provider.providerName(), provider.modelName(), TradeAction.NO_ACTION,
+            context.market() != null ? context.market().symbol() : "UNKNOWN",
+            "FLAT", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+            "INTRADAY", "Analysis skipped due to AI budget policy exhaustion.",
+            List.of(), List.of(), List.of(), ValidationStatus.FAILED, "AI_BUDGET_EXCEEDED",
+            0L, 0, 0, BigDecimal.ZERO, now, now.plusSeconds(300)
+        );
+        decisionStore.save(failedDecision);
+        audit.record("AGENT", context.botId().toString(), "DECISION_FAILED", "DECISION", failedDecision.id().toString(),
+            Map.of("reason", "AI_BUDGET_EXCEEDED"));
+        return failedDecision;
+      }
+    }
+
+    // 3. Rate Limiting & Cost Budget Checks
     if (!costLimiter.tryAcquire()) {
       log.warn("AI decision analysis rate limited or budget exceeded for bot {}", context.botId());
       StructuredTradeDecision failedDecision = new StructuredTradeDecision(
@@ -78,7 +126,8 @@ public class LLMDecisionEngineService {
       return failedDecision;
     }
 
-    // 2. Execute LLM Analysis
+    // 4. Execute LLM Analysis
+    long startTime = clock.instant().toEpochMilli();
     StructuredTradeDecision rawDecision;
     try {
       rawDecision = provider.analyze(context);
@@ -99,17 +148,24 @@ public class LLMDecisionEngineService {
           Map.of("error", e.getMessage() != null ? e.getMessage() : "PROVIDER_ERROR"));
       return errorDecision;
     }
+    long latencyMs = clock.instant().toEpochMilli() - startTime;
 
-    // 3. Record Token & Cost Usage
+    // 5. Record Token & Cost Usage
     costLimiter.recordUsage(rawDecision.inputTokens(), rawDecision.outputTokens(), rawDecision.estimatedCostUsd());
+    if (costGovernance != null) {
+      costGovernance.recordAiDecisionCost(context, rawDecision, provider.providerName(), provider.modelName(), latencyMs);
+    }
 
-    // 4. Validate Structured Decision
+    // 6. Validate Structured Decision
     StructuredTradeDecision validatedDecision = validator.validate(rawDecision, context);
 
-    // 5. Persist Decision Record
+    // 7. Persist & Cache Decision Record
     decisionStore.save(validatedDecision);
+    if (costGovernance != null) {
+      costGovernance.cacheDecision(context, validatedDecision);
+    }
 
-    // 6. Audit Trail Logging (Zero Execution Allowed)
+    // 8. Audit Trail Logging (Zero Execution Allowed)
     String eventType = validatedDecision.validationStatus() == ValidationStatus.VALIDATED
         ? "DECISION_VALIDATED"
         : "DECISION_REJECTED";

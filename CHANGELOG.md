@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.21.0 — 2026-09-01
+
+- Implemented Autonomous Intelligence Layer — Phase I (AI Cost Controls, Token Attribution & Rate Gating):
+  - Added Flyway migration `V22__ai_cost_and_budget_governance.sql` creating `ai_cost_events`, `ai_model_pricing`, and `ai_budget_policies` tables.
+  - Implemented typed cost event model (`AiCostEvent`, `CostOperationType`, `BudgetTier`, `BudgetStatus`).
+  - Implemented `AiCostGovernanceService` providing multi-tier budget evaluation (`GLOBAL`, `BOT`, `STRATEGY`), dynamic threshold throttling ($70\%$ ➔ `THROTTLED`, $100\%$ ➔ `BLOCKED`), and deduplication caching.
+  - Implemented 7-section granular token attribution breakdown (`systemInstructions`, `marketContext`, `strategyContext`, `portfolioContext`, `riskContext`, `researchEvidence`, `outputTokens`).
+  - Added `AiCostController` REST endpoints (`/api/costs`, `/api/costs/today`, `/api/costs/bots/{botId}`, `/api/costs/strategies/{strategyId}`, `/api/costs/budget`, `/api/costs/budget/status`).
+  - Updated web operations dashboard with real-time AI Cost Accounting & Budget Governance table.
+  - Added `docs/AI_COST_CONTROL.md`.
+  - Added comprehensive automated unit tests (`AiCostGovernanceServiceTest`) passing 200 total tests.
+
 ## 0.20.0 — 2026-09-01
 
 - Implemented Autonomous Intelligence Layer — Phase H (Heartbeat Watchdog, Health Probes & Automated Fault Recovery):

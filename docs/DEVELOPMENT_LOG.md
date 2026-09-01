@@ -1,5 +1,44 @@
 # Development log
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase I (AI Cost Controls, Token Attribution & Rate Gating)
+
+- **Phase:** Phase I — AI Cost Controls, Token Attribution & Rate Gating
+- **Objective:** Build end-to-end AI cost governance, multi-tier budget policies (`GLOBAL`, `BOT`, `STRATEGY`), dynamic budget throttling ($70\%$ ➔ `THROTTLED`, $100\%$ ➔ `BLOCKED`), 7-section prompt token attribution, request deduplication, and fail-closed safety gating.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V22__ai_cost_and_budget_governance.sql`
+  - `src/main/java/io/algopilot/cost/CostOperationType.java`
+  - `src/main/java/io/algopilot/cost/BudgetTier.java`
+  - `src/main/java/io/algopilot/cost/BudgetStatus.java`
+  - `src/main/java/io/algopilot/cost/AiCostEvent.java`
+  - `src/main/java/io/algopilot/cost/AiModelPricing.java`
+  - `src/main/java/io/algopilot/cost/AiBudgetPolicy.java`
+  - `src/main/java/io/algopilot/cost/CostSummary.java`
+  - `src/main/java/io/algopilot/cost/CostStore.java`
+  - `src/main/java/io/algopilot/cost/JdbcCostStore.java`
+  - `src/main/java/io/algopilot/cost/AiCostGovernanceService.java`
+  - `src/main/java/io/algopilot/cost/AiCostController.java`
+  - `src/main/java/io/algopilot/agent/decision/LLMDecisionEngineService.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/cost/AiCostGovernanceServiceTest.java`
+  - `docs/AI_COST_CONTROL.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V22__ai_cost_and_budget_governance.sql` (`ai_cost_events`, `ai_model_pricing`, `ai_budget_policies`).
+- **Implementation Summary:**
+  1. Implemented typed cost event model (`AiCostEvent`, `CostOperationType`, `BudgetTier`, `BudgetStatus`).
+  2. Implemented `AiCostGovernanceService` evaluating multi-tier budgets, request deduplication caching, and dynamic throttling.
+  3. Integrated `AiCostGovernanceService` into `LLMDecisionEngineService` with fail-closed gate evaluation.
+  4. Implemented 7-section granular token attribution breakdown.
+  5. Updated dashboard with live AI Cost Accounting & Budget Governance table.
+- **Tests Executed:** 200 automated tests across 63 test classes (4 dedicated new tests for Phase I).
+- **Test Results:** 200 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero live trading paths, fail-closed cost evaluation, no prompt/credential leakage.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase H (Heartbeat Watchdog, Health Probes & Automated Fault Recovery)
 
 - **Phase:** Phase H — Heartbeat Watchdog, Health Probes & Automated Fault Recovery

@@ -1,5 +1,23 @@
 # Test report
 
+## 2026-09-01 — Autonomous Intelligence Layer: Phase I (AI Cost Controls, Token Attribution & Rate Gating)
+
+Command: `mvn test -q`
+
+Result: **passed** (200 tests executed across 63 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Budget Threshold Evaluation (`AiCostGovernanceServiceTest`):**
+   - Verified that when daily spending is $< 70\%$ of budget, status evaluates to `NORMAL`.
+   - Verified that when daily spending crosses $70\%$, status transitions to `THROTTLED`.
+   - Verified that when daily spending reaches $\ge 100\%$, status transitions to `BLOCKED` (`AI_BUDGET_EXCEEDED`).
+
+2. **Token Attribution & Cost Calculation (`AiCostGovernanceServiceTest`):**
+   - Verified that decision token counts are attributed across 7 prompt sections (`systemInstructions`, `marketContext`, `strategyContext`, `portfolioContext`, `riskContext`, `researchEvidence`, `outputTokens`).
+   - Verified that costs are calculated against active `AiModelPricing` per million tokens.
+   - Verified that cost records are saved to `ai_cost_events` and recorded in the audit trail.
+
 ## 2026-09-01 — Autonomous Intelligence Layer: Phase H (Heartbeat Watchdog, Health Probes & Automated Fault Recovery)
 
 Command: `mvn test -q`

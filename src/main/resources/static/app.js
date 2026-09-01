@@ -963,6 +963,38 @@ async function loadAgentDecisionsTable() {
   loadAutonomousExecutionsTable();
   loadMonitoredPositionsTable();
   loadComponentHeartbeatsTable();
+  loadAiCostEventsTable();
+}
+
+async function loadAiCostEventsTable() {
+  try {
+    const tbody = document.getElementById('ai-costs-body');
+    if (!tbody) return;
+
+    const res = await fetch('/api/costs?limit=10');
+    if (!res.ok) return;
+
+    const events = await res.json();
+    if (events.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="recon-empty">No AI cost events recorded yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = events.map(ev => {
+      return `
+        <tr>
+          <td>${new Date(ev.timestamp).toLocaleTimeString()}</td>
+          <td><b>${escapeHtml(ev.operationType)}</b></td>
+          <td><code>${escapeHtml(ev.model)}</code></td>
+          <td>${ev.inputTokens} / ${ev.outputTokens} (${ev.totalTokens})</td>
+          <td><b>$${Number(ev.estimatedTotalCost).toFixed(4)}</b></td>
+          <td>${ev.latencyMs}ms</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load cost events', e);
+  }
 }
 
 async function loadComponentHeartbeatsTable() {

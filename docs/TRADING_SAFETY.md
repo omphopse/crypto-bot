@@ -62,6 +62,11 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 3. **Restart Safe Default**: On application restart, previously running bots default to `PAUSED` and require clean broker reconciliation before resuming.
 4. **Stuck Order Surveillance**: Orders remaining in `CREATED` or `SUBMITTED` beyond threshold ($> 30\text{s}$) trigger automatic bot pausing and broker reconciliation.
 
+## AI Cost Control & Budget Invariants
+1. **Fail-Closed Gate**: If cost governance fails or budget limits cannot be determined, AI requests are rejected and no orders are generated.
+2. **Safety Exemption**: AI budget exhaustion never disables or weakens deterministic position stop loss, trailing stop, take profit, or risk management safeguards.
+3. **Non-Elevated Governance**: AI reasoning engines possess zero authority to alter or expand their own budgets or rate limits.
+
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
 2. **Health Probe Integrity**: Container liveness/readiness probes verify database connectivity and Actuator health status before routing traffic.
