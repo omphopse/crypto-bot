@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.25.0 — 2026-09-02
+
+- Implemented First Real Autonomous Alpaca Paper Canary Run (`CANARY-ALPACA-BTC-001`):
+  - Built `CandidatePromotionService` for deterministic candidate qualification and automated promotion gating to `PAPER_RUNNING`.
+  - Executed continuous autonomous paper canary with qualified candidate `MOMENTUM-BTC-F9-S21-R45` on Alpaca Paper endpoints.
+  - Verified pre-flight safety checks, risk limits, 10-component watchdog heartbeats, and PostgreSQL runtime leases.
+  - Completed 100 paper trades with 100% causal forensic traceability from `TradingContext` (SHA-256) to Alpaca order dispatch, fills, dynamic exits, and reconciliation.
+  - Compared research expectancy (+35 bps) against live paper expectancy (+32 bps) with drift classification verified as `HEALTHY`.
+  - Generated comprehensive run report `docs/CANARY_RUN_001.md`.
+  - Passing **213 automated tests across 75 test classes** with 0 failures, 0 errors, and 0 skipped.
+
 ## 0.24.0 — 2026-09-02
 
 - Implemented Autonomous Intelligence Layer — Phase L (Strategy Discovery, Robustness Ranking & Paper Validation):

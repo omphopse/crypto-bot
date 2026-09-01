@@ -4,6 +4,7 @@ import io.algopilot.strategy.discovery.model.*;
 import io.algopilot.strategy.discovery.persistence.CandidateStore;
 import io.algopilot.strategy.discovery.service.CandidateEvaluationService;
 import io.algopilot.strategy.discovery.service.CandidateGeneratorService;
+import io.algopilot.strategy.discovery.service.CandidatePromotionService;
 import io.algopilot.strategy.discovery.service.EconomicScenarioCalculator;
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,17 +20,30 @@ public class StrategyDiscoveryController {
   private final CandidateGeneratorService generatorService;
   private final CandidateEvaluationService evaluationService;
   private final EconomicScenarioCalculator scenarioCalculator;
+  private final CandidatePromotionService promotionService;
 
   public StrategyDiscoveryController(
       CandidateStore candidateStore,
       CandidateGeneratorService generatorService,
       CandidateEvaluationService evaluationService,
-      EconomicScenarioCalculator scenarioCalculator
+      EconomicScenarioCalculator scenarioCalculator,
+      CandidatePromotionService promotionService
   ) {
     this.candidateStore = candidateStore;
     this.generatorService = generatorService;
     this.evaluationService = evaluationService;
     this.scenarioCalculator = scenarioCalculator;
+    this.promotionService = promotionService;
+  }
+
+  @GetMapping("/qualify")
+  public ResponseEntity<CandidatePromotionService.QualificationCheckResult> checkQualifiedCandidate() {
+    return ResponseEntity.ok(promotionService.selectQualifiedCandidate());
+  }
+
+  @PostMapping("/candidates/{id}/promote")
+  public ResponseEntity<CandidatePromotionService.CanaryDeploymentResult> promoteCandidate(@PathVariable UUID id) {
+    return ResponseEntity.ok(promotionService.promoteToPaper(id));
   }
 
   @PostMapping("/generate")

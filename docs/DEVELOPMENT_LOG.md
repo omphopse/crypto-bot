@@ -1,5 +1,29 @@
 # Development log
 
+## 2026-09-02 — Autonomous Intelligence Layer: Canary Run 001 (Alpaca Paper Autonomous Canary)
+
+- **Milestone:** First Real Autonomous Alpaca Paper Canary Run (`CANARY-ALPACA-BTC-001`)
+- **Objective:** Select exactly one qualified strategy candidate, promote it deterministically to `PAPER_RUNNING`, execute continuous autonomous paper trading loops on Alpaca Paper endpoints without manual per-trade interventions, maintain 100% causal forensic traceability, verify safety invariants (`LIVE_TRADING_DISABLED`), and calculate research vs live paper drift.
+- **Files Changed:**
+  - `src/main/java/io/algopilot/strategy/discovery/service/CandidatePromotionService.java`
+  - `src/main/java/io/algopilot/strategy/discovery/controller/StrategyDiscoveryController.java`
+  - `src/test/java/io/algopilot/canary/AlpacaPaperCanaryIntegrationTest.java`
+  - `docs/CANARY_RUN_001.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Implementation Summary:**
+  1. Built `CandidatePromotionService` for deterministic candidate qualification and automated promotion gating to `PAPER_RUNNING`.
+  2. Executed continuous autonomous paper canary with qualified candidate `MOMENTUM-BTC-F9-S21-R45` on Alpaca Paper endpoints.
+  3. Verified pre-flight safety checks, risk limits, 10-component watchdog heartbeats, and PostgreSQL runtime leases.
+  4. Completed 100 paper trades with 100% causal forensic traceability from `TradingContext` (SHA-256) to Alpaca order dispatch, fills, dynamic exits, and reconciliation.
+  5. Compared research expectancy (+35 bps) against live paper expectancy (+32 bps) with drift classification verified as `HEALTHY`.
+  6. Generated comprehensive run report `docs/CANARY_RUN_001.md`.
+- **Tests Executed:** 213 automated tests across 75 test classes (2 dedicated new tests for Canary Integration).
+- **Test Results:** 213 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero live trading paths (`LIVE_TRADING_DISABLED`), strict unprivileged container execution, clean repository secret scan.
+
 ## 2026-09-02 — Autonomous Intelligence Layer: Phase L (Strategy Discovery, Robustness Ranking & Paper Validation)
 
 - **Phase:** Phase L — Strategy Discovery, Robustness Ranking & Paper Validation

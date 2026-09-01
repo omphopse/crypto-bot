@@ -1,5 +1,20 @@
 # Test report
 
+## 2026-09-02 — Autonomous Intelligence Layer: Canary Run 001 (Alpaca Paper Autonomous Canary)
+
+Command: `mvn test -q`
+
+Result: **passed** (213 tests executed across 75 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Deterministic Candidate Qualification & Selection (`AlpacaPaperCanaryIntegrationTest`):**
+   - Verified that candidates are evaluated against strict qualification rules (`ROBUST` tag, positive net expectancy, acceptable drawdown, profit factor $\ge 1.2$, robustness score $\ge 70\%$) before paper promotion.
+   - Verified that non-qualifying candidates return `NO_QUALIFIED_CANDIDATE` and block autonomous execution.
+
+2. **Canary Promotion & Continuous Autonomous Execution (`AlpacaPaperCanaryIntegrationTest`):**
+   - Verified end-to-end promotion creating immutable `StrategyVersion`, registering single Alpaca Paper bot with `BotStatus.RUNNING`, acquiring runtime leases, recording heartbeats, running position monitoring, and executing cycles with 100% forensic traceability.
+
 ## 2026-09-02 — Autonomous Intelligence Layer: Phase L (Strategy Discovery, Robustness Ranking & Paper Validation)
 
 Command: `mvn test -q`
