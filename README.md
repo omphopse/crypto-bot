@@ -82,6 +82,6 @@ No UI action is an execution authority. Production order flow must be:
 
 The browser/research layer is an untrusted information source only. Live trading is disabled by design until separately implemented with explicit deployment gates.
 
-See [docs/RUNBOOK.md](docs/RUNBOOK.md) for incident response and operational procedures, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for service design, [docs/TRADING_SAFETY.md](docs/TRADING_SAFETY.md) for non-negotiable controls, and [docs/SECURITY.md](docs/SECURITY.md) for security boundaries.
+See [docs/DATA_INTEGRITY_REPORT.md](docs/DATA_INTEGRITY_REPORT.md) for data sources and simulation boundaries, [docs/RUNBOOK.md](docs/RUNBOOK.md) for incident response and operational procedures, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for service design, [docs/TRADING_SAFETY.md](docs/TRADING_SAFETY.md) for non-negotiable controls, and [docs/SECURITY.md](docs/SECURITY.md) for security boundaries.
 
 Milestone status and test evidence are recorded in [docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md) and [docs/TEST_REPORT.md](docs/TEST_REPORT.md).

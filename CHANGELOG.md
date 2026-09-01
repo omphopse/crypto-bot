@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.0 — 2026-09-01
+
+- Added complete Data Integrity Audit and published `docs/DATA_INTEGRITY_REPORT.md` classifying all production, seed, test, mock, and simulated execution paths.
+- Configured single controlled **Canary validation deployment**: 1 Alpaca Paper bot (`Canary Alpaca Paper`) and 1 Bybit Demo bot (`Canary Bybit Demo`) in `RUNNING` status, leaving other bots in `PAUSED` state by default.
+- Added critical reconciliation mismatch order-blocking gate in `ExecutionGateway` to prevent order dispatching if unresolved discrepancies exist.
+- Standardized UI dashboard terminology and badges (`PAPER`, `DEMO`, `SIMULATED P&L`, `Simulated Net P&L`, `Paper/Demo Portfolio Equity`) to clearly differentiate paper operations from real fiat currency.
+- Added execution provenance tracking (provider, environment, provider order ID, client order ID, timestamps) to trade execution details.
+- Added automated unit test verifying order dispatch rejection when critical reconciliation mismatches exist (120 total passing tests).
+
 ## 0.9.0 — 2026-08-31
 
 - Added Micrometer `TradingMetrics` component registering trading operational metrics for submitted orders, executed orders, approved/rejected risk decisions, active reconciliation mismatches, and rebalance runs.

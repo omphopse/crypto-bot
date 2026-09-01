@@ -91,7 +91,8 @@ WebSocket Topics (/topic/*)               AlphaHypothesis & Strategy Synthesis
 
 ## Execution Gateway & Broker Adapters
 
-- **Execution Gateway (`ExecutionGateway`)**: Central router ensuring orders are dispatched ONLY when the bot is in `RUNNING` status, rejecting `LIVE` mode, dispatching to the registered adapter, advancing order lifecycle state to `SUBMITTED` / `ACKNOWLEDGED`, and writing immutable audit records.
+- **Execution Gateway (`ExecutionGateway`)**: Central router ensuring orders are dispatched ONLY when the bot is in `RUNNING` status, rejecting `LIVE` mode, verifying that the bot has zero unresolved critical reconciliation mismatches, dispatching to the registered adapter, advancing order lifecycle state to `SUBMITTED` / `ACKNOWLEDGED`, and writing immutable audit records.
+- **Canary Validation Deployment**: Supports a single controlled canary deployment (1 Alpaca Paper bot `Canary Alpaca Paper` and 1 Bybit Demo bot `Canary Bybit Demo` running concurrently with other bots safely paused).
 - **Alpaca Paper Adapter (`AlpacaPaperAdapter`)**: REST client for Alpaca Paper (`https://paper-api.alpaca.markets/v2`) providing order placement, cancellation, balance, position, and fill retrieval.
 - **Bybit Demo Adapter (`BybitDemoAdapter`)**: REST client for Bybit V5 Demo (`https://api-demo.bybit.com`) with HMAC-SHA256 authenticated order execution and position tracking.
 - **Composite Broker State Provider (`CompositeBrokerStateProvider`)**: Routes reconciliation snapshot queries to the active adapter based on bot broker and mode.

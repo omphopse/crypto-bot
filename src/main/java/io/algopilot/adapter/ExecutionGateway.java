@@ -12,6 +12,9 @@ import io.algopilot.order.OrderRecord;
 import io.algopilot.order.OrderStatus;
 import io.algopilot.order.OrderStore;
 import io.algopilot.order.OrderTransitionRequest;
+import io.algopilot.reconciliation.model.MismatchSeverity;
+import io.algopilot.reconciliation.model.ResolutionState;
+import io.algopilot.reconciliation.persistence.ReconciliationStore;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +38,7 @@ public class ExecutionGateway {
   private final OrderStore orderStore;
   private final OrderLifecycleService lifecycleService;
   private final AuditEventWriter audit;
+  private final ReconciliationStore reconciliationStore;
   private final Clock clock;
 
   @org.springframework.beans.factory.annotation.Autowired
@@ -43,8 +47,26 @@ public class ExecutionGateway {
       BotStore botStore,
       OrderStore orderStore,
       OrderLifecycleService lifecycleService,
-      AuditEventWriter audit) {
-    this(adapters, botStore, orderStore, lifecycleService, audit, Clock.systemUTC());
+      AuditEventWriter audit,
+      @org.springframework.lang.Nullable ReconciliationStore reconciliationStore) {
+    this(adapters, botStore, orderStore, lifecycleService, audit, reconciliationStore, Clock.systemUTC());
+  }
+
+  public ExecutionGateway(
+      List<BrokerOrderAdapter> adapters,
+      BotStore botStore,
+      OrderStore orderStore,
+      OrderLifecycleService lifecycleService,
+      AuditEventWriter audit,
+      ReconciliationStore reconciliationStore,
+      Clock clock) {
+    this.adapters = adapters;
+    this.botStore = botStore;
+    this.orderStore = orderStore;
+    this.lifecycleService = lifecycleService;
+    this.audit = audit;
+    this.reconciliationStore = reconciliationStore;
+    this.clock = clock;
   }
 
   public ExecutionGateway(
@@ -54,12 +76,16 @@ public class ExecutionGateway {
       OrderLifecycleService lifecycleService,
       AuditEventWriter audit,
       Clock clock) {
-    this.adapters = adapters;
-    this.botStore = botStore;
-    this.orderStore = orderStore;
-    this.lifecycleService = lifecycleService;
-    this.audit = audit;
-    this.clock = clock;
+    this(adapters, botStore, orderStore, lifecycleService, audit, null, clock);
+  }
+
+  public ExecutionGateway(
+      List<BrokerOrderAdapter> adapters,
+      BotStore botStore,
+      OrderStore orderStore,
+      OrderLifecycleService lifecycleService,
+      AuditEventWriter audit) {
+    this(adapters, botStore, orderStore, lifecycleService, audit, null, Clock.systemUTC());
   }
 
   @Transactional
@@ -81,6 +107,14 @@ public class ExecutionGateway {
 
     if (bot.status() != BotStatus.RUNNING) {
       throw new BrokerAdapterException("BOT_NOT_RUNNING_CANNOT_DISPATCH_ORDER:" + bot.status());
+    }
+
+    if (reconciliationStore != null) {
+      var mismatches = reconciliationStore.findMismatchesByBotId(bot.id().toString(), ResolutionState.UNRESOLVED);
+      boolean hasCritical = mismatches.stream().anyMatch(m -> m.severity() == MismatchSeverity.CRITICAL);
+      if (hasCritical) {
+        throw new BrokerAdapterException("BOT_RECONCILIATION_MISMATCH_BLOCK: Bot has " + mismatches.size() + " unresolved critical reconciliation mismatches.");
+      }
     }
 
     if (order.status() != OrderStatus.CREATED) {

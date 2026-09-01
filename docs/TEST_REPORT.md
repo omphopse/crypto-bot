@@ -1,5 +1,22 @@
 # Test report
 
+## 2026-09-01 — Data Integrity, Reconciliation Gating & Canary Validation Milestone
+
+Command: `mvn test -q`
+
+Result: **passed** (120 tests executed across 43 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Reconciliation Gating in `ExecutionGateway`:**
+   - Added `testDispatch_rejectsWhenCriticalReconciliationMismatchExists` verifying that an order dispatch is rejected immediately with `BOT_RECONCILIATION_MISMATCH_BLOCK` if unresolved critical mismatches exist for the bot.
+
+2. **Canary Validation Isolation:**
+   - Single controlled Canary setup: 1 Alpaca Paper bot (`Canary Alpaca Paper`), 1 Bybit Demo bot (`Canary Bybit Demo`), with other bots safely paused.
+
+3. **Execution Provenance & UI Terminology:**
+   - Standardized dashboard terminology to `PAPER/DEMO PORTFOLIO VALUE`, `SIMULATED DAILY P&L`, `Simulated Net P&L`.
+
 ## 2026-08-31 — Production Deployment Packaging, Health Orchestration & Operational Runbooks Milestone
 
 Command: `mvn test -q`

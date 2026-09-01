@@ -126,20 +126,36 @@ public class ExecutionGatewayTest {
   }
 
   @Test
-  void testDispatch_rejectsWhenOrderAlreadyDispatched() {
+  void testDispatch_rejectsWhenCriticalReconciliationMismatchExists() {
     UUID botId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
     Bot bot = new Bot(botId, "Alpaca Bot", UUID.randomUUID(), Broker.ALPACA_PAPER, ExecutionMode.PAPER, BotStatus.RUNNING, fixedInstant);
     OrderRecord order = new OrderRecord(
         orderId, "client-ord-1", botId.toString(), "v1", "BTC/USD",
         RiskDecisionRequest.Side.BUY, new BigDecimal("1.0"), new BigDecimal("60000.00"),
-        OrderStatus.SUBMITTED, fixedInstant
+        OrderStatus.CREATED, fixedInstant
+    );
+
+    io.algopilot.reconciliation.persistence.ReconciliationStore reconStore = mock(io.algopilot.reconciliation.persistence.ReconciliationStore.class);
+    when(reconStore.findMismatchesByBotId(eq(botId.toString()), eq(io.algopilot.reconciliation.model.ResolutionState.UNRESOLVED)))
+        .thenReturn(List.of(new io.algopilot.reconciliation.model.ReconciliationMismatch(
+            UUID.randomUUID(), UUID.randomUUID(), botId.toString(),
+            io.algopilot.reconciliation.model.MismatchCategory.POSITION_MISMATCH,
+            io.algopilot.reconciliation.model.MismatchType.POSITION_QUANTITY_MISMATCH,
+            io.algopilot.reconciliation.model.MismatchSeverity.CRITICAL,
+            "BTC/USD", Map.of(), Map.of(), io.algopilot.reconciliation.model.ResolutionState.UNRESOLVED, null, fixedInstant
+        )));
+
+    ExecutionGateway gatewayWithRecon = new ExecutionGateway(
+        List.of(alpacaAdapter, bybitAdapter),
+        botStore, orderStore, lifecycleService, audit, reconStore, Clock.fixed(fixedInstant, ZoneOffset.UTC)
     );
 
     when(orderStore.findById(orderId)).thenReturn(Optional.of(order));
     when(botStore.findById(botId)).thenReturn(Optional.of(bot));
 
-    BrokerAdapterException ex = assertThrows(BrokerAdapterException.class, () -> gateway.dispatch(orderId));
-    assertTrue(ex.getMessage().contains("ORDER_NOT_IN_CREATION_STATE"));
+    BrokerAdapterException ex = assertThrows(BrokerAdapterException.class, () -> gatewayWithRecon.dispatch(orderId));
+    assertTrue(ex.getMessage().contains("BOT_RECONCILIATION_MISMATCH_BLOCK"));
+    verify(alpacaAdapter, never()).submitOrder(any());
   }
 }

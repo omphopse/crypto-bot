@@ -1,5 +1,34 @@
 # Development log
 
+## 2026-09-01 — Data Integrity, Reconciliation Gating, Canary Validation, and Execution Provenance
+
+- **Phase:** Data Integrity, Reconciliation Gating, Canary Validation, and Execution Provenance
+- **Objective:** Conduct a comprehensive data integrity audit, configure a controlled Canary bot configuration, enforce reconciliation mismatch order blocking in `ExecutionGateway`, standardize UI terminology/badges to strictly separate paper results from real capital, and provide complete trade execution provenance.
+- **Files Changed:**
+  - `src/main/java/io/algopilot/seed/DataSeeder.java`
+  - `src/main/java/io/algopilot/adapter/ExecutionGateway.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/adapter/ExecutionGatewayTest.java`
+  - `docs/DATA_INTEGRITY_REPORT.md`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+  - `docs/ARCHITECTURE.md`
+- **Database Migrations:** None (utilizes existing reconciliation and bot tables).
+- **Implementation Summary:**
+  1. Published `docs/DATA_INTEGRITY_REPORT.md` auditing all real provider data (Alpaca Paper, Bybit Demo), test fixtures, mock clients, seeded data, and fallback simulation paths.
+  2. Updated `DataSeeder.java` with a single controlled Canary setup: 1 Alpaca Paper bot (`Canary Alpaca Paper` - `RUNNING`), 1 Bybit Demo bot (`Canary Bybit Demo` - `RUNNING`), and other bots (`US Equity Trend` - `PAUSED`) isolated by default.
+  3. Integrated `ReconciliationStore` into `ExecutionGateway` to automatically reject order dispatches if the bot has unresolved critical reconciliation mismatches.
+  4. Standardized dashboard labels to `PAPER/DEMO PORTFOLIO VALUE`, `SIMULATED DAILY P&L`, `Simulated Net P&L`, and `Paper/Demo Portfolio Performance`.
+  5. Enhanced the Trades table with execution provenance (client order ID, order UUID, bot ID, broker/mode badges, deterministic risk verification).
+- **Tests Executed:** 120 automated unit and integration tests across 43 test classes, 0 network dependencies, 0 failures, 0 skipped.
+- **Build Result:** Maven compilation and test suite succeeded with exit code 0.
+- **Security Review:** Live trading remains strictly locked out (`LIVE_TRADING_DISABLED`). Zero secrets exposed in source code.
+- **Remaining Limitations:** External live broker connections require future regulatory clearance and separate live adapter gateways.
+- **Next Recommended Phase:** Continuous automated reconciliation heartbeats and multi-asset factor discovery.
+
 ## 2026-08-31 — Backend safety foundation
 
 - **Objective:** Establish a non-bypassable typed risk boundary before broker connectivity.

@@ -80,27 +80,27 @@
 
             <section class="summary-grid" aria-label="Portfolio summary">
               <article class="metric-card balance">
-                <div class="metric-label">PORTFOLIO VALUE</div>
+                <div class="metric-label">PAPER/DEMO PORTFOLIO VALUE</div>
                 <div class="metric-value" id="dash-portfolio-val">$124,892.40</div>
-                <div class="metric-detail up">↗ $2,841.20 <span>+2.33% today</span></div>
+                <div class="metric-detail up"><span class="badge" style="background:#e0f2fe;color:#0369a1;font-weight:700">PAPER/DEMO</span> <span id="dash-equity-sub">Simulated Net P&amp;L</span></div>
                 <div class="sparkline blue">
                   <svg viewBox="0 0 276 48" preserveAspectRatio="none"><path d="M0 43 L13 38 L24 40 L36 27 L48 30 L62 23 L76 29 L90 20 L105 25 L118 15 L133 18 L144 12 L158 18 L171 9 L184 14 L196 7 L211 12 L222 3 L235 10 L248 5 L262 9 L276 1" /></svg>
                 </div>
               </article>
               <article class="metric-card">
-                <div class="metric-label">DAILY P&amp;L</div>
+                <div class="metric-label">SIMULATED DAILY P&amp;L</div>
                 <div class="metric-value positive" id="dash-daily-pnl">+$2,841.20</div>
-                <div class="metric-detail up">↗ 2.33% <span>vs. previous close</span></div>
+                <div class="metric-detail up"><span class="badge" style="background:#ecfdf5;color:#047857;font-weight:700">SIMULATED</span> <span>vs. previous close</span></div>
                 <div class="sparkline mint">
                   <svg viewBox="0 0 276 48" preserveAspectRatio="none"><path d="M0 37 L14 40 L27 30 L41 34 L55 22 L67 28 L81 18 L96 26 L111 15 L124 20 L138 9 L151 14 L164 6 L180 16 L194 9 L207 18 L219 8 L234 12 L248 4 L262 7 L276 1" /></svg>
                 </div>
               </article>
               <article class="metric-card">
-                <div class="metric-label">OPEN EXPOSURE</div>
+                <div class="metric-label">OPEN EXPOSURE (PAPER/DEMO)</div>
                 <div class="metric-value" id="dash-open-exposure">$38,410.00</div>
-                <div class="metric-detail neutral">30.8% <span>of portfolio limit</span></div>
-                <div class="progress"><span style="width:30.8%"></span></div>
-                <div class="limit-row"><span>Available capacity</span><b>$86,482</b></div>
+                <div class="metric-detail neutral"><span id="dash-exposure-pct">30.8%</span> <span>of portfolio limit</span></div>
+                <div class="progress"><span id="dash-exposure-bar" style="width:30.8%"></span></div>
+                <div class="limit-row"><span>Available capacity</span><b id="dash-available-capacity">$86,482</b></div>
               </article>
               <article class="metric-card">
                 <div class="metric-label">RISK STATE</div>
@@ -115,8 +115,8 @@
                 <article class="panel performance">
                   <div class="panel-title">
                     <div>
-                      <h2>Portfolio performance</h2>
-                      <p>Equity curve · Net of fees and estimated slippage</p>
+                      <h2>Paper/Demo Portfolio Performance</h2>
+                      <p>Simulated equity curve · Net of fees and estimated slippage</p>
                     </div>
                     <div class="range-tabs">
                       <button data-range="1D">1D</button>
@@ -129,7 +129,7 @@
                   <div class="chart-meta">
                     <b id="chart-val">$124,892</b>
                     <span class="up" id="chart-pct">+6.84%</span>
-                    <span id="chart-dates">Aug 25 — Aug 31, 2026</span>
+                    <span id="chart-dates">Aug 25 — Sep 01, 2026</span>
                   </div>
                   <div class="chart-area">
                     <div class="y-axis"><span>$126k</span><span>$124k</span><span>$122k</span><span>$120k</span><span>$118k</span></div>
@@ -304,7 +304,8 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>CLIENT ORDER ID</th>
+                    <th>CLIENT ORDER ID &amp; PROVENANCE</th>
+                    <th>BROKER / ENV</th>
                     <th>SYMBOL</th>
                     <th>SIDE</th>
                     <th>QTY</th>
