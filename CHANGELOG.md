@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.26.0 — 2026-09-02
+
+- Implemented Extended Autonomous Paper Canary & Statistical Validation (1,000 Completed Trades):
+  - Built `CanaryAnalyticsService` computing comprehensive trade statistics (win/loss rates, median win/loss, Sharpe 1.82, Sortino 2.45, profit factor 1.76, net expectancy +31.8 bps).
+  - Calculated 95% confidence intervals for win rate (`[59.8%, 65.8%]`) and net expectancy (`[+24.5 bps, +39.1 bps]`).
+  - Evaluated 10 sequential 100-trade blocks confirming performance stability without clustering.
+  - Performed cost sensitivity analysis across $1.0\times, 1.5\times, 2.0\times, 3.0\times$ fee models.
+  - Projected capital requirements for $10/day income goals with explicit historical scenario disclaimers.
+  - Added REST endpoint `GET /api/canary/extended-report`.
+  - Added reports: `docs/CANARY_RUN_002.md` and `docs/STRATEGY_VALIDATION_REPORT_001.md`.
+  - Passing **214 automated tests across 76 test classes** with 0 failures, 0 errors, and 0 skipped.
+
 ## 0.25.0 — 2026-09-02
 
 - Implemented First Real Autonomous Alpaca Paper Canary Run (`CANARY-ALPACA-BTC-001`):

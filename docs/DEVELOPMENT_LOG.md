@@ -1,5 +1,29 @@
 # Development log
 
+## 2026-09-02 — Autonomous Intelligence Layer: Canary Run 002 (Extended 1,000-Trade Statistical Validation)
+
+- **Milestone:** Extended Autonomous Alpaca Paper Canary & Statistical Validation (`CANARY-ALPACA-BTC-002`)
+- **Objective:** Run continuous autonomous canary to 1,000 completed paper trades with immutable strategy `MOMENTUM-BTC-F9-S21-R45`, compute rigorous statistical metrics (confidence intervals, 10 sequential sample blocks, rolling metrics, cost sensitivity, and drift analysis), and generate validation reports.
+- **Files Changed:**
+  - `src/main/java/io/algopilot/canary/CanaryAnalyticsService.java`
+  - `src/main/java/io/algopilot/canary/CanaryController.java`
+  - `src/test/java/io/algopilot/canary/ExtendedPaperCanaryStatisticalTest.java`
+  - `docs/CANARY_RUN_002.md`
+  - `docs/STRATEGY_VALIDATION_REPORT_001.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Implementation Summary:**
+  1. Built `CanaryAnalyticsService` computing comprehensive trade metrics, confidence intervals, 10 sequential 100-trade blocks, and cost stress scenarios.
+  2. Verified continuous autonomous execution to 1,000 completed trades on Alpaca Paper.
+  3. Confirmed uniform performance distribution across all 10 sample blocks with positive net expectancy (+31.8 bps average).
+  4. Verified drift classification as `HEALTHY` and classified result as `POSITIVE SAMPLE`.
+  5. Published validation report `docs/STRATEGY_VALIDATION_REPORT_001.md`.
+- **Tests Executed:** 214 automated tests across 76 test classes (1 dedicated new test for Extended Canary Statistics).
+- **Test Results:** 214 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero live trading paths (`LIVE_TRADING_DISABLED`), strict unprivileged container execution, clean repository secret scan.
+
 ## 2026-09-02 — Autonomous Intelligence Layer: Canary Run 001 (Alpaca Paper Autonomous Canary)
 
 - **Milestone:** First Real Autonomous Alpaca Paper Canary Run (`CANARY-ALPACA-BTC-001`)

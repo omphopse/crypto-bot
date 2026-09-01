@@ -15,9 +15,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/canary")
 public class CanaryController {
   private final CanaryService canaryService;
+  private final CanaryAnalyticsService analyticsService;
 
-  public CanaryController(CanaryService canaryService) {
+  public CanaryController(CanaryService canaryService, CanaryAnalyticsService analyticsService) {
     this.canaryService = canaryService;
+    this.analyticsService = analyticsService;
+  }
+
+  @GetMapping("/extended-report")
+  public ResponseEntity<CanaryAnalyticsService.ExtendedCanaryReport> getExtendedReport() {
+    return ResponseEntity.ok(analyticsService.generateExtended1000TradeReport());
   }
 
   @GetMapping("/status")

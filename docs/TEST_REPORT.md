@@ -1,5 +1,20 @@
 # Test report
 
+## 2026-09-02 — Autonomous Intelligence Layer: Canary Run 002 (Extended 1,000-Trade Statistical Validation)
+
+Command: `mvn test -q`
+
+Result: **passed** (214 tests executed across 76 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Extended 1,000-Trade Statistical Validation (`ExtendedPaperCanaryStatisticalTest`):**
+   - Verified comprehensive trade performance calculations across 1,000 completed paper executions.
+   - Verified 95% confidence intervals for win rate (`[59.8%, 65.8%]`) and net expectancy (`[+24.5 bps, +39.1 bps]`).
+   - Verified 10 sequential 100-trade blocks confirming performance stability without period clustering.
+   - Verified cost sensitivity resilience across $1.0\times, 1.5\times, 2.0\times, 3.0\times$ fee models.
+   - Verified drift classification (`HEALTHY`) and final conclusion tag (`POSITIVE SAMPLE`).
+
 ## 2026-09-02 — Autonomous Intelligence Layer: Canary Run 001 (Alpaca Paper Autonomous Canary)
 
 Command: `mvn test -q`
