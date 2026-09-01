@@ -109,6 +109,50 @@ The reconciliation architecture is composed of:
 - **Persistence & Audit (`JdbcReconciliationStore`)**: Append-only records for `reconciliation_runs`, `reconciliation_mismatches`, and `reconciliation_recoveries`.
 - **Operational Health (`ReconciliationHealthIndicator`)**: Distinguishes current active critical discrepancies from historical resolved events for Spring Actuator health monitoring.
 
+## Source of Truth Matrix
+
+| Subsystem / Domain | Authoritative Store | Responsibilities & Invariants |
+| :--- | :--- | :--- |
+| **Provider State** | External Broker API (`Alpaca Paper`, `Bybit Demo`) | Ground-truth for actual fills, external broker cash, settled broker positions, and external order IDs. Queried exclusively via `BrokerStateProvider`. |
+| **Local Order State** | `OrderStore` (`JdbcOrderStore` / `orders`) | Authoritative for local order lifecycle (`CREATED`, `SUBMITTED`, `ACKNOWLEDGED`, `PARTIALLY_FILLED`, `FILLED`, `CANCELLED`, `REJECTED`). Active in-flight orders represent committed risk reservations. |
+| **Local Position State** | `PositionStore` (`JdbcPositionStore` / `positions`) | Authoritative for settled bot inventory, directional quantities, weighted average entry prices, and closed-trade realized P&L. Updated only upon validated fill ingestion. |
+| **Accounting State** | `PortfolioAccountingService` | Authoritative calculation of Cash, Cost Basis, Current Market Value, Gross Exposure, Unrealized P&L, Cumulative Fees, Net Realized P&L, Total Net P&L, and Portfolio Equity. |
+| **Risk State** | `RiskEngine` / `RiskDecisionService` | Authoritative gate for order creation. Evaluates settled positions + active in-flight pending order reservations against single-symbol (10%) and global portfolio (50%) limits. |
+
+---
+
+## Mark-to-Market Financial Accounting Model
+
+The portfolio accounting engine enforces exact mathematical equivalence and zero double-counting:
+
+$$\text{Cash} = \text{Starting Capital} - \text{Cost Basis (Longs)} + \text{Cost Basis (Shorts)} + \text{Realized P\&L} - \text{Cumulative Fees}$$
+$$\text{Current Market Value} = \sum (\text{Quantity}_i \times \text{Market Price}_i)$$
+$$\text{Cost Basis Exposure} = \sum |\text{Quantity}_i \times \text{Average Entry Price}_i|$$
+$$\text{Gross Exposure} = \sum |\text{Quantity}_i \times \text{Market Price}_i|$$
+$$\text{Unrealized P\&L} = \sum \text{Quantity}_i \times (\text{Market Price}_i - \text{Average Entry Price}_i)$$
+$$\text{Net Realized P\&L} = \text{Realized P\&L} - \text{Cumulative Fees}$$
+$$\text{Total Net P\&L} = \text{Realized P\&L} + \text{Unrealized P\&L} - \text{Cumulative Fees}$$
+
+$$\text{Portfolio Equity} \equiv \text{Cash} + \text{Current Market Value} \equiv \text{Starting Capital} + \text{Total Net P\&L}$$
+
+---
+
+## Multi-Instance Concurrency & Database-Backed Order Reservations
+
+1. **Local Concurrency Control**:
+   - `OrderService` maintains a fair JVM `ReentrantLock(true)` ensuring local request ordering.
+2. **Distributed / Multi-Instance Database Safety**:
+   - For multi-process / clustered deployments, `OrderService.create` executes inside a database transaction acquiring an exclusive pessimistic row lock:
+     ```sql
+     SELECT id FROM portfolio_accounts WHERE id = 'GLOBAL' FOR UPDATE;
+     ```
+   - This row-level lock serializes concurrent order requests across independent JVM instances at the PostgreSQL database level.
+3. **Authoritative Order Reservations**:
+   - Pending in-flight orders (`CREATED`, `SUBMITTED`, `ACKNOWLEDGED`, `PARTIALLY_FILLED`, `CANCEL_REQUESTED`) immediately consume portfolio risk capacity:
+     $$\text{Total Reserved Exposure} = \text{Gross Market Exposure} + \sum (\text{Open Order Quantity} \times \text{Reference Price})$$
+   - If $\text{Total Reserved Exposure} + \text{Proposed Order Notional} > \text{Max Portfolio Exposure}$, the order is deterministically rejected with `MAX_PORTFOLIO_EXPOSURE`.
+   - When orders transition to terminal states (`FILLED`, `CANCELLED`, `REJECTED`, `EXPIRED`), order reservations are automatically released.
+
 ## Persistence
 
-Flyway migrations create domain tables: audit events, risk decisions, orders, order events, strategies, strategy versions, bots, agent decisions, fills, positions, reconciliation runs, reconciliation mismatches, recovery records, backtest runs, backtest trades, walk-forward runs, alpha hypotheses, strategy candidates, portfolio allocation plans, rebalance runs, and rebalance orders. High-frequency state is indexed by `bot_id`, `strategy_version_id`, `symbol`, `status`, and descending occurrence timestamp.
+Flyway migrations create domain tables: audit events, risk decisions, orders, order events, strategies, strategy versions, bots, agent decisions, fills, positions, reconciliation runs, reconciliation mismatches, recovery records, backtest runs, backtest trades, walk-forward runs, alpha hypotheses, strategy candidates, portfolio allocation plans, rebalance runs, rebalance orders, and portfolio accounts. High-frequency state is indexed by `bot_id`, `strategy_version_id`, `symbol`, `status`, and descending occurrence timestamp.

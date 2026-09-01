@@ -11,4 +11,5 @@ public interface FillStore {
   BigDecimal totalQuantityForOrder(UUID orderId);
   List<Fill> findByOrderId(UUID orderId);
   List<Fill> findByBotId(String botId);
+  default List<Fill> findAll() { return List.of(); }
 }

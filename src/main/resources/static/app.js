@@ -158,72 +158,90 @@ async function loadBots() {
 
 async function loadPositions() {
   try {
-    const res = await fetch('/api/positions');
-    if (!res.ok) return;
-    const positions = await res.json();
+    // 1. Fetch Authoritative Mark-to-Market Accounting Summary
+    const summaryRes = await fetch('/api/portfolio/accounting/summary');
+    if (summaryRes.ok) {
+      const summary = await summaryRes.json();
+
+      const portValEl = document.getElementById('dash-portfolio-val');
+      if (portValEl) portValEl.textContent = `$${formatNumber(summary.portfolioEquity)}`;
+
+      const eqSubEl = document.getElementById('dash-equity-sub');
+      if (eqSubEl) eqSubEl.textContent = `Cash: $${formatNumber(summary.cash)} · Pos: $${formatNumber(summary.marketExposure)}`;
+
+      const netPnlEl = document.getElementById('dash-net-pnl');
+      if (netPnlEl) {
+        const net = parseFloat(summary.totalNetPnl) || 0;
+        netPnlEl.textContent = `${net >= 0 ? '+' : ''}$${formatNumber(summary.totalNetPnl)}`;
+        netPnlEl.className = `metric-value ${net >= 0 ? 'positive' : 'negative'}`;
+      }
+
+      const pnlBreakEl = document.getElementById('dash-pnl-breakdown');
+      if (pnlBreakEl) {
+        const rPnl = parseFloat(summary.realizedPnl) || 0;
+        const uPnl = parseFloat(summary.unrealizedPnl) || 0;
+        pnlBreakEl.textContent = `Realized: ${rPnl >= 0 ? '+' : ''}$${formatNumber(summary.realizedPnl)} · Unrealized: ${uPnl >= 0 ? '+' : ''}$${formatNumber(summary.unrealizedPnl)} · Fees: $${formatNumber(summary.cumulativeFees)}`;
+      }
+
+      const mktExpEl = document.getElementById('dash-market-exposure');
+      if (mktExpEl) mktExpEl.textContent = `$${formatNumber(summary.grossExposure)}`;
+
+      const costBasisEl = document.getElementById('dash-cost-basis-desc');
+      if (costBasisEl) costBasisEl.textContent = `Cost Basis: $${formatNumber(summary.costBasisExposure)}`;
+
+      const riskUtilEl = document.getElementById('dash-risk-util');
+      if (riskUtilEl) riskUtilEl.textContent = `Util: ${summary.riskUtilizationPercent}%`;
+
+      const expBarEl = document.getElementById('dash-exposure-bar');
+      if (expBarEl) expBarEl.style.width = `${Math.min(100, parseFloat(summary.riskUtilizationPercent) || 0)}%`;
+
+      const capEl = document.getElementById('dash-available-capacity');
+      if (capEl) {
+        const avail = Math.max(0, 50000 - parseFloat(summary.totalReservedExposure));
+        capEl.textContent = `$${formatNumber(avail.toFixed(0))}`;
+      }
+
+      const riskDescEl = document.getElementById('dash-risk-desc');
+      if (riskDescEl) riskDescEl.textContent = `Pending orders: $${formatNumber(summary.pendingOrderNotional)} · Live trading is strictly blocked.`;
+
+      const chartValEl = document.getElementById('chart-val');
+      if (chartValEl) chartValEl.textContent = `$${formatNumber(summary.portfolioEquity)}`;
+    }
+
+    // 2. Fetch Marked Positions
+    const posRes = await fetch('/api/portfolio/accounting/positions-mark');
+    if (!posRes.ok) return;
+    const positions = await posRes.json();
 
     const countEl = document.getElementById('positions-count');
     if (countEl) countEl.textContent = positions.length;
-
-    // Calculate dynamic exposure & simulated P&L from actual positions
-    let totalExposure = 0;
-    let totalRealizedPnl = 0;
-    positions.forEach(p => {
-      const qty = parseFloat(p.quantity) || 0;
-      const price = parseFloat(p.averageEntryPrice) || 0;
-      const pnl = parseFloat(p.realizedPnl) || 0;
-      totalExposure += Math.abs(qty * price);
-      totalRealizedPnl += pnl;
-    });
-
-    const baseCapital = 100000;
-    const portfolioEquity = baseCapital + totalRealizedPnl;
-    const capacity = Math.max(0, 125000 - totalExposure);
-    const exposurePct = Math.min(100, ((totalExposure / 125000) * 100)).toFixed(1);
-
-    const portValEl = document.getElementById('dash-portfolio-val');
-    if (portValEl) portValEl.textContent = `$${formatNumber(portfolioEquity.toFixed(2))}`;
-
-    const dailyPnlEl = document.getElementById('dash-daily-pnl');
-    if (dailyPnlEl) {
-      dailyPnlEl.textContent = `${totalRealizedPnl >= 0 ? '+' : ''}$${formatNumber(totalRealizedPnl.toFixed(2))}`;
-      dailyPnlEl.className = `metric-value ${totalRealizedPnl >= 0 ? 'positive' : 'negative'}`;
-    }
-
-    const openExpEl = document.getElementById('dash-open-exposure');
-    if (openExpEl) openExpEl.textContent = `$${formatNumber(totalExposure.toFixed(2))}`;
-
-    const expPctEl = document.getElementById('dash-exposure-pct');
-    if (expPctEl) expPctEl.textContent = `${exposurePct}%`;
-
-    const expBarEl = document.getElementById('dash-exposure-bar');
-    if (expBarEl) expBarEl.style.width = `${exposurePct}%`;
-
-    const capEl = document.getElementById('dash-available-capacity');
-    if (capEl) capEl.textContent = `$${formatNumber(capacity.toFixed(0))}`;
-
-    const chartValEl = document.getElementById('chart-val');
-    if (chartValEl) chartValEl.textContent = `$${formatNumber(portfolioEquity.toFixed(0))}`;
 
     const tbody = document.getElementById('dash-positions-body');
     if (!tbody) return;
 
     if (positions.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="recon-empty">No open positions. Place an order to execute.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="recon-empty">No open positions. Place an order to execute.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = positions.map(p => `
-      <tr>
-        <td><b>${escapeHtml(p.symbol)}</b></td>
-        <td><code>${p.quantity}</code></td>
-        <td>$${formatNumber(p.averageEntryPrice)}</td>
-        <td class="${p.realizedPnl >= 0 ? 'positive' : 'negative'}"><b>${p.realizedPnl >= 0 ? '+' : ''}$${formatNumber(p.realizedPnl)}</b></td>
-        <td><span class="status-pill running">OPEN</span></td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = positions.map(p => {
+      const uPnl = parseFloat(p.unrealizedPnl) || 0;
+      const rPnl = parseFloat(p.realizedPnl) || 0;
+      return `
+        <tr>
+          <td><b>${escapeHtml(p.symbol)}</b></td>
+          <td><code>${p.quantity}</code></td>
+          <td>$${formatNumber(p.averageEntryPrice)}</td>
+          <td>$${formatNumber(p.currentMarketPrice)}</td>
+          <td>$${formatNumber(p.costBasis)}</td>
+          <td>$${formatNumber(p.marketValue)}</td>
+          <td class="${uPnl >= 0 ? 'positive' : 'negative'}"><b>${uPnl >= 0 ? '+' : ''}$${formatNumber(p.unrealizedPnl)}</b></td>
+          <td class="${rPnl >= 0 ? 'positive' : 'negative'}"><b>${rPnl >= 0 ? '+' : ''}$${formatNumber(p.realizedPnl)}</b></td>
+        </tr>
+      `;
+    }).join('');
   } catch (e) {
-    console.error('Failed to load positions', e);
+    console.error('Failed to load accounting positions', e);
   }
 }
 

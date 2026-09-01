@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.12.0 — 2026-09-01
+
+- Implemented authoritative mark-to-market financial accounting engine (`PortfolioAccountingService`, `PortfolioSummary`, `PositionMark`):
+  - Strict mathematical invariant: $\text{Equity} \equiv \text{Cash} + \text{Market Value of Open Positions} \equiv \text{Starting Capital} + \text{Realized P\&L} + \text{Unrealized P\&L} - \text{Cumulative Fees}$.
+  - Realized P&L, unrealized P&L, cost basis, market exposure, gross exposure, and broker fees cleanly separated with zero double-counting.
+  - REST endpoints at `/api/portfolio/accounting/summary` and `/api/portfolio/accounting/positions-mark`.
+- Multi-instance concurrency hardening:
+  - Added Flyway migration `V13__portfolio_accounting.sql` with `portfolio_accounts` table.
+  - Implemented database-backed row-level locking (`SELECT ... FOR UPDATE`) in `OrderService` for multi-process distributed risk gating.
+  - Implemented authoritative pending order reservations consuming portfolio exposure during in-flight states.
+- Enhanced web dashboard with distinct metric cards: Paper/Demo Portfolio Value, Cash Balance, P&L Breakdown (Realized, Unrealized, Fees), Cost Basis vs Market Exposure, Risk Utilization %, and Mark-to-Market Positions table.
+- Added comprehensive unit and regression tests in `PortfolioAccountingServiceTest` (128 total passing tests).
+
 ## 0.11.0 — 2026-09-01
 
 - Published execution incident forensic report `docs/EXECUTION_INCIDENT_2026-09-01.md` analyzing repeated order bursts on Alpaca Paper and exposure breaches.

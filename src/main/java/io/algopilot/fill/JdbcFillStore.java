@@ -37,6 +37,10 @@ public class JdbcFillStore implements FillStore {
     return jdbc.query("select f.* from fills f inner join orders o on f.order_id = o.id where o.bot_id = ? order by f.filled_at desc", this::map, botId);
   }
 
+  @Override public List<Fill> findAll() {
+    return jdbc.query("select * from fills order by filled_at desc", this::map);
+  }
+
   private Fill map(ResultSet rs, int row) throws SQLException {
     return new Fill(
         rs.getObject("id", UUID.class),

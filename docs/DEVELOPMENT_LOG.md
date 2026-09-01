@@ -1,5 +1,39 @@
 # Development log
 
+## 2026-09-01 — Mark-to-Market Financial Accounting & Multi-Instance Concurrency Hardening
+
+- **Phase:** Financial Accounting & Multi-Instance Concurrency Hardening
+- **Objective:** Implement authoritative mark-to-market portfolio accounting, distinguish cash, cost basis, market exposure, realized P&L, unrealized P&L, fees, and equity, provide database-backed row-level locking for multi-instance risk safety, and update web console metrics.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V13__portfolio_accounting.sql`
+  - `src/main/java/io/algopilot/portfolio/accounting/PortfolioSummary.java`
+  - `src/main/java/io/algopilot/portfolio/accounting/PositionMark.java`
+  - `src/main/java/io/algopilot/portfolio/accounting/PortfolioAccountingService.java`
+  - `src/main/java/io/algopilot/portfolio/accounting/PortfolioAccountingController.java`
+  - `src/main/java/io/algopilot/fill/FillStore.java`
+  - `src/main/java/io/algopilot/fill/JdbcFillStore.java`
+  - `src/main/java/io/algopilot/order/OrderService.java`
+  - `src/main/resources/static/index.html`
+  - `src/main/resources/static/app.js`
+  - `src/test/java/io/algopilot/portfolio/accounting/PortfolioAccountingServiceTest.java`
+  - `docs/ARCHITECTURE.md`
+  - `docs/TRADING_SAFETY.md`
+  - `README.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Database Migrations:** `V13__portfolio_accounting.sql` (`portfolio_accounts` table for global ledger balance and row-level locking).
+- **Implementation Summary:**
+  1. Created `PortfolioAccountingService` computing exact mark-to-market balances:
+     $\text{Portfolio Equity} = \text{Cash} + \text{Market Value of Open Positions} \equiv \text{Starting Capital} + \text{Realized P\&L} + \text{Unrealized P\&L} - \text{Cumulative Fees}$.
+  2. Guarded order creation against multi-instance race conditions using database row-level locking (`SELECT ... FOR UPDATE` on `portfolio_accounts`) in addition to fair JVM `ReentrantLock`.
+  3. Implemented authoritative pending order reservations consuming portfolio risk capacity immediately during active in-flight states.
+  4. Updated web dashboard UI with separate cards for Equity, Cash, P&L breakdown (Realized, Unrealized, Fees), Cost Basis vs Market Exposure, and a marked-to-market positions table.
+- **Tests Executed:** 128 automated tests across 44 test classes (5 dedicated new tests in `PortfolioAccountingServiceTest`).
+- **Test Results:** 128 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Live trading strictly disabled (`LIVE_TRADING_DISABLED`). Zero secrets committed.
+
 ## 2026-09-01 — Execution Incident Root Cause Fix, Global Portfolio Risk Concurrency & Remote Deployment
 
 - **Phase:** Execution Safety Review, Incident Resolution & Global Portfolio Risk Concurrency

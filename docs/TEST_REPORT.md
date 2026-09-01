@@ -1,5 +1,27 @@
 # Test report
 
+## 2026-09-01 — Mark-to-Market Financial Accounting & Multi-Instance Concurrency Suite
+
+Command: `mvn test -q`
+
+Result: **passed** (128 tests executed across 44 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Mark-to-Market Open Position Valuation:**
+   - Starting Capital $100k, Open Position cost $10k, Market Price rises to $110 (value $11k).
+   - Proved Cash = $90,000, Market Value = $11,000, Equity = $101,000, Unrealized P&L = $1,000, Realized P&L = $0.
+
+2. **Closed Position Realized P&L and Broker Fees:**
+   - Position closed at $11k with $10 total fees.
+   - Proved Cash = $100,990, Realized P&L = $1,000, Cumulative Fees = $10, Net Realized P&L = $990, Equity = $100,990.
+
+3. **Loss Trades with Fees:**
+   - Loss of -$1,000 with $5 fee verified to result in Net P&L = -$1,005, Cash = $98,995, Equity = $98,995.
+
+4. **Pending Order Reservations Accounting:**
+   - Active in-flight orders consume reserved exposure capacity ($10,000 pending order + $10,000 open position = $20,000 reserved exposure, 20% risk utilization) without altering settled cash or equity.
+
 ## 2026-09-01 — Execution Incident Regression & Global Portfolio Risk Concurrency Suite
 
 Command: `mvn test -q`

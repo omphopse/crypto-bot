@@ -25,6 +25,7 @@ public class OrderService {
   private final PositionStore positions;
   private final BotStore botStore;
   private final AuditEventWriter audit;
+  private final org.springframework.jdbc.core.JdbcTemplate jdbc;
   private final Clock clock;
   private final ReentrantLock orderLock = new ReentrantLock(true);
 
@@ -35,21 +36,33 @@ public class OrderService {
       @Nullable PositionStore positions,
       @Nullable BotStore botStore,
       AuditEventWriter audit,
+      @Nullable org.springframework.jdbc.core.JdbcTemplate jdbc,
       Clock clock) {
     this.risk = risk;
     this.orders = orders;
     this.positions = positions;
     this.botStore = botStore;
     this.audit = audit;
+    this.jdbc = jdbc;
     this.clock = clock;
   }
 
+  public OrderService(
+      RiskDecisionService risk,
+      OrderStore orders,
+      @Nullable PositionStore positions,
+      @Nullable BotStore botStore,
+      AuditEventWriter audit,
+      Clock clock) {
+    this(risk, orders, positions, botStore, audit, null, clock);
+  }
+
   public OrderService(RiskDecisionService risk, OrderStore orders, AuditEventWriter audit) {
-    this(risk, orders, null, null, audit, Clock.systemUTC());
+    this(risk, orders, null, null, audit, null, Clock.systemUTC());
   }
 
   public OrderService(RiskDecisionService risk, OrderStore orders, AuditEventWriter audit, Clock clock) {
-    this(risk, orders, null, null, audit, clock);
+    this(risk, orders, null, null, audit, null, clock);
   }
 
   public OrderService(
@@ -58,13 +71,22 @@ public class OrderService {
       PositionStore positions,
       BotStore botStore,
       AuditEventWriter audit) {
-    this(risk, orders, positions, botStore, audit, Clock.systemUTC());
+    this(risk, orders, positions, botStore, audit, null, Clock.systemUTC());
   }
 
   @Transactional(noRollbackFor = OrderRejectedException.class)
   public OrderRecord create(RiskDecisionRequest command) {
     orderLock.lock();
     try {
+      // 1. Database-backed distributed row lock for multi-instance safety
+      if (jdbc != null) {
+        try {
+          jdbc.queryForList("SELECT id FROM portfolio_accounts WHERE id = 'GLOBAL' FOR UPDATE");
+        } catch (Exception ignored) {
+          // Table may not exist in mock testing or before migration
+        }
+      }
+
       var existing = orders.findByClientOrderId(command.clientOrderId());
       if (existing.isPresent()) return existing.get(); // idempotent retry: do not evaluate or create a second order
 

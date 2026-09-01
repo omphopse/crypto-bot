@@ -81,31 +81,31 @@
             <section class="summary-grid" aria-label="Portfolio summary">
               <article class="metric-card balance">
                 <div class="metric-label">PAPER/DEMO PORTFOLIO VALUE</div>
-                <div class="metric-value" id="dash-portfolio-val">$124,892.40</div>
-                <div class="metric-detail up"><span class="badge" style="background:#e0f2fe;color:#0369a1;font-weight:700">PAPER/DEMO</span> <span id="dash-equity-sub">Simulated Net P&amp;L</span></div>
+                <div class="metric-value" id="dash-portfolio-val">$100,000.00</div>
+                <div class="metric-detail up"><span class="badge" style="background:#e0f2fe;color:#0369a1;font-weight:700">PAPER/DEMO</span> <span id="dash-equity-sub">Cash: $100,000.00 · Pos: $0.00</span></div>
                 <div class="sparkline blue">
                   <svg viewBox="0 0 276 48" preserveAspectRatio="none"><path d="M0 43 L13 38 L24 40 L36 27 L48 30 L62 23 L76 29 L90 20 L105 25 L118 15 L133 18 L144 12 L158 18 L171 9 L184 14 L196 7 L211 12 L222 3 L235 10 L248 5 L262 9 L276 1" /></svg>
                 </div>
               </article>
               <article class="metric-card">
-                <div class="metric-label">SIMULATED DAILY P&amp;L</div>
-                <div class="metric-value positive" id="dash-daily-pnl">+$2,841.20</div>
-                <div class="metric-detail up"><span class="badge" style="background:#ecfdf5;color:#047857;font-weight:700">SIMULATED</span> <span>vs. previous close</span></div>
+                <div class="metric-label">P&amp;L BREAKDOWN (SIMULATED)</div>
+                <div class="metric-value positive" id="dash-net-pnl">+$0.00</div>
+                <div class="metric-detail up"><span id="dash-pnl-breakdown">Realized: +$0.00 · Unrealized: +$0.00 · Fees: $0.00</span></div>
                 <div class="sparkline mint">
                   <svg viewBox="0 0 276 48" preserveAspectRatio="none"><path d="M0 37 L14 40 L27 30 L41 34 L55 22 L67 28 L81 18 L96 26 L111 15 L124 20 L138 9 L151 14 L164 6 L180 16 L194 9 L207 18 L219 8 L234 12 L248 4 L262 7 L276 1" /></svg>
                 </div>
               </article>
               <article class="metric-card">
-                <div class="metric-label">OPEN EXPOSURE (PAPER/DEMO)</div>
-                <div class="metric-value" id="dash-open-exposure">$38,410.00</div>
-                <div class="metric-detail neutral"><span id="dash-exposure-pct">30.8%</span> <span>of portfolio limit</span></div>
-                <div class="progress"><span id="dash-exposure-bar" style="width:30.8%"></span></div>
-                <div class="limit-row"><span>Available capacity</span><b id="dash-available-capacity">$86,482</b></div>
+                <div class="metric-label">MARKET &amp; COST EXPOSURE</div>
+                <div class="metric-value" id="dash-market-exposure">$0.00</div>
+                <div class="metric-detail neutral"><span id="dash-cost-basis-desc">Cost Basis: $0.00</span> · <span id="dash-risk-util">Util: 0.0%</span></div>
+                <div class="progress"><span id="dash-exposure-bar" style="width:0%"></span></div>
+                <div class="limit-row"><span>Available capacity</span><b id="dash-available-capacity">$50,000</b></div>
               </article>
               <article class="metric-card">
-                <div class="metric-label">RISK STATE</div>
-                <div class="risk-value"><i></i> NORMAL</div>
-                <div class="risk-copy">All deterministic risk checks are passing. Live trading is strictly blocked.</div>
+                <div class="metric-label">RISK STATE &amp; RESERVATIONS</div>
+                <div class="risk-value" id="dash-risk-badge"><i></i> NORMAL</div>
+                <div class="risk-copy" id="dash-risk-desc">Pending orders: $0.00 · Live trading is strictly blocked.</div>
                 <a href="#risk" class="inline-link">View risk controls <span>→</span></a>
               </article>
             </section>
@@ -127,8 +127,8 @@
                     </div>
                   </div>
                   <div class="chart-meta">
-                    <b id="chart-val">$124,892</b>
-                    <span class="up" id="chart-pct">+6.84%</span>
+                    <b id="chart-val">$100,000</b>
+                    <span class="up" id="chart-pct">+0.00%</span>
                     <span id="chart-dates">Aug 25 — Sep 01, 2026</span>
                   </div>
                   <div class="chart-area">
@@ -140,8 +140,7 @@
                           <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
                         </linearGradient>
                       </defs>
-                      <g class="grid"><path d="M0 7 H680 M0 58 H680 M0 109 H680 M0 160 H680 M0 211 H680"/></g>
-                      <path class="area" d="M0 173 C20 161 34 165 50 151 S77 160 96 145 S121 153 140 121 S168 132 187 113 S209 127 230 111 S251 99 271 108 S301 104 322 90 S347 97 366 73 S394 78 416 61 S441 76 459 55 S492 62 514 45 S539 54 559 32 S583 38 602 24 S626 39 646 18 S667 25 680 8 V216 H0 Z"/>
+                      <path class="fill" d="M0 173 C20 161 34 165 50 151 S77 160 96 145 S121 153 140 121 S168 132 187 113 S209 127 230 111 S251 99 271 108 S301 104 322 90 S347 97 366 73 S394 78 416 61 S441 76 459 55 S492 62 514 45 S539 54 559 32 S583 38 602 24 S626 39 646 18 S667 25 680 8 L680 216 L0 216 Z"/>
                       <path class="line" d="M0 173 C20 161 34 165 50 151 S77 160 96 145 S121 153 140 121 S168 132 187 113 S209 127 230 111 S251 99 271 108 S301 104 322 90 S347 97 366 73 S394 78 416 61 S441 76 459 55 S492 62 514 45 S539 54 559 32 S583 38 602 24 S626 39 646 18 S667 25 680 8"/>
                       <circle cx="680" cy="8" r="4"/>
                     </svg>
@@ -152,17 +151,26 @@
                 <article class="panel positions">
                   <div class="panel-title">
                     <div>
-                      <h2>Open positions <span class="badge" id="positions-count">3</span></h2>
+                      <h2>Open positions <span class="badge" id="positions-count">0</span></h2>
                       <p>Marked to last available market price</p>
                     </div>
                     <a href="#portfolio" class="inline-link">Rebalance portfolio <span>→</span></a>
                   </div>
                   <table>
                     <thead>
-                      <tr><th>SYMBOL</th><th>QUANTITY</th><th>AVG. ENTRY</th><th>REALIZED P&amp;L</th><th>STATUS</th></tr>
+                      <tr>
+                        <th>SYMBOL</th>
+                        <th>QTY</th>
+                        <th>AVG ENTRY</th>
+                        <th>MKT PRICE</th>
+                        <th>COST BASIS</th>
+                        <th>MKT VALUE</th>
+                        <th>UNREALIZED P&amp;L</th>
+                        <th>REALIZED P&amp;L</th>
+                      </tr>
                     </thead>
                     <tbody id="dash-positions-body">
-                      <tr><td colspan="5" class="recon-empty">Loading live positions...</td></tr>
+                      <tr><td colspan="8" class="recon-empty">Loading live positions...</td></tr>
                     </tbody>
                   </table>
                 </article>

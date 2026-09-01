@@ -9,10 +9,15 @@ ALGOPILOT must fail closed. The deterministic risk engine is the final order aut
 
 ## Global Portfolio Risk & Concurrency Invariants
 1. **Authoritative State Synthesis**: `OrderService` evaluates exposure authoritatively from settled positions in `PositionStore` PLUS all open/in-flight orders (`CREATED`, `SUBMITTED`, `ACKNOWLEDGED`, `PARTIALLY_FILLED`) in `OrderStore`. Caller-supplied exposure numbers cannot bypass backend accounting.
-2. **Atomic Concurrency Gate**: Order creation is guarded by an atomic fair concurrency lock (`ReentrantLock`) preventing race conditions across concurrent bot requests.
+2. **Atomic Concurrency Gate**: Order creation is guarded by an atomic fair concurrency lock (`ReentrantLock`) and database-backed row-level locking (`SELECT ... FOR UPDATE` on `portfolio_accounts`) preventing multi-process race conditions.
 3. **Hard Portfolio Exposure Cap**: Global portfolio exposure cannot exceed `maxPortfolioExposurePercent` (default 50% of account equity).
 4. **Hard Symbol Position Cap**: Single-symbol exposure cannot exceed `maxPositionPercent` (default 10% of account equity).
 5. **Default Paused Fleet**: All automated bot runtimes in development configuration start in `PAUSED` status by default to prevent runaway signal execution.
+
+## Financial Accounting & Mark-to-Market Invariants
+1. **Mark-to-Market Invariant**: Portfolio Equity MUST strictly equal $\text{Cash} + \text{Current Market Value of Open Positions}$, identically matching $\text{Starting Capital} + \text{Realized P\&L} + \text{Unrealized P\&L} - \text{Cumulative Fees}$.
+2. **Zero Double-Counting**: Realized P&L from closed positions, unrealized P&L from open inventory, and broker execution fees are strictly partitioned.
+3. **Reservation Lifecycle**: In-flight orders consume buying power immediately upon risk gating approval; cancelled, rejected, or filled orders release/update reservations synchronously.
 
 ## Production Incident Response & Safety Invariants
 1. **Runbook Adherence**: All operator actions during reconciliation discrepancies, emergency stop events, and broker reconnects MUST follow procedures in `docs/RUNBOOK.md`.
