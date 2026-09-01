@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.27.0 — 2026-09-02
+
+- Implemented Clean Experiment Reset & Pre-Flight Environment Verification:
+  - Added Flyway migration `V25__clean_reset_operations.sql` creating `reset_operations` audit table.
+  - Built `CleanResetService` and `CleanResetController` exposing `POST /api/reset/confirm` (requiring `RESET_ALGOPILOT_EXPERIMENT_STATE` token) and `GET /api/reset/preflight`.
+  - Cleared all experimental and persisted test data across 51 database tables while preserving schema, Flyway history, AI pricing catalogs, budget policies, and security configurations.
+  - Modified `DataSeeder` to start in `CONFIGURATION_REQUIRED` mode with 0 active bots and 0 seeded trading entities.
+  - Added `docs/CLEAN_RESET_INVENTORY.md`, `docs/CLEAN_RESET_RUNBOOK.md`, and prepared `docs/CANARY_RUN_003.md`.
+  - Passing **214 automated tests across 76 test classes** with 0 failures, 0 errors, and 0 skipped.
+
 ## 0.26.0 — 2026-09-02
 
 - Implemented Extended Autonomous Paper Canary & Statistical Validation (1,000 Completed Trades):

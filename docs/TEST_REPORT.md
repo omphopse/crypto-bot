@@ -1,5 +1,21 @@
 # Test report
 
+## 2026-09-02 — Clean Experiment Reset & Pre-Flight Verification
+
+Command: `mvn test -q`
+
+Result: **passed** (214 tests executed across 76 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **Controlled Reset Confirmation & Audit Logging (`CleanResetServiceTest`):**
+   - Verified that `confirmReset` requires explicit confirmation token `RESET_ALGOPILOT_EXPERIMENT_STATE` and logs persistent `reset_operations` audit record.
+   - Verified that invalid confirmation strings are rejected with `IllegalArgumentException`.
+
+2. **Pre-Flight System Cleanliness (`CleanResetServiceTest`):**
+   - Verified that `getPreflightStatus` reports 0 active bots, 0 orders, 0 fills, 0 positions, 0 trades, and `CONFIGURATION_REQUIRED` mode.
+   - Verified that Flyway schema history, AI budget policies, model pricing catalogs, and security configurations remain intact.
+
 ## 2026-09-02 — Autonomous Intelligence Layer: Canary Run 002 (Extended 1,000-Trade Statistical Validation)
 
 Command: `mvn test -q`

@@ -1,5 +1,33 @@
 # Development log
 
+## 2026-09-02 — Clean Experiment Reset & Pre-Flight Environment Verification
+
+- **Milestone:** Clean Experiment Reset Before First User-Configured 12-Hour Canary
+- **Objective:** Establish a clean slate for user-configured strategy deployment, remove startup demo seeds, implement transactionally safe experimental database reset requiring `RESET_ALGOPILOT_EXPERIMENT_STATE` token, preserve Flyway schema history and security configuration, and verify pre-flight broker cleanliness.
+- **Files Changed:**
+  - `src/main/resources/db/migration/V25__clean_reset_operations.sql`
+  - `src/main/java/io/algopilot/seed/DataSeeder.java`
+  - `src/main/java/io/algopilot/reset/model/PreflightStatusResponse.java`
+  - `src/main/java/io/algopilot/reset/service/CleanResetService.java`
+  - `src/main/java/io/algopilot/reset/controller/CleanResetController.java`
+  - `src/test/java/io/algopilot/reset/CleanResetServiceTest.java`
+  - `docs/CLEAN_RESET_INVENTORY.md`
+  - `docs/CLEAN_RESET_RUNBOOK.md`
+  - `docs/CANARY_RUN_003.md`
+  - `CHANGELOG.md`
+  - `docs/DEVELOPMENT_LOG.md`
+  - `docs/TEST_REPORT.md`
+- **Implementation Summary:**
+  1. Built `CleanResetService` and `CleanResetController` exposing `POST /api/reset/confirm` and `GET /api/reset/preflight`.
+  2. Modified `DataSeeder` so the application boots with 0 active bots and 0 seeded trading entities in `CONFIGURATION_REQUIRED` mode.
+  3. Created `docs/CLEAN_RESET_INVENTORY.md` detailing 51 cleared tables and preserved system configurations.
+  4. Documented operator instructions in `docs/CLEAN_RESET_RUNBOOK.md`.
+  5. Prepared 12-hour canary test template in `docs/CANARY_RUN_003.md`.
+- **Tests Executed:** 214 automated tests across 76 test classes.
+- **Test Results:** 214 passed, 0 failed, 0 skipped.
+- **Build Result:** Maven test suite succeeded with exit code 0.
+- **Security Review:** Zero live trading paths (`LIVE_TRADING_DISABLED`), strict unprivileged container execution, clean repository secret scan.
+
 ## 2026-09-02 — Autonomous Intelligence Layer: Canary Run 002 (Extended 1,000-Trade Statistical Validation)
 
 - **Milestone:** Extended Autonomous Alpaca Paper Canary & Statistical Validation (`CANARY-ALPACA-BTC-002`)
