@@ -24,8 +24,9 @@ public class AiCostLimiter {
     this(Clock.systemUTC());
   }
 
-  public AiCostLimiter(Clock clock) {
-    this.clock = clock;
+  @org.springframework.beans.factory.annotation.Autowired
+  public AiCostLimiter(@org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
+    this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
   public synchronized boolean isAllowed() {

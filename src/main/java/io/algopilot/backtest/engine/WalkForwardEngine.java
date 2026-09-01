@@ -21,14 +21,14 @@ public class WalkForwardEngine {
   private final BacktestEngine backtestEngine;
   private final Clock clock;
 
-  @org.springframework.beans.factory.annotation.Autowired
   public WalkForwardEngine(BacktestEngine backtestEngine) {
     this(backtestEngine, Clock.systemUTC());
   }
 
-  public WalkForwardEngine(BacktestEngine backtestEngine, Clock clock) {
+  @org.springframework.beans.factory.annotation.Autowired
+  public WalkForwardEngine(BacktestEngine backtestEngine, @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
     this.backtestEngine = backtestEngine;
-    this.clock = clock;
+    this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
   public WalkForwardResult run(WalkForwardRequest request, List<Candle> candles) {

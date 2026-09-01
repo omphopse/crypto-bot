@@ -24,6 +24,7 @@ public class ControlledHttpResearchProvider implements ResearchProvider {
   private final SourcePolicy sourcePolicy;
   private final HttpClient httpClient;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public ControlledHttpResearchProvider(DomainSecurityValidator domainValidator, SourcePolicy sourcePolicy) {
     this(domainValidator, sourcePolicy, HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(5))

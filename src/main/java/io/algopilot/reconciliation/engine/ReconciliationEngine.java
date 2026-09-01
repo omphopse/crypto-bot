@@ -39,13 +39,13 @@ import org.springframework.stereotype.Service;
 public class ReconciliationEngine {
   private final Clock clock;
 
-  @org.springframework.beans.factory.annotation.Autowired
   public ReconciliationEngine() {
     this(Clock.systemUTC());
   }
 
-  public ReconciliationEngine(Clock clock) {
-    this.clock = clock;
+  @org.springframework.beans.factory.annotation.Autowired
+  public ReconciliationEngine(@org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
+    this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
   public List<ReconciliationMismatch> reconcile(

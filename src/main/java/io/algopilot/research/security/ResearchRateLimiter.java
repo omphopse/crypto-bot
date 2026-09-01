@@ -9,6 +9,7 @@ public class ResearchRateLimiter {
   private final AtomicInteger currentMinuteCount = new AtomicInteger(0);
   private volatile long lastMinuteWindow = System.currentTimeMillis() / 60_000L;
 
+  @org.springframework.beans.factory.annotation.Autowired
   public ResearchRateLimiter() {
     this(30); // Default 30 requests per minute
   }

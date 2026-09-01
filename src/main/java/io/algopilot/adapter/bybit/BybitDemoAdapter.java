@@ -50,8 +50,8 @@ public class BybitDemoAdapter implements BrokerOrderAdapter, BrokerStateProvider
   private final Clock clock;
 
   @org.springframework.beans.factory.annotation.Autowired
-  public BybitDemoAdapter(BybitConfig config, ObjectMapper json) {
-    this(config, json, HttpClient.newHttpClient(), Clock.systemUTC());
+  public BybitDemoAdapter(BybitConfig config, ObjectMapper json, @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
+    this(config, json, HttpClient.newHttpClient(), clock != null ? clock : Clock.systemUTC());
   }
 
   public BybitDemoAdapter(BybitConfig config, ObjectMapper json, HttpClient httpClient, Clock clock) {

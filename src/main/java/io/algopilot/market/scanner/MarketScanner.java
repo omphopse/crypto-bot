@@ -24,10 +24,14 @@ public class MarketScanner {
   private final AuditEventWriter audit;
   private final Clock clock;
 
-  public MarketScanner(MarketScanStore scanStore, AuditEventWriter audit, Clock clock) {
+  @org.springframework.beans.factory.annotation.Autowired
+  public MarketScanner(
+      MarketScanStore scanStore,
+      AuditEventWriter audit,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
     this.scanStore = scanStore;
     this.audit = audit;
-    this.clock = clock;
+    this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
   public MarketScanner(MarketScanStore scanStore, AuditEventWriter audit) {

@@ -8,14 +8,20 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
-/** Deterministic and deliberately side-effect free. Execution must require an APPROVED result. */
 @Service
 public class RiskEngine {
   private final Clock clock;
   private final RiskLimits limits;
+
+  public RiskEngine() {
+    this(Clock.systemUTC(), RiskLimits.defaults());
+  }
+
   @org.springframework.beans.factory.annotation.Autowired
-  public RiskEngine() { this(Clock.systemUTC(), RiskLimits.defaults()); }
-  RiskEngine(Clock clock, RiskLimits limits) { this.clock = clock; this.limits = limits; }
+  public RiskEngine(@org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
+    this(clock != null ? clock : Clock.systemUTC(), RiskLimits.defaults());
+  }
+  public RiskEngine(Clock clock, RiskLimits limits) { this.clock = clock != null ? clock : Clock.systemUTC(); this.limits = limits; }
 
   public RiskDecision evaluate(RiskDecisionRequest request) {
     List<RiskDecision.Reason> reasons = new ArrayList<>();
