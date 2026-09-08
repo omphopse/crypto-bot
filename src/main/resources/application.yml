@@ -27,6 +27,12 @@ server:
     include-message: never
 
 algopilot:
+  ai:
+    provider: ${AI_PROVIDER:gemini}
+    gemini:
+      base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+      api-key: ${GEMINI_API_KEY:}
+      model: ${GEMINI_MODEL:gemini-2.5-flash}
   alpaca:
     base-url: ${ALPACA_BASE_URL:https://paper-api.alpaca.markets/v2}
     key-id: ${ALPACA_API_KEY:}

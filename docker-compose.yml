@@ -44,6 +44,10 @@ services:
       BYBIT_BASE_URL: ${BYBIT_BASE_URL:-https://api-demo.bybit.com}
       BYBIT_API_KEY: ${BYBIT_API_KEY:-}
       BYBIT_API_SECRET: ${BYBIT_API_SECRET:-}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com}
     ports:
       - "${PORT:-8080}:8080"
     depends_on:
