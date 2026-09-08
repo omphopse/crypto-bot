@@ -215,6 +215,26 @@ class ContextBuilderServiceTest {
   }
 
   @Test
+  void testBuildContext_whenNoActiveSession_createsAndPersistsSessionSafely() {
+    Instant now = clock.instant();
+    when(agentStateStore.findActiveSessionByBotId(botId)).thenReturn(Optional.empty());
+    when(agentStateStore.findSessionsByBotId(botId)).thenReturn(List.of());
+    UUID createdSessionId = UUID.randomUUID();
+    AgentSession newSession = new AgentSession(createdSessionId, botId, "Canary Agent", AgentState.IDLE, AutonomousMode.OBSERVE_ONLY, json.createObjectNode(), now, now, null);
+    when(agentStateStore.saveSession(org.mockito.ArgumentMatchers.any(AgentSession.class))).thenReturn(newSession);
+
+    PortfolioSummary summary = new PortfolioSummary(new BigDecimal("100000.00"), new BigDecimal("100000.00"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("100000.00"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, now);
+    when(accountingService.calculateSummary()).thenReturn(summary);
+    when(accountingService.getMarkedPositions()).thenReturn(List.of());
+
+    TradingContext context = service.buildContext(botId);
+
+    assertThat(context).isNotNull();
+    assertThat(context.agentSessionId()).isEqualTo(createdSessionId);
+    verify(agentStateStore, times(1)).saveSession(org.mockito.ArgumentMatchers.any(AgentSession.class));
+  }
+
+  @Test
   void testZeroExecutionAuthority_contextBuilderHasNoTradingPaths() {
     Method[] methods = ContextBuilderService.class.getDeclaredMethods();
     for (Method m : methods) {

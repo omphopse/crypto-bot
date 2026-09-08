@@ -1,5 +1,25 @@
 # Test report
 
+## 2026-09-08 — Current-State Audit & Context/AgentSession FK Resolution
+
+Command: `mvn test -q`
+
+Result: **passed** (226 tests executed across 73 test classes, 0 failures, 0 errors, 0 skipped, 0 network dependencies).
+
+### Covered Verification Scenarios:
+
+1. **ContextBuilderService Session Resolution & Foreign Key Safety (`ContextBuilderServiceTest`):**
+   - Verified that `buildContext` safely resolves active session or persists an initial `AgentSession` in `agent_sessions` before saving to `trading_contexts`.
+   - Verified that `testBuildContext_whenNoActiveSession_createsAndPersistsSessionSafely` passes cleanly.
+   - Guaranteed zero `DataIntegrityViolationException` on `trading_contexts.session_id` foreign key.
+
+2. **Spring Component Constructor Autowiring Verification:**
+   - Verified unambiguous constructor injection across `MarketScanner`, `AiCostLimiter`, `ControlledHttpResearchProvider`, `ResearchRateLimiter`, `BacktestEngine`, `WalkForwardEngine`, `AlpacaPaperAdapter`, and `BybitDemoAdapter`.
+
+3. **Autonomous End-to-End Safety Pipeline:**
+   - Verified complete 10-stage execution pipeline from observation to reconciliation.
+   - Verified 100% deterministic risk gating with `LIVE_TRADING_DISABLED`.
+
 ## 2026-09-02 — Clean Experiment Reset & Pre-Flight Verification
 
 Command: `mvn test -q`

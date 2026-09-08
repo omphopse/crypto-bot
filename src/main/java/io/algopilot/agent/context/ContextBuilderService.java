@@ -121,9 +121,34 @@ public class ContextBuilderService {
 
     // 2. Agent Session & State
     Optional<AgentSession> sessionOpt = agentStateStore.findActiveSessionByBotId(botId);
-    UUID sessionId = sessionOpt.map(AgentSession::id).orElse(UUID.randomUUID());
-    AgentState agentState = sessionOpt.map(AgentSession::currentState).orElse(AgentState.IDLE);
-    AutonomousMode autonomousMode = sessionOpt.map(AgentSession::mode).orElse(AutonomousMode.OBSERVE_ONLY);
+    if (sessionOpt.isEmpty()) {
+      List<AgentSession> existing = agentStateStore.findSessionsByBotId(botId);
+      if (!existing.isEmpty()) {
+        sessionOpt = Optional.of(existing.get(0));
+      }
+    }
+
+    AgentSession session;
+    if (sessionOpt.isPresent()) {
+      session = sessionOpt.get();
+    } else {
+      AgentSession created = new AgentSession(
+          UUID.randomUUID(),
+          botId,
+          bot.name(),
+          AgentState.IDLE,
+          AutonomousMode.OBSERVE_ONLY,
+          json.createObjectNode(),
+          now,
+          now,
+          null
+      );
+      AgentSession saved = agentStateStore.saveSession(created);
+      session = saved != null ? saved : created;
+    }
+    UUID sessionId = session.id();
+    AgentState agentState = session.currentState();
+    AutonomousMode autonomousMode = session.mode();
 
     // 3. Market Context
     Optional<MarketObservation> obsOpt = marketDataStore.findLatest(symbol);
