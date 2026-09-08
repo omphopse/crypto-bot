@@ -33,6 +33,10 @@ algopilot:
       base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
       api-key: ${GEMINI_API_KEY:}
       model: ${GEMINI_MODEL:gemini-3.6-flash}
+    xai:
+      base-url: ${XAI_BASE_URL:https://api.x.ai/v1}
+      api-key: ${XAI_API_KEY:}
+      model: ${XAI_MODEL:grok-2-latest}
   alpaca:
     base-url: ${ALPACA_BASE_URL:https://paper-api.alpaca.markets/v2}
     key-id: ${ALPACA_API_KEY:}

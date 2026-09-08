@@ -18,18 +18,29 @@ public class DelegatingLLMDecisionProvider implements LLMDecisionProvider {
   private static final Logger log = LoggerFactory.getLogger(DelegatingLLMDecisionProvider.class);
 
   private final GeminiLLMDecisionProvider geminiProvider;
+  private final GrokLLMDecisionProvider grokProvider;
   private final FakeLLMDecisionProvider fakeProvider;
   private final String providerMode;
 
   @Autowired
   public DelegatingLLMDecisionProvider(
       GeminiLLMDecisionProvider geminiProvider,
+      @Autowired(required = false) GrokLLMDecisionProvider grokProvider,
       FakeLLMDecisionProvider fakeProvider,
       @Value("${algopilot.ai.provider:gemini}") String providerMode
   ) {
     this.geminiProvider = geminiProvider;
+    this.grokProvider = grokProvider;
     this.fakeProvider = fakeProvider;
     this.providerMode = providerMode != null ? providerMode.trim().toLowerCase() : "gemini";
+  }
+
+  public DelegatingLLMDecisionProvider(
+      GeminiLLMDecisionProvider geminiProvider,
+      FakeLLMDecisionProvider fakeProvider,
+      String providerMode
+  ) {
+    this(geminiProvider, null, fakeProvider, providerMode);
   }
 
   @Override
@@ -48,12 +59,22 @@ public class DelegatingLLMDecisionProvider implements LLMDecisionProvider {
   }
 
   public LLMDecisionProvider getActiveDelegate() {
-    if ("gemini".equalsIgnoreCase(providerMode) && geminiProvider.isApiKeyConfigured()) {
-      return geminiProvider;
-    }
-    if ("gemini".equalsIgnoreCase(providerMode) && !geminiProvider.isApiKeyConfigured()) {
+    if ("gemini".equalsIgnoreCase(providerMode)) {
+      if (geminiProvider != null && geminiProvider.isApiKeyConfigured()) {
+        return geminiProvider;
+      }
       log.debug("Gemini provider selected but GEMINI_API_KEY is not set. Falling back to deterministic Fake provider for testing.");
+      return fakeProvider;
     }
+
+    if ("xai".equalsIgnoreCase(providerMode) || "grok".equalsIgnoreCase(providerMode)) {
+      if (grokProvider != null && grokProvider.isApiKeyConfigured()) {
+        return grokProvider;
+      }
+      log.debug("xAI/Grok provider selected but XAI_API_KEY is not set. Falling back to deterministic Fake provider for testing.");
+      return fakeProvider;
+    }
+
     return fakeProvider;
   }
 }
