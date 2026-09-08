@@ -46,8 +46,11 @@ services:
       BYBIT_API_SECRET: ${BYBIT_API_SECRET:-}
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
       GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com}
+      LIVE_TRADING_DISABLED: "true"
+      ALGOPILOT_RUNTIME_INTERVAL_MS: ${ALGOPILOT_RUNTIME_INTERVAL_MS:-15000}
+      ALGOPILOT_RUNTIME_INSTANCE_ID: ${ALGOPILOT_RUNTIME_INSTANCE_ID:-runtime-primary}
     ports:
       - "${PORT:-8080}:8080"
     depends_on:

@@ -132,12 +132,15 @@ public class ContextBuilderService {
     if (sessionOpt.isPresent()) {
       session = sessionOpt.get();
     } else {
+      AutonomousMode autoMode = bot.executionMode() == io.algopilot.bot.ExecutionMode.PAPER
+          ? AutonomousMode.PAPER_AUTONOMOUS
+          : (bot.executionMode() == io.algopilot.bot.ExecutionMode.DEMO ? AutonomousMode.DEMO_AUTONOMOUS : AutonomousMode.OBSERVE_ONLY);
       AgentSession created = new AgentSession(
           UUID.randomUUID(),
           botId,
           bot.name(),
           AgentState.IDLE,
-          AutonomousMode.OBSERVE_ONLY,
+          autoMode,
           json.createObjectNode(),
           now,
           now,

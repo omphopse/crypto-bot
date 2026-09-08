@@ -25,6 +25,7 @@ public class CleanResetService {
       "candidate_stress_results",
       "discovery_candidates",
       "strategy_candidates",
+      "alpha_hypotheses",
       "experiment_regime_results",
       "experiment_parameter_sweeps",
       "experiment_walk_forward_windows",
@@ -54,27 +55,25 @@ public class CleanResetService {
       "market_observations",
       "agent_state_events",
       "agent_sessions",
-      "pnl_records",
-      "portfolio_snapshots",
+      "portfolio_accounts",
       "rebalance_orders",
-      "portfolio_rebalance_runs",
-      "allocation_targets",
-      "portfolio_allocations",
-      "factor_evaluations",
-      "alpha_factors",
+      "rebalance_runs",
+      "portfolio_allocation_plans",
+      "walk_forward_runs",
       "backtest_trades",
-      "backtests",
+      "backtest_runs",
+      "reconciliation_recoveries",
       "reconciliation_mismatches",
-      "reconciliations",
+      "reconciliation_runs",
       "fills",
       "positions",
       "order_events",
       "agent_decisions",
+      "orders",
       "bots",
       "strategy_versions",
       "strategies",
-      "orders",
-      "risk_rejections",
+      "risk_decisions",
       "audit_events"
   );
 
@@ -98,12 +97,21 @@ public class CleanResetService {
         resetId, op, confirmationString, String.join(",", EXPERIMENTAL_TABLES), Timestamp.from(now)
     );
 
-    // 2. Clear all experimental tables in dependency order
-    for (String table : EXPERIMENTAL_TABLES) {
-      try {
-        jdbc.execute("DELETE FROM " + table);
-      } catch (Exception e) {
-        log.warn("Could not delete from table {} (might not exist yet): {}", table, e.getMessage());
+    // 2. Clear all experimental tables in dependency order with CASCADE
+    try {
+      jdbc.execute("TRUNCATE TABLE " + String.join(", ", EXPERIMENTAL_TABLES) + " CASCADE");
+    } catch (Exception e) {
+      log.warn("Bulk truncate failed ({}), attempting individual truncates/deletes in order", e.getMessage());
+      for (String table : EXPERIMENTAL_TABLES) {
+        try {
+          jdbc.execute("TRUNCATE TABLE " + table + " CASCADE");
+        } catch (Exception ex) {
+          try {
+            jdbc.execute("DELETE FROM " + table);
+          } catch (Exception ex2) {
+            log.warn("Could not delete from table {}: {}", table, ex2.getMessage());
+          }
+        }
       }
     }
 

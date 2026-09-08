@@ -44,7 +44,7 @@ public class GeminiLLMDecisionProvider implements LLMDecisionProvider {
   public GeminiLLMDecisionProvider(
       @Value("${algopilot.ai.gemini.api-key:${GEMINI_API_KEY:}}") String apiKey,
       @Value("${algopilot.ai.gemini.base-url:https://generativelanguage.googleapis.com}") String baseUrl,
-      @Value("${algopilot.ai.gemini.model:gemini-2.5-flash}") String model,
+      @Value("${algopilot.ai.gemini.model:gemini-3.6-flash}") String model,
       DecisionPromptBuilder promptBuilder,
       ObjectMapper json,
       @Autowired(required = false) Clock clock
@@ -63,7 +63,7 @@ public class GeminiLLMDecisionProvider implements LLMDecisionProvider {
   ) {
     this.apiKey = apiKey != null ? apiKey.trim() : "";
     this.baseUrl = baseUrl != null ? baseUrl.trim() : "https://generativelanguage.googleapis.com";
-    this.model = model != null && !model.isBlank() ? model.trim() : "gemini-2.5-flash";
+    this.model = model != null && !model.isBlank() ? model.trim() : "gemini-3.6-flash";
     this.promptBuilder = promptBuilder;
     this.json = json;
     this.httpClient = httpClient;
@@ -127,7 +127,7 @@ public class GeminiLLMDecisionProvider implements LLMDecisionProvider {
       long latencyMs = clock.instant().toEpochMilli() - startTime;
 
       if (response.statusCode() != 200) {
-        log.warn("Gemini API returned non-200 status code: {}. Failing safe.", response.statusCode());
+        log.warn("Gemini API returned non-200 status code: {} body: {}. Failing safe.", response.statusCode(), response.body());
         return createSafeFallback(context, "GEMINI_HTTP_" + response.statusCode(), now, expiresAt, latencyMs, 0, 0, BigDecimal.ZERO);
       }
 
@@ -138,7 +138,17 @@ public class GeminiLLMDecisionProvider implements LLMDecisionProvider {
         return createSafeFallback(context, "GEMINI_NO_CANDIDATES", now, expiresAt, latencyMs, 0, 0, BigDecimal.ZERO);
       }
 
-      String responseText = candidates.get(0).path("content").path("parts").get(0).path("text").asText();
+      String responseText = candidates.get(0).path("content").path("parts").get(0).path("text").asText().trim();
+      if (responseText.startsWith("```json")) {
+        responseText = responseText.substring(7);
+      } else if (responseText.startsWith("```")) {
+        responseText = responseText.substring(3);
+      }
+      if (responseText.endsWith("```")) {
+        responseText = responseText.substring(0, responseText.length() - 3);
+      }
+      responseText = responseText.trim();
+
       JsonNode decisionJson = json.readTree(responseText);
 
       int inTokens = rootNode.path("usageMetadata").path("promptTokenCount").asInt(450);
@@ -151,10 +161,10 @@ public class GeminiLLMDecisionProvider implements LLMDecisionProvider {
 
       TradeAction action = parseTradeAction(decisionJson.path("decision").asText("NO_ACTION"));
       String decisionSymbol = decisionJson.path("symbol").asText(symbol);
-      BigDecimal confidence = decisionJson.has("confidence") ? new BigDecimal(decisionJson.path("confidence").asText()) : new BigDecimal("0.50");
-      BigDecimal qty = decisionJson.has("quantity") ? new BigDecimal(decisionJson.path("quantity").asText()) : BigDecimal.ZERO;
-      BigDecimal sl = decisionJson.has("stopLoss") ? new BigDecimal(decisionJson.path("stopLoss").asText()) : BigDecimal.ZERO;
-      BigDecimal tp = decisionJson.has("takeProfit") ? new BigDecimal(decisionJson.path("takeProfit").asText()) : BigDecimal.ZERO;
+      BigDecimal confidence = parseBigDecimalSafely(decisionJson, "confidence", new BigDecimal("0.50"));
+      BigDecimal qty = parseBigDecimalSafely(decisionJson, "quantity", BigDecimal.ZERO);
+      BigDecimal sl = parseBigDecimalSafely(decisionJson, "stopLoss", BigDecimal.ZERO);
+      BigDecimal tp = parseBigDecimalSafely(decisionJson, "takeProfit", BigDecimal.ZERO);
       String thesis = decisionJson.path("thesis").asText("Gemini multi-factor market analysis.");
 
       List<UUID> evidenceRefs = new ArrayList<>();
@@ -271,5 +281,20 @@ public class GeminiLLMDecisionProvider implements LLMDecisionProvider {
         now,
         expiresAt
     );
+  }
+
+  private BigDecimal parseBigDecimalSafely(JsonNode node, String fieldName, BigDecimal defaultValue) {
+    if (node == null || !node.has(fieldName) || node.get(fieldName).isNull()) {
+      return defaultValue;
+    }
+    try {
+      String text = node.get(fieldName).asText().trim();
+      if (text.isEmpty() || "null".equalsIgnoreCase(text) || "none".equalsIgnoreCase(text) || "n/a".equalsIgnoreCase(text)) {
+        return defaultValue;
+      }
+      return new BigDecimal(text);
+    } catch (Exception e) {
+      return defaultValue;
+    }
   }
 }
