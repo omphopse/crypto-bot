@@ -19,6 +19,7 @@ public class DelegatingLLMDecisionProvider implements LLMDecisionProvider {
 
   private final GeminiLLMDecisionProvider geminiProvider;
   private final GrokLLMDecisionProvider grokProvider;
+  private final OllamaLLMDecisionProvider ollamaProvider;
   private final FakeLLMDecisionProvider fakeProvider;
   private final String providerMode;
 
@@ -26,13 +27,24 @@ public class DelegatingLLMDecisionProvider implements LLMDecisionProvider {
   public DelegatingLLMDecisionProvider(
       GeminiLLMDecisionProvider geminiProvider,
       @Autowired(required = false) GrokLLMDecisionProvider grokProvider,
+      @Autowired(required = false) OllamaLLMDecisionProvider ollamaProvider,
       FakeLLMDecisionProvider fakeProvider,
       @Value("${algopilot.ai.provider:gemini}") String providerMode
   ) {
     this.geminiProvider = geminiProvider;
     this.grokProvider = grokProvider;
+    this.ollamaProvider = ollamaProvider;
     this.fakeProvider = fakeProvider;
     this.providerMode = providerMode != null ? providerMode.trim().toLowerCase() : "gemini";
+  }
+
+  public DelegatingLLMDecisionProvider(
+      GeminiLLMDecisionProvider geminiProvider,
+      GrokLLMDecisionProvider grokProvider,
+      FakeLLMDecisionProvider fakeProvider,
+      String providerMode
+  ) {
+    this(geminiProvider, grokProvider, null, fakeProvider, providerMode);
   }
 
   public DelegatingLLMDecisionProvider(
@@ -40,7 +52,7 @@ public class DelegatingLLMDecisionProvider implements LLMDecisionProvider {
       FakeLLMDecisionProvider fakeProvider,
       String providerMode
   ) {
-    this(geminiProvider, null, fakeProvider, providerMode);
+    this(geminiProvider, null, null, fakeProvider, providerMode);
   }
 
   @Override
@@ -59,6 +71,14 @@ public class DelegatingLLMDecisionProvider implements LLMDecisionProvider {
   }
 
   public LLMDecisionProvider getActiveDelegate() {
+    if ("ollama".equalsIgnoreCase(providerMode)) {
+      if (ollamaProvider != null) {
+        return ollamaProvider;
+      }
+      log.debug("Ollama provider selected but OllamaLLMDecisionProvider bean is not available. Falling back to deterministic Fake provider.");
+      return fakeProvider;
+    }
+
     if ("gemini".equalsIgnoreCase(providerMode)) {
       if (geminiProvider != null && geminiProvider.isApiKeyConfigured()) {
         return geminiProvider;
