@@ -6,6 +6,7 @@ import io.algopilot.order.OrderRecord;
 import io.algopilot.order.OrderStore;
 import io.algopilot.portfolio.Position;
 import io.algopilot.portfolio.PositionStore;
+import io.algopilot.risk.RiskDecisionRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -107,6 +108,7 @@ public class PortfolioAccountingService {
     BigDecimal portfolioEquity = cash.add(marketExposure);
 
     BigDecimal pendingOrderNotional = openOrders.stream()
+        .filter(o -> o.side() == RiskDecisionRequest.Side.BUY)
         .map(o -> o.quantity().multiply(o.referencePrice()))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
 

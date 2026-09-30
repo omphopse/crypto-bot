@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import org.mockito.ArgumentCaptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.algopilot.adapter.BrokerAdapterException;
 import io.algopilot.adapter.OrderCancellationResult;
@@ -80,6 +81,94 @@ public class AlpacaPaperAdapterTest {
     assertEquals("client-123", result.clientOrderId());
     assertEquals("alpaca-order-123", result.exchangeOrderId());
     assertEquals(OrderStatus.ACKNOWLEDGED, result.status());
+
+    ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+    verify(httpClient).send(captor.capture(), any());
+    String body = extractBody(captor.getValue());
+    assertTrue(body.contains("\"time_in_force\":\"gtc\""), "BTC/USD must produce time_in_force=gtc");
+    assertTrue(body.contains("\"symbol\":\"BTCUSD\""), "BTC/USD must be normalized to BTCUSD");
+  }
+
+  @Test
+  void testSubmitOrder_cryptoWithoutSlash_usesGtcTimeInForce() throws Exception {
+    String responseJson = """
+        {
+          "id": "alpaca-order-124",
+          "client_order_id": "client-124",
+          "symbol": "BTCUSD",
+          "status": "accepted",
+          "qty": "0.5"
+        }
+        """;
+    when(httpResponse.statusCode()).thenReturn(200);
+    when(httpResponse.body()).thenReturn(responseJson);
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(httpResponse);
+
+    OrderRecord order = new OrderRecord(
+        UUID.randomUUID(), "client-124", "bot-1", "v1", "BTCUSD",
+        RiskDecisionRequest.Side.BUY, new BigDecimal("0.5"), new BigDecimal("60000.00"),
+        OrderStatus.CREATED, fixedInstant
+    );
+
+    OrderSubmissionResult result = adapter.submitOrder(order);
+
+    assertNotNull(result);
+    ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+    verify(httpClient, atLeastOnce()).send(captor.capture(), any());
+    String body = extractBody(captor.getValue());
+    assertTrue(body.contains("\"time_in_force\":\"gtc\""), "BTCUSD must produce time_in_force=gtc");
+  }
+
+  @Test
+  void testSubmitOrder_nonCryptoSymbol_preservesDayTimeInForce() throws Exception {
+    String responseJson = """
+        {
+          "id": "alpaca-order-equity-1",
+          "client_order_id": "client-eq-1",
+          "symbol": "AAPL",
+          "status": "accepted",
+          "qty": "10"
+        }
+        """;
+    when(httpResponse.statusCode()).thenReturn(200);
+    when(httpResponse.body()).thenReturn(responseJson);
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(httpResponse);
+
+    OrderRecord order = new OrderRecord(
+        UUID.randomUUID(), "client-eq-1", "bot-1", "v1", "AAPL",
+        RiskDecisionRequest.Side.BUY, new BigDecimal("10"), new BigDecimal("150.00"),
+        OrderStatus.CREATED, fixedInstant
+    );
+
+    OrderSubmissionResult result = adapter.submitOrder(order);
+
+    assertNotNull(result);
+    ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+    verify(httpClient, atLeastOnce()).send(captor.capture(), any());
+    String body = extractBody(captor.getValue());
+    assertTrue(body.contains("\"time_in_force\":\"day\""), "Non-crypto symbol AAPL must preserve time_in_force=day");
+    assertTrue(body.contains("\"symbol\":\"AAPL\""), "AAPL symbol must remain unchanged");
+  }
+
+  private static String extractBody(HttpRequest request) {
+    if (request == null || request.bodyPublisher().isEmpty()) return "";
+    var subscriber = HttpResponse.BodySubscribers.ofString(java.nio.charset.StandardCharsets.UTF_8);
+    request.bodyPublisher().get().subscribe(new java.util.concurrent.Flow.Subscriber<java.nio.ByteBuffer>() {
+      @Override public void onSubscribe(java.util.concurrent.Flow.Subscription s) {
+        s.request(Long.MAX_VALUE);
+        subscriber.onSubscribe(s);
+      }
+      @Override public void onNext(java.nio.ByteBuffer item) {
+        subscriber.onNext(java.util.List.of(item));
+      }
+      @Override public void onError(Throwable throwable) {
+        subscriber.onError(throwable);
+      }
+      @Override public void onComplete() {
+        subscriber.onComplete();
+      }
+    });
+    return subscriber.getBody().toCompletableFuture().join();
   }
 
   @Test
@@ -166,7 +255,7 @@ public class AlpacaPaperAdapterTest {
 
     List<BrokerPosition> positions = adapter.fetchPositions(Broker.ALPACA_PAPER, ExecutionMode.PAPER, "bot-1");
     assertEquals(1, positions.size());
-    assertEquals("BTCUSD", positions.getFirst().symbol());
+    assertEquals("BTC/USD", positions.getFirst().symbol());
     assertEquals(new BigDecimal("1.5"), positions.getFirst().quantity());
     assertEquals(new BigDecimal("60000.00"), positions.getFirst().averageEntryPrice());
   }

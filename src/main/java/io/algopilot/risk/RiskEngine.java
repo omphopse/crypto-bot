@@ -27,11 +27,25 @@ public class RiskEngine {
     List<RiskDecision.Reason> reasons = new ArrayList<>();
     Instant now = clock.instant();
     BigDecimal proposed = request.quantity().multiply(request.referencePrice());
-    BigDecimal positionPct = percent(request.existingSymbolExposure().add(proposed), request.accountEquity());
-    BigDecimal portfolioPct = percent(request.existingPortfolioExposure().add(proposed), request.accountEquity());
+    BigDecimal nextSymbolExposure = request.side() == RiskDecisionRequest.Side.SELL
+        ? request.existingSymbolExposure().subtract(proposed).max(BigDecimal.ZERO)
+        : request.existingSymbolExposure().add(proposed);
+    BigDecimal nextPortfolioExposure = request.side() == RiskDecisionRequest.Side.SELL
+        ? request.existingPortfolioExposure().subtract(proposed).max(BigDecimal.ZERO)
+        : request.existingPortfolioExposure().add(proposed);
+    BigDecimal positionPct = percent(nextSymbolExposure, request.accountEquity());
+    BigDecimal portfolioPct = percent(nextPortfolioExposure, request.accountEquity());
     BigDecimal dailyLossPct = percent(request.realizedDailyLoss(), request.accountEquity());
     if (request.emergencyStop()) reasons.add(RiskDecision.Reason.EMERGENCY_STOP);
-    if (request.botPaused()) reasons.add(RiskDecision.Reason.BOT_PAUSED);
+    if (request.botPaused()) {
+      boolean isExposureReducingSell = request.side() == RiskDecisionRequest.Side.SELL
+          && request.existingSymbolExposure() != null
+          && request.existingSymbolExposure().compareTo(BigDecimal.ZERO) > 0
+          && proposed.compareTo(request.existingSymbolExposure().multiply(new BigDecimal("1.01"))) <= 0;
+      if (!isExposureReducingSell) {
+        reasons.add(RiskDecision.Reason.BOT_PAUSED);
+      }
+    }
     if (request.duplicateOrder()) reasons.add(RiskDecision.Reason.DUPLICATE_ORDER);
     if (request.marketDataTimestamp().plus(limits.maxMarketDataAge()).isBefore(now)) reasons.add(RiskDecision.Reason.STALE_MARKET_DATA);
     if (positionPct.compareTo(limits.maxPositionPercent()) > 0) reasons.add(RiskDecision.Reason.MAX_POSITION_SIZE);

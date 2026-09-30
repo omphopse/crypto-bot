@@ -83,6 +83,23 @@ class MarketScannerTest {
   }
 
   @Test
+  void testMomentumCandidate_detectedWithCustomEmaParameters() {
+    UUID sessionId = UUID.randomUUID();
+    UUID botId = UUID.randomUUID();
+    List<Candle> uptrend = generateCandles(35, new BigDecimal("100.00"), new BigDecimal("1.50"));
+    MarketObservation obs = createObservation("BTC/USD", uptrend.get(uptrend.size() - 1).close(), false);
+
+    ScanResult result = scanner.scan(sessionId, botId, uptrend, obs, 12, 26, 14);
+
+    assertThat(result.candidateType()).isEqualTo(CandidateType.MOMENTUM);
+    assertThat(result.status()).isEqualTo("CANDIDATE_DETECTED");
+    assertThat(result.confidenceScore()).isGreaterThan(BigDecimal.ZERO);
+    assertThat(result.triggerConditions()).contains("EMA12_ABOVE_EMA26");
+    assertThat(result.indicatorSnapshot().isWarmedUp()).isTrue();
+    assertThat(result.indicatorSnapshot().emaFast()).isGreaterThan(result.indicatorSnapshot().emaSlow());
+  }
+
+  @Test
   void testOversoldCandidate_detectedWhenRsiBelow30() {
     UUID sessionId = UUID.randomUUID();
     UUID botId = UUID.randomUUID();

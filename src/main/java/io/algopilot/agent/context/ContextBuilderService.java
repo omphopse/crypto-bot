@@ -12,8 +12,10 @@ import io.algopilot.bot.BotStatus;
 import io.algopilot.bot.BotStore;
 import io.algopilot.market.observation.MarketDataStore;
 import io.algopilot.market.observation.MarketObservation;
+import io.algopilot.backtest.model.Candle;
 import io.algopilot.market.scanner.CandidateType;
 import io.algopilot.market.scanner.MarketScanStore;
+import io.algopilot.market.scanner.MarketScanner;
 import io.algopilot.market.scanner.ScanResult;
 import io.algopilot.order.OrderRecord;
 import io.algopilot.order.OrderStatus;
@@ -41,6 +43,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -60,6 +63,40 @@ public class ContextBuilderService {
   private final AuditEventWriter audit;
   private final Clock clock;
   private final ObjectMapper json;
+  private final MarketScanner marketScanner;
+
+  @Autowired
+  public ContextBuilderService(
+      BotStore botStore,
+      AgentStateStore agentStateStore,
+      StrategyStore strategyStore,
+      MarketDataStore marketDataStore,
+      MarketScanStore marketScanStore,
+      PortfolioAccountingService accountingService,
+      OrderStore orderStore,
+      ReconciliationStore reconciliationStore,
+      ResearchStore researchStore,
+      TradingContextStore contextStore,
+      AuditEventWriter audit,
+      Clock clock,
+      ObjectMapper json,
+      @Autowired(required = false) MarketScanner marketScanner
+  ) {
+    this.botStore = botStore;
+    this.agentStateStore = agentStateStore;
+    this.strategyStore = strategyStore;
+    this.marketDataStore = marketDataStore;
+    this.marketScanStore = marketScanStore;
+    this.accountingService = accountingService;
+    this.orderStore = orderStore;
+    this.reconciliationStore = reconciliationStore;
+    this.researchStore = researchStore;
+    this.contextStore = contextStore;
+    this.audit = audit;
+    this.clock = clock;
+    this.json = json;
+    this.marketScanner = marketScanner;
+  }
 
   public ContextBuilderService(
       BotStore botStore,
@@ -76,19 +113,11 @@ public class ContextBuilderService {
       Clock clock,
       ObjectMapper json
   ) {
-    this.botStore = botStore;
-    this.agentStateStore = agentStateStore;
-    this.strategyStore = strategyStore;
-    this.marketDataStore = marketDataStore;
-    this.marketScanStore = marketScanStore;
-    this.accountingService = accountingService;
-    this.orderStore = orderStore;
-    this.reconciliationStore = reconciliationStore;
-    this.researchStore = researchStore;
-    this.contextStore = contextStore;
-    this.audit = audit;
-    this.clock = clock;
-    this.json = json;
+    this(
+        botStore, agentStateStore, strategyStore, marketDataStore, marketScanStore,
+        accountingService, orderStore, reconciliationStore, researchStore, contextStore,
+        audit, clock, json, null
+    );
   }
 
   public TradingContext buildContext(UUID botId) {
@@ -180,6 +209,31 @@ public class ContextBuilderService {
     }
 
     // 4. Scanner Context & Indicator Snapshot
+    int fastEma = 12;
+    int slowEma = 26;
+    int rsiPeriod = 14;
+    if (params != null) {
+      if (params.has("fastEma")) fastEma = params.get("fastEma").asInt(12);
+      if (params.has("slowEma")) slowEma = params.get("slowEma").asInt(26);
+      if (params.has("rsiPeriod")) rsiPeriod = params.get("rsiPeriod").asInt(14);
+    }
+
+    if (marketScanner != null) {
+      try {
+        List<MarketObservation> recentObs = marketDataStore.findRecent(symbol, 50);
+        int minBars = Math.max(20, Math.max(fastEma, slowEma));
+        if (recentObs != null && recentObs.size() >= minBars) {
+          List<Candle> candles = recentObs.stream()
+              .sorted((a, b) -> a.marketTimestamp().compareTo(b.marketTimestamp()))
+              .map(o -> new Candle(o.symbol(), o.timeframe(), o.openPrice(), o.highPrice(), o.lowPrice(), o.closePrice(), o.volume(), o.marketTimestamp()))
+              .toList();
+          marketScanner.scan(sessionId, botId, candles, obsOpt.orElse(null), fastEma, slowEma, rsiPeriod);
+        }
+      } catch (Exception e) {
+        log.warn("Failed to execute on-demand market scan for symbol {}: {}", symbol, e.getMessage());
+      }
+    }
+
     List<ScanResult> scans = marketScanStore.findRecentBySymbol(symbol, 1);
     ScannerContext scannerContext;
     IndicatorContext indicatorContext;

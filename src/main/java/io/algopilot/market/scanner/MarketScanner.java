@@ -39,6 +39,18 @@ public class MarketScanner {
   }
 
   public ScanResult scan(UUID sessionId, UUID botId, List<Candle> candles, MarketObservation currentObservation) {
+    return scan(sessionId, botId, candles, currentObservation, 9, 21, 14);
+  }
+
+  public ScanResult scan(
+      UUID sessionId,
+      UUID botId,
+      List<Candle> candles,
+      MarketObservation currentObservation,
+      int fastEmaPeriod,
+      int slowEmaPeriod,
+      int rsiPeriod
+  ) {
     Instant now = clock.instant();
     String symbol = currentObservation != null ? currentObservation.symbol() : (candles != null && !candles.isEmpty() ? candles.get(0).symbol() : "UNKNOWN");
     String timeframe = currentObservation != null ? currentObservation.timeframe() : "1m";
@@ -54,7 +66,8 @@ public class MarketScanner {
       return staleResult;
     }
 
-    if (candles == null || candles.size() < 20) {
+    int minBars = Math.max(20, Math.max(fastEmaPeriod, slowEmaPeriod));
+    if (candles == null || candles.size() < minBars) {
       IndicatorSnapshot coldSnap = new IndicatorSnapshot(
           symbol, timeframe, now, null, null, null, null, null, null, null, null, null, null, null, null,
           BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, false
@@ -62,7 +75,7 @@ public class MarketScanner {
       ScanResult coldResult = new ScanResult(
           UUID.randomUUID(), sessionId, botId, symbol, timeframe, provider,
           CandidateType.NO_CANDIDATE, List.of("INSUFFICIENT_BAR_HISTORY"),
-          coldSnap, currentObservation, BigDecimal.ZERO, "Insufficient candle history for indicator warm-up (<20 bars)", "NO_CANDIDATE", now
+          coldSnap, currentObservation, BigDecimal.ZERO, "Insufficient candle history for indicator warm-up (<" + minBars + " bars)", "NO_CANDIDATE", now
       );
       scanStore.save(coldResult);
       return coldResult;
@@ -71,11 +84,11 @@ public class MarketScanner {
     List<BigDecimal> closes = candles.stream().map(Candle::close).toList();
     List<BigDecimal> volumes = candles.stream().map(Candle::volume).toList();
 
-    List<BigDecimal> ema9 = Indicators.ema(closes, 9);
-    List<BigDecimal> ema21 = Indicators.ema(closes, 21);
+    List<BigDecimal> emaFast = Indicators.ema(closes, fastEmaPeriod);
+    List<BigDecimal> emaSlow = Indicators.ema(closes, slowEmaPeriod);
     List<BigDecimal> sma50 = Indicators.sma(closes, 50);
     List<BigDecimal> sma200 = Indicators.sma(closes, 200);
-    List<BigDecimal> rsi14 = Indicators.rsi(closes, 14);
+    List<BigDecimal> rsiList = Indicators.rsi(closes, rsiPeriod);
     Indicators.MacdResult macdRes = Indicators.macd(closes, 12, 26, 9);
     List<BigDecimal> atr14 = Indicators.atr(candles, 14);
     Indicators.BollingerBands bb = Indicators.bollingerBands(closes, 20, 2.0);
@@ -84,11 +97,11 @@ public class MarketScanner {
     int lastIdx = candles.size() - 1;
     BigDecimal curClose = closes.get(lastIdx);
     BigDecimal curVol = volumes.get(lastIdx);
-    BigDecimal curEma9 = ema9.get(lastIdx);
-    BigDecimal curEma21 = ema21.get(lastIdx);
+    BigDecimal curEmaFast = emaFast.get(lastIdx);
+    BigDecimal curEmaSlow = emaSlow.get(lastIdx);
     BigDecimal curSma50 = sma50.size() > lastIdx ? sma50.get(lastIdx) : null;
     BigDecimal curSma200 = sma200.size() > lastIdx ? sma200.get(lastIdx) : null;
-    BigDecimal curRsi = rsi14.get(lastIdx);
+    BigDecimal curRsi = rsiList.get(lastIdx);
     BigDecimal curMacd = macdRes.macd().size() > lastIdx ? macdRes.macd().get(lastIdx) : null;
     BigDecimal curMacdSig = macdRes.signal().size() > lastIdx ? macdRes.signal().get(lastIdx) : null;
     BigDecimal curMacdHist = macdRes.histogram().size() > lastIdx ? macdRes.histogram().get(lastIdx) : null;
@@ -109,7 +122,7 @@ public class MarketScanner {
 
     IndicatorSnapshot snapshot = new IndicatorSnapshot(
         symbol, timeframe, now,
-        curEma9, curEma21, curSma50, curSma200, curRsi,
+        curEmaFast, curEmaSlow, curSma50, curSma200, curRsi,
         curMacd, curMacdSig, curMacdHist, curAtr,
         curBbUpper, curBbMiddle, curBbLower,
         curAvgVol, curVol, priceChangePct, volatility, true
@@ -143,13 +156,13 @@ public class MarketScanner {
     }
 
     // 3. Momentum Condition (Fast EMA > Slow EMA and RSI > 50 and Price >= Fast EMA)
-    else if (curEma9 != null && curEma21 != null && curEma9.compareTo(curEma21) > 0 && curRsi != null && curRsi.compareTo(new BigDecimal("50.00")) > 0 && curClose.compareTo(curEma9) >= 0) {
-      triggers.add("EMA9_ABOVE_EMA21");
+    else if (curEmaFast != null && curEmaSlow != null && curEmaFast.compareTo(curEmaSlow) > 0 && curRsi != null && curRsi.compareTo(new BigDecimal("50.00")) > 0 && curClose.compareTo(curEmaFast) >= 0) {
+      triggers.add("EMA" + fastEmaPeriod + "_ABOVE_EMA" + slowEmaPeriod);
       triggers.add("RSI_BULLISH_>50");
-      triggers.add("PRICE_ABOVE_EMA9");
+      triggers.add("PRICE_ABOVE_EMA" + fastEmaPeriod);
       candidateType = CandidateType.MOMENTUM;
       score = new BigDecimal("0.85");
-      reason = "Bullish momentum structure confirmed across EMA9/21, RSI, and price action";
+      reason = "Bullish momentum structure confirmed across EMA" + fastEmaPeriod + "/" + slowEmaPeriod + ", RSI, and price action";
     }
 
     // 4. Oversold / Mean Reversion

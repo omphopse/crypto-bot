@@ -44,18 +44,29 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
   private final ObjectMapper json;
   private final HttpClient httpClient;
   private final Clock clock;
+  private final io.algopilot.bot.BotStore botStore;
 
   @org.springframework.beans.factory.annotation.Autowired
-  public AlpacaPaperAdapter(AlpacaConfig config, ObjectMapper json, @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
-    this(config, json, HttpClient.newHttpClient(), clock != null ? clock : Clock.systemUTC());
+  public AlpacaPaperAdapter(
+      AlpacaConfig config,
+      ObjectMapper json,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) io.algopilot.bot.BotStore botStore,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock
+  ) {
+    this(config, json, botStore, HttpClient.newHttpClient(), clock != null ? clock : Clock.systemUTC());
   }
 
-  public AlpacaPaperAdapter(AlpacaConfig config, ObjectMapper json, HttpClient httpClient, Clock clock) {
+  public AlpacaPaperAdapter(AlpacaConfig config, ObjectMapper json, io.algopilot.bot.BotStore botStore, HttpClient httpClient, Clock clock) {
     this.config = config;
     this.json = json;
+    this.botStore = botStore;
     this.httpClient = httpClient;
     this.clock = clock;
     config.validate();
+  }
+
+  public AlpacaPaperAdapter(AlpacaConfig config, ObjectMapper json, HttpClient httpClient, Clock clock) {
+    this(config, json, null, httpClient, clock);
   }
 
   @Override
@@ -72,12 +83,14 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
   public OrderSubmissionResult submitOrder(OrderRecord order) {
     validateOrder(order);
 
+    String timeInForce = isCryptoSymbol(order.symbol()) ? "gtc" : "day";
+
     Map<String, Object> payload = Map.of(
         "symbol", normalizeSymbol(order.symbol()),
         "qty", order.quantity().toPlainString(),
         "side", order.side().name().toLowerCase(),
         "type", "market",
-        "time_in_force", "day",
+        "time_in_force", timeInForce,
         "client_order_id", order.clientOrderId()
     );
 
@@ -204,6 +217,12 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
   @Override
   public List<BrokerFill> fetchFills(Broker broker, ExecutionMode mode, String botId, Instant since) {
     checkCompatibility(broker, mode);
+    Instant cutoff = (since == null || since.equals(Instant.EPOCH)) ? null : since;
+    if (cutoff == null && botStore != null && botId != null) {
+      try {
+        cutoff = botStore.findById(UUID.fromString(botId)).map(io.algopilot.bot.Bot::createdAt).orElse(null);
+      } catch (Exception ignored) {}
+    }
     try {
       HttpRequest request = buildRequest("/account/activities/FILL", "GET", HttpRequest.BodyPublishers.noBody());
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -216,14 +235,17 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
       List<BrokerFill> list = new ArrayList<>();
       if (arrayNode.isArray()) {
         for (JsonNode n : arrayNode) {
+          Instant filledAt = Instant.parse(n.path("transaction_time").asText(clock.instant().toString()));
+          if (cutoff != null && filledAt.isBefore(cutoff)) {
+            continue;
+          }
           String fillId = n.path("id").asText();
           String orderId = n.path("order_id").asText();
-          String symbol = n.path("symbol").asText();
+          String symbol = denormalizeSymbol(n.path("symbol").asText());
           String sideStr = n.path("side").asText("buy").toUpperCase();
           BigDecimal qty = new BigDecimal(n.path("qty").asText("0"));
           BigDecimal price = new BigDecimal(n.path("price").asText("0"));
           BigDecimal fee = BigDecimal.ZERO;
-          Instant filledAt = Instant.parse(n.path("transaction_time").asText(clock.instant().toString()));
 
           list.add(new BrokerFill(
               fillId, orderId, "", botId, symbol,
@@ -253,7 +275,7 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
       List<BrokerPosition> list = new ArrayList<>();
       if (arrayNode.isArray()) {
         for (JsonNode n : arrayNode) {
-          String symbol = n.path("symbol").asText();
+          String symbol = denormalizeSymbol(n.path("symbol").asText());
           BigDecimal qty = new BigDecimal(n.path("qty").asText("0"));
           String side = n.path("side").asText("long");
           if ("short".equalsIgnoreCase(side) && qty.signum() > 0) {
@@ -290,7 +312,7 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
   private BrokerOrder mapNodeToBrokerOrder(JsonNode n, String botId) {
     String brokerOrderId = n.path("id").asText("");
     String clientOrderId = n.path("client_order_id").asText("");
-    String symbol = n.path("symbol").asText("");
+    String symbol = denormalizeSymbol(n.path("symbol").asText(""));
     String sideStr = n.path("side").asText("buy").toUpperCase();
     BigDecimal qty = new BigDecimal(n.path("qty").asText("0"));
     BigDecimal filledQty = new BigDecimal(n.path("filled_qty").asText("0"));
@@ -320,6 +342,27 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
 
   private String normalizeSymbol(String symbol) {
     return symbol.replace("/", "").replace("-", "");
+  }
+
+  private String denormalizeSymbol(String symbol) {
+    if (symbol == null || symbol.isBlank()) {
+      return "";
+    }
+    String s = symbol.trim();
+    if ("BTCUSD".equalsIgnoreCase(s)) return "BTC/USD";
+    if ("ETHUSD".equalsIgnoreCase(s)) return "ETH/USD";
+    if ("SOLUSD".equalsIgnoreCase(s)) return "SOL/USD";
+    return s;
+  }
+
+  private boolean isCryptoSymbol(String symbol) {
+    if (symbol == null || symbol.isBlank()) {
+      return false;
+    }
+    String s = symbol.trim().toUpperCase();
+    return s.equals("BTC/USD") || s.equals("BTCUSD")
+        || s.equals("ETH/USD") || s.equals("ETHUSD")
+        || s.contains("/");
   }
 
   private void validateOrder(OrderRecord order) {

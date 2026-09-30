@@ -101,4 +101,31 @@ public class MarketController {
     );
     return ResponseEntity.ok(observationService.recordObservation(obs));
   }
+
+  @PostMapping("/observations/batch")
+  public ResponseEntity<List<MarketObservation>> ingestObservationsBatch(@RequestBody List<IngestObservationRequest> requests) {
+    Instant now = Instant.now();
+    List<MarketObservation> recorded = requests.stream().map(req -> {
+      MarketObservation obs = MarketObservation.create(
+          UUID.randomUUID(),
+          req.symbol(),
+          req.provider(),
+          req.environment(),
+          req.lastPrice(),
+          req.bid(),
+          req.ask(),
+          req.volume(),
+          req.openPrice(),
+          req.highPrice(),
+          req.lowPrice(),
+          req.closePrice(),
+          req.timeframe(),
+          req.marketTimestamp() != null ? req.marketTimestamp() : now,
+          now,
+          MarketObservationService.DEFAULT_STALE_THRESHOLD_MS
+      );
+      return observationService.recordObservation(obs);
+    }).toList();
+    return ResponseEntity.ok(recorded);
+  }
 }

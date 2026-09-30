@@ -245,6 +245,47 @@ class ContextBuilderServiceTest {
     }
   }
 
+  @Test
+  void testBuildContext_runsOnDemandScannerWhenMarketScannerProvidedAndObservationsPresent() {
+    io.algopilot.market.scanner.MarketScanner marketScanner = mock(io.algopilot.market.scanner.MarketScanner.class);
+    ContextBuilderService serviceWithScanner = new ContextBuilderService(
+        botStore, agentStateStore, strategyStore, marketDataStore, marketScanStore,
+        accountingService, orderStore, reconciliationStore, researchStore, contextStore,
+        audit, clock, json, marketScanner
+    );
+
+    List<MarketObservation> observations = new ArrayList<>();
+    Instant t = clock.instant().minusSeconds(30 * 60);
+    for (int i = 0; i < 30; i++) {
+      observations.add(MarketObservation.create(
+          UUID.randomUUID(), "BTC/USD", "ALPACA_PAPER", "PAPER",
+          new BigDecimal("60000"), new BigDecimal("59990"), new BigDecimal("60010"),
+          new BigDecimal("10"), new BigDecimal("60000"), new BigDecimal("60050"),
+          new BigDecimal("59950"), new BigDecimal("60000"), "1m",
+          t.plusSeconds(i * 60), clock.instant(), 60_000L
+      ));
+    }
+    when(marketDataStore.findRecent(eq("BTC/USD"), eq(50))).thenReturn(observations);
+
+    PortfolioSummary summary = new PortfolioSummary(
+        new BigDecimal("100.00"), new BigDecimal("100.00"), BigDecimal.ZERO, BigDecimal.ZERO,
+        BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+        BigDecimal.ZERO, new BigDecimal("100.00"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, clock.instant()
+    );
+    when(accountingService.calculateSummary()).thenReturn(summary);
+
+    TradingContext context = serviceWithScanner.buildContext(botId);
+
+    assertThat(context).isNotNull();
+    verify(marketScanner, times(1)).scan(
+        org.mockito.ArgumentMatchers.any(),
+        eq(botId),
+        org.mockito.ArgumentMatchers.argThat(candles -> candles.size() == 30),
+        org.mockito.ArgumentMatchers.any(),
+        eq(12), eq(26), eq(14)
+    );
+  }
+
   private static final class MemoryTradingContextStore implements TradingContextStore {
     private final Map<UUID, TradingContext> contexts = Collections.synchronizedMap(new HashMap<>());
 

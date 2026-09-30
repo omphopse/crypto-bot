@@ -131,7 +131,7 @@ public class ReconciliationService {
           bot.id().toString(),
           null, // cash not separately tracked per-bot in local store
           null,
-          calculatedEquity.signum() > 0 ? calculatedEquity : null,
+          null, // cash not segregated per-bot; avoid comparing single position equity against whole broker account equity
           openOrders,
           fills,
           positions,

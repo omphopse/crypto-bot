@@ -2,6 +2,7 @@ package io.algopilot.agent.position;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import io.algopilot.adapter.ExecutionGateway;
 import io.algopilot.adapter.OrderSubmissionResult;
+import io.algopilot.adapter.alpaca.AlpacaPaperAdapter;
 import io.algopilot.agent.context.ContextBuilderService;
 import io.algopilot.agent.context.FreshnessStatus;
 import io.algopilot.agent.context.FreshnessSummary;
@@ -17,6 +19,8 @@ import io.algopilot.agent.context.MarketContext;
 import io.algopilot.agent.context.PortfolioContext;
 import io.algopilot.agent.context.ReconciliationContext;
 import io.algopilot.agent.context.RiskContext;
+import io.algopilot.fill.FillIngestionService;
+import io.algopilot.reconciliation.broker.BrokerOrder;
 import io.algopilot.agent.context.SafetySummary;
 import io.algopilot.agent.context.TradingContext;
 import io.algopilot.agent.decision.TradeAction;
@@ -193,6 +197,128 @@ class PositionMonitorServiceTest {
     assertThat(events).hasSize(1);
     assertThat(events.get(0).exitReason()).isEqualTo(ExitReason.HARD_STOP_LOSS);
     verify(orderService, times(1)).create(any());
+  }
+
+  @Test
+  void testMonitorBotPositions_whenBrokerReturnsFilled_ingestsFillAndClosesLifecycle() {
+    AlpacaPaperAdapter alpacaAdapter = mock(AlpacaPaperAdapter.class);
+    FillIngestionService fillIngestionService = mock(FillIngestionService.class);
+
+    PositionMonitorService monitorWithAlpaca = new PositionMonitorService(
+        positionStore, lifecycleStore, contextBuilder, exitEvaluator, trailingStopManager,
+        positionDecisionService, orderService, executionGateway, reconciliationService,
+        botStore, audit, fillIngestionService, alpacaAdapter, clock
+    );
+
+    MarketContext market = new MarketContext("BTC/USD", "ALPACA_PAPER", "PAPER", new BigDecimal("57000.00"), new BigDecimal("56990.00"), new BigDecimal("57010.00"), BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "1m", now, now, 1000L, FreshnessStatus.FRESH, "VALID");
+    PortfolioContext portfolio = new PortfolioContext(new BigDecimal("100000"), new BigDecimal("100000"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("100000"), BigDecimal.ZERO, now);
+    RiskContext risk = new RiskContext("ACTIVE", BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("20"), BigDecimal.ZERO, new BigDecimal("10000"), BigDecimal.ZERO, new BigDecimal("50000"), false, false, false);
+    ReconciliationContext recon = new ReconciliationContext("MATCHED", now, 0, false, false);
+    SafetySummary safety = new SafetySummary(true, true, true, true, true, true, List.of());
+    FreshnessSummary freshness = new FreshnessSummary(1000L, 0L, 0L, FreshnessStatus.FRESH);
+
+    TradingContext context = new TradingContext(
+        UUID.randomUUID(), "hash123", now, botId, UUID.randomUUID(), "ALPACA_PAPER", "PAPER",
+        AgentState.MONITORING, AutonomousMode.PAPER_AUTONOMOUS, market,
+        null, null, null, portfolio, List.of(), List.of(), risk, recon,
+        List.of(), null, freshness, safety
+    );
+    when(contextBuilder.buildContext(botId)).thenReturn(context);
+
+    UUID exitOrderId = UUID.randomUUID();
+    OrderRecord exitOrder = new OrderRecord(exitOrderId, "exit-12345", botId.toString(), stratVersionId.toString(), "BTC/USD", RiskDecisionRequest.Side.SELL, new BigDecimal("1.00"), new BigDecimal("57000.00"), OrderStatus.CREATED, now);
+    when(orderService.create(any())).thenReturn(exitOrder);
+    when(executionGateway.dispatch(exitOrderId)).thenReturn(new OrderSubmissionResult("exit-12345", "alpaca-exit-999", OrderStatus.ACKNOWLEDGED, now, Map.of()));
+
+    // Seed open lifecycle
+    PositionLifecycleRecord initialLifecycle = new PositionLifecycleRecord(
+        positionId, botId, stratVersionId, "BTC/USD", "BUY", new BigDecimal("1.00"), new BigDecimal("1.00"),
+        new BigDecimal("60000.00"), new BigDecimal("58800.00"), new BigDecimal("58800.00"),
+        new BigDecimal("65000.00"), BigDecimal.ZERO, new BigDecimal("60000.00"),
+        PositionLifecycleState.MONITORING, now, null, now
+    );
+    lifecycleStore.saveLifecycle(initialLifecycle);
+
+    BrokerOrder filledOrder = new BrokerOrder(
+        "alpaca-exit-999", "exit-12345", botId.toString(), "BTC/USD",
+        RiskDecisionRequest.Side.SELL, new BigDecimal("1.00"), new BigDecimal("1.00"),
+        new BigDecimal("57000.00"), OrderStatus.FILLED, now, now
+    );
+    when(alpacaAdapter.getOrderStatus(any(), eq("alpaca-exit-999"))).thenReturn(Optional.of(filledOrder));
+    when(alpacaAdapter.fetchPositions(any(), any(), eq(botId.toString()))).thenReturn(List.of());
+    when(positionStore.find(botId.toString(), "BTC/USD")).thenReturn(Optional.of(new Position(positionId, botId.toString(), "BTC/USD", new BigDecimal("1.00"), new BigDecimal("60000.00"), BigDecimal.ZERO, now)));
+
+    List<PositionExitEvent> events = monitorWithAlpaca.monitorBotPositions(botId);
+
+    assertThat(events).hasSize(1);
+    verify(fillIngestionService, times(1)).ingest(any());
+    verify(positionStore, times(1)).save(any());
+    verify(reconciliationService, times(1)).reconcile(botId.toString());
+
+    PositionLifecycleRecord updatedLifecycle = lifecycleStore.findLifecycleByPositionId(positionId).orElseThrow();
+    assertThat(updatedLifecycle.state()).isEqualTo(PositionLifecycleState.CLOSED);
+    assertThat(updatedLifecycle.currentQuantity()).isEqualByComparingTo(BigDecimal.ZERO);
+  }
+
+  @Test
+  void testMonitorBotPositions_whenBrokerReturnsAcknowledged_doesNotIngestFillAndDoesNotCloseLifecycle() {
+    AlpacaPaperAdapter alpacaAdapter = mock(AlpacaPaperAdapter.class);
+    FillIngestionService fillIngestionService = mock(FillIngestionService.class);
+
+    PositionMonitorService monitorWithAlpaca = new PositionMonitorService(
+        positionStore, lifecycleStore, contextBuilder, exitEvaluator, trailingStopManager,
+        positionDecisionService, orderService, executionGateway, reconciliationService,
+        botStore, audit, fillIngestionService, alpacaAdapter, clock
+    );
+
+    MarketContext market = new MarketContext("BTC/USD", "ALPACA_PAPER", "PAPER", new BigDecimal("57000.00"), new BigDecimal("56990.00"), new BigDecimal("57010.00"), BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "1m", now, now, 1000L, FreshnessStatus.FRESH, "VALID");
+    PortfolioContext portfolio = new PortfolioContext(new BigDecimal("100000"), new BigDecimal("100000"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("100000"), BigDecimal.ZERO, now);
+    RiskContext risk = new RiskContext("ACTIVE", BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("20"), BigDecimal.ZERO, new BigDecimal("10000"), BigDecimal.ZERO, new BigDecimal("50000"), false, false, false);
+    ReconciliationContext recon = new ReconciliationContext("MATCHED", now, 0, false, false);
+    SafetySummary safety = new SafetySummary(true, true, true, true, true, true, List.of());
+    FreshnessSummary freshness = new FreshnessSummary(1000L, 0L, 0L, FreshnessStatus.FRESH);
+
+    TradingContext context = new TradingContext(
+        UUID.randomUUID(), "hash123", now, botId, UUID.randomUUID(), "ALPACA_PAPER", "PAPER",
+        AgentState.MONITORING, AutonomousMode.PAPER_AUTONOMOUS, market,
+        null, null, null, portfolio, List.of(), List.of(), risk, recon,
+        List.of(), null, freshness, safety
+    );
+    when(contextBuilder.buildContext(botId)).thenReturn(context);
+
+    UUID exitOrderId = UUID.randomUUID();
+    OrderRecord exitOrder = new OrderRecord(exitOrderId, "exit-12345", botId.toString(), stratVersionId.toString(), "BTC/USD", RiskDecisionRequest.Side.SELL, new BigDecimal("1.00"), new BigDecimal("57000.00"), OrderStatus.CREATED, now);
+    when(orderService.create(any())).thenReturn(exitOrder);
+    when(executionGateway.dispatch(exitOrderId)).thenReturn(new OrderSubmissionResult("exit-12345", "alpaca-exit-999", OrderStatus.ACKNOWLEDGED, now, Map.of()));
+
+    // Seed open lifecycle
+    PositionLifecycleRecord initialLifecycle = new PositionLifecycleRecord(
+        positionId, botId, stratVersionId, "BTC/USD", "BUY", new BigDecimal("1.00"), new BigDecimal("1.00"),
+        new BigDecimal("60000.00"), new BigDecimal("58800.00"), new BigDecimal("58800.00"),
+        new BigDecimal("65000.00"), BigDecimal.ZERO, new BigDecimal("60000.00"),
+        PositionLifecycleState.MONITORING, now, null, now
+    );
+    lifecycleStore.saveLifecycle(initialLifecycle);
+
+    // Broker order is still pending (ACKNOWLEDGED)
+    BrokerOrder pendingOrder = new BrokerOrder(
+        "alpaca-exit-999", "exit-12345", botId.toString(), "BTC/USD",
+        RiskDecisionRequest.Side.SELL, new BigDecimal("1.00"), BigDecimal.ZERO,
+        new BigDecimal("57000.00"), OrderStatus.ACKNOWLEDGED, now, now
+    );
+    when(alpacaAdapter.getOrderStatus(any(), eq("alpaca-exit-999"))).thenReturn(Optional.of(pendingOrder));
+
+    List<PositionExitEvent> events = monitorWithAlpaca.monitorBotPositions(botId);
+
+    assertThat(events).hasSize(1);
+    // Fill MUST NOT be ingested!
+    verify(fillIngestionService, never()).ingest(any());
+    // Local position MUST NOT be updated!
+    verify(positionStore, never()).save(any());
+    // Lifecycle MUST NOT be closed!
+    PositionLifecycleRecord updatedLifecycle = lifecycleStore.findLifecycleByPositionId(positionId).orElseThrow();
+    assertThat(updatedLifecycle.state()).isEqualTo(PositionLifecycleState.MONITORING);
+    assertThat(updatedLifecycle.currentQuantity()).isEqualByComparingTo(BigDecimal.ONE);
   }
 
   private static final class MemoryPositionLifecycleStore implements PositionLifecycleStore {

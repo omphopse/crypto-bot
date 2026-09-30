@@ -151,4 +151,109 @@ class PortfolioAccountingServiceTest {
     assertThat(summary.totalReservedExposure()).isEqualByComparingTo("20000.00");
     assertThat(summary.riskUtilizationPercent()).isEqualByComparingTo("20.0000");
   }
+
+  @Test
+  void testInvariantA_pendingBuyReservations() {
+    // Invariant A: Pending BUY order reserves capital equal to quantity * referencePrice.
+    when(positionStore.findAll()).thenReturn(List.of());
+    when(fillStore.findAll()).thenReturn(List.of());
+    OrderRecord openBuy = new OrderRecord(
+        UUID.randomUUID(), "client-buy-1", "bot-1", "v1", "BTC/USD",
+        RiskDecisionRequest.Side.BUY, new BigDecimal("0.000132"), new BigDecimal("77000.00"),
+        OrderStatus.SUBMITTED, Instant.now()
+    );
+    when(orderStore.findAllOpenOrders()).thenReturn(List.of(openBuy));
+
+    PortfolioSummary summary = service.calculateSummary(new BigDecimal("100000.00"));
+
+    assertThat(summary.grossExposure()).isEqualByComparingTo("0.00");
+    assertThat(summary.pendingOrderNotional()).isEqualByComparingTo("10.16");
+    assertThat(summary.totalReservedExposure()).isEqualByComparingTo("10.16");
+  }
+
+  @Test
+  void testInvariantB_postBuyFillAccountingModel() {
+    // Invariant B: Post-BUY fill accounting model: pending order cleared, position held at market value.
+    Position btcPos = new Position(UUID.randomUUID(), "bot-1", "BTC/USD", new BigDecimal("0.000132"), new BigDecimal("77000.00"), BigDecimal.ZERO, Instant.now());
+    when(positionStore.findAll()).thenReturn(List.of(btcPos));
+    when(fillStore.findAll()).thenReturn(List.of());
+    when(orderStore.findAllOpenOrders()).thenReturn(List.of());
+
+    service.updateMarketPrice("BTC/USD", new BigDecimal("77000.00"));
+    PortfolioSummary summary = service.calculateSummary(new BigDecimal("100000.00"));
+
+    assertThat(summary.pendingOrderNotional()).isEqualByComparingTo("0.00");
+    assertThat(summary.grossExposure()).isEqualByComparingTo("10.16");
+    assertThat(summary.totalReservedExposure()).isEqualByComparingTo("10.16");
+  }
+
+  @Test
+  void testInvariantC_postSellFlatState() {
+    // Invariant C: Post-SELL flat state: 0 position, 0 orders, reservations = $0.
+    Position closedPos = new Position(UUID.randomUUID(), "bot-1", "BTC/USD", BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("0.50"), Instant.now());
+    when(positionStore.findAll()).thenReturn(List.of(closedPos));
+    when(fillStore.findAll()).thenReturn(List.of());
+    when(orderStore.findAllOpenOrders()).thenReturn(List.of());
+
+    PortfolioSummary summary = service.calculateSummary(new BigDecimal("100000.00"));
+
+    assertThat(summary.grossExposure()).isEqualByComparingTo("0.00");
+    assertThat(summary.marketExposure()).isEqualByComparingTo("0.00");
+    assertThat(summary.pendingOrderNotional()).isEqualByComparingTo("0.00");
+    assertThat(summary.totalReservedExposure()).isEqualByComparingTo("0.00");
+  }
+
+  @Test
+  void testInvariantD_failedOrCancelledOrderRelease() {
+    // Invariant D: Failed/cancelled order release: When order is cancelled, open orders drops to 0, reservations drop to 0.
+    when(positionStore.findAll()).thenReturn(List.of());
+    when(fillStore.findAll()).thenReturn(List.of());
+    when(orderStore.findAllOpenOrders()).thenReturn(List.of());
+
+    PortfolioSummary summary = service.calculateSummary(new BigDecimal("100000.00"));
+
+    assertThat(summary.pendingOrderNotional()).isEqualByComparingTo("0.00");
+    assertThat(summary.totalReservedExposure()).isEqualByComparingTo("0.00");
+  }
+
+  @Test
+  void testInvariantE_unconfirmedSellHoldingPositionAndReservation() {
+    // Invariant E: Unconfirmed SELL holding position & reservation:
+    // Open position exists (0.000132 BTC @ $77,000 = $10.16)
+    // Pending SELL order exists (0.000132 BTC @ $77,000)
+    // MUST NOT double-count pendingOrderNotional!
+    Position btcPos = new Position(UUID.randomUUID(), "bot-1", "BTC/USD", new BigDecimal("0.000132"), new BigDecimal("77000.00"), BigDecimal.ZERO, Instant.now());
+    OrderRecord pendingSell = new OrderRecord(
+        UUID.randomUUID(), "client-sell-1", "bot-1", "v1", "BTC/USD",
+        RiskDecisionRequest.Side.SELL, new BigDecimal("0.000132"), new BigDecimal("77000.00"),
+        OrderStatus.SUBMITTED, Instant.now()
+    );
+
+    when(positionStore.findAll()).thenReturn(List.of(btcPos));
+    when(fillStore.findAll()).thenReturn(List.of());
+    when(orderStore.findAllOpenOrders()).thenReturn(List.of(pendingSell));
+
+    service.updateMarketPrice("BTC/USD", new BigDecimal("77000.00"));
+    PortfolioSummary summary = service.calculateSummary(new BigDecimal("100000.00"));
+
+    assertThat(summary.grossExposure()).isEqualByComparingTo("10.16");
+    assertThat(summary.pendingOrderNotional()).isEqualByComparingTo("0.00");
+    assertThat(summary.totalReservedExposure()).isEqualByComparingTo("10.16");
+  }
+
+  @Test
+  void testInvariantF_filledSellReleasingReservationExactlyOnce() {
+    // Invariant F: Filled SELL releasing reservation exactly once:
+    // Once SELL is filled, position is 0, no open orders, grossExposure = 0, totalReservedExposure = 0.
+    Position closedPos = new Position(UUID.randomUUID(), "bot-1", "BTC/USD", BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("0.20"), Instant.now());
+    when(positionStore.findAll()).thenReturn(List.of(closedPos));
+    when(fillStore.findAll()).thenReturn(List.of());
+    when(orderStore.findAllOpenOrders()).thenReturn(List.of());
+
+    PortfolioSummary summary = service.calculateSummary(new BigDecimal("100000.00"));
+
+    assertThat(summary.grossExposure()).isEqualByComparingTo("0.00");
+    assertThat(summary.pendingOrderNotional()).isEqualByComparingTo("0.00");
+    assertThat(summary.totalReservedExposure()).isEqualByComparingTo("0.00");
+  }
 }
