@@ -560,10 +560,18 @@ public class AlpacaPaperBuySellLifecycleIntegrationTest {
     // Ingest SELL fill into application if not already ingested by PositionMonitorService
     OrderRecord orderBeforeStep6 = orderStore.findById(exitOrderId).orElseThrow();
     if (orderBeforeStep6.status() != OrderStatus.FILLED) {
-      FillReport sellFillReport = new FillReport(exitOrderId, sellExchangeFillId, actualHeldQty, sellRealPrice, sellFee);
-      Fill sellFill = fillIngestionService.ingest(sellFillReport);
-      assertThat(sellFill).isNotNull();
-      log.info("SELL Fill Ingested: fillId={}", sellFill.id());
+      BigDecimal alreadyIngested = fillStore.totalQuantityForOrder(exitOrderId);
+      BigDecimal remQty = actualHeldQty.subtract(alreadyIngested);
+      if (remQty.compareTo(BigDecimal.ZERO) > 0) {
+        String uniqueFillId = sellExchangeFillId;
+        if (fillStore.findByExchangeFillId(uniqueFillId).isPresent()) {
+          uniqueFillId = uniqueFillId + "-rem";
+        }
+        FillReport sellFillReport = new FillReport(exitOrderId, uniqueFillId, remQty, sellRealPrice, sellFee);
+        Fill sellFill = fillIngestionService.ingest(sellFillReport);
+        assertThat(sellFill).isNotNull();
+        log.info("SELL Fill Ingested: fillId={}", sellFill.id());
+      }
     } else {
       log.info("SELL Fill already autonomously ingested by PositionMonitorService: orderStatus=FILLED");
     }

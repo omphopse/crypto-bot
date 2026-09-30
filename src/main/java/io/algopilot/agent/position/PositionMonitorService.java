@@ -287,46 +287,65 @@ public class PositionMonitorService {
           // If real broker adapter and fill ingestion service are present, poll for actual broker execution
           if (fillIngestionService != null && alpacaAdapter != null && subResult.exchangeOrderId() != null) {
             try {
-              for (int i = 0; i < 5; i++) {
+              boolean orderFilledOnBroker = false;
+              for (int i = 0; i < 8; i++) {
                 var brokerOrder = alpacaAdapter.getOrderStatus(exitOrder.clientOrderId(), subResult.exchangeOrderId());
-                if (brokerOrder.isPresent() && (brokerOrder.get().status() == io.algopilot.order.OrderStatus.FILLED || brokerOrder.get().status() == io.algopilot.order.OrderStatus.PARTIALLY_FILLED)) {
-                  isFilled = true;
-                  filledQty = brokerOrder.get().filledQuantity() != null && brokerOrder.get().filledQuantity().compareTo(BigDecimal.ZERO) > 0
-                      ? brokerOrder.get().filledQuantity() : exitOrder.quantity();
-                  filledPrice = brokerOrder.get().price() != null && brokerOrder.get().price().compareTo(BigDecimal.ZERO) > 0
-                      ? brokerOrder.get().price() : currentPrice;
+                if (brokerOrder.isPresent()) {
+                  if (brokerOrder.get().status() == io.algopilot.order.OrderStatus.FILLED) {
+                    orderFilledOnBroker = true;
+                    isFilled = true;
+                    filledQty = brokerOrder.get().filledQuantity() != null && brokerOrder.get().filledQuantity().compareTo(BigDecimal.ZERO) > 0
+                        ? brokerOrder.get().filledQuantity() : exitOrder.quantity();
+                    filledPrice = brokerOrder.get().price() != null && brokerOrder.get().price().compareTo(BigDecimal.ZERO) > 0
+                        ? brokerOrder.get().price() : currentPrice;
+                    break;
+                  } else if (brokerOrder.get().status() == io.algopilot.order.OrderStatus.PARTIALLY_FILLED) {
+                    isFilled = true;
+                  }
+                }
+                try { Thread.sleep(400); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+              }
 
-                  String exchangeFillId = null;
-                  BigDecimal fee = BigDecimal.ZERO;
-
-                  for (int f = 0; f < 5; f++) {
-                    try {
-                      var fills = alpacaAdapter.fetchFills(bot.broker(), bot.executionMode(), botId.toString(), clock.instant().minusSeconds(120));
-                      if (fills != null) {
-                        for (var bf : fills) {
-                          if (subResult.exchangeOrderId().equals(bf.brokerOrderId())) {
-                            exchangeFillId = bf.exchangeFillId();
-                            if (bf.price() != null && bf.price().compareTo(BigDecimal.ZERO) > 0) filledPrice = bf.price();
-                            if (bf.quantity() != null && bf.quantity().compareTo(BigDecimal.ZERO) > 0) filledQty = bf.quantity();
-                            if (bf.fee() != null) fee = bf.fee();
-                            break;
+              if (isFilled) {
+                // Fetch and ingest all fill executions for this order
+                BigDecimal ingestedTotal = BigDecimal.ZERO;
+                for (int f = 0; f < 5; f++) {
+                  try {
+                    var fills = alpacaAdapter.fetchFills(bot.broker(), bot.executionMode(), botId.toString(), clock.instant().minusSeconds(120));
+                    if (fills != null) {
+                      for (var bf : fills) {
+                        if (subResult.exchangeOrderId().equals(bf.brokerOrderId())) {
+                          try {
+                            io.algopilot.fill.FillReport report = new io.algopilot.fill.FillReport(exitOrder.id(), bf.exchangeFillId(), bf.quantity(), bf.price(), bf.fee() != null ? bf.fee() : BigDecimal.ZERO);
+                            fillIngestionService.ingest(report);
+                            ingestedTotal = ingestedTotal.add(bf.quantity());
+                            log.info("POSITION_EXIT_FILL_INGESTED botId={} orderId={} exchangeFillId={} qty={} price={}",
+                                botId, exitOrder.id(), bf.exchangeFillId(), bf.quantity(), bf.price());
+                          } catch (Exception ex) {
+                            log.debug("Fill already ingested or duplicate: {}", ex.getMessage());
                           }
                         }
                       }
-                      if (exchangeFillId != null) break;
-                    } catch (Exception ignored) {}
-                    try { Thread.sleep(300); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
-                  }
+                    }
+                    if (ingestedTotal.compareTo(exitOrder.quantity()) >= 0) break;
+                  } catch (Exception ignored) {}
+                  try { Thread.sleep(300); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+                }
 
-                  if (exchangeFillId == null) {
-                    exchangeFillId = "alpaca-sell-fill-" + subResult.exchangeOrderId();
+                // If broker is FILLED but activities did not yield all individual fills, ingest remaining quantity
+                if (orderFilledOnBroker && ingestedTotal.compareTo(exitOrder.quantity()) < 0) {
+                  BigDecimal remaining = exitOrder.quantity().subtract(ingestedTotal);
+                  try {
+                    String synthFillId = "alpaca-sell-fill-" + subResult.exchangeOrderId() + (ingestedTotal.compareTo(BigDecimal.ZERO) > 0 ? "-rem" : "");
+                    io.algopilot.fill.FillReport remReport = new io.algopilot.fill.FillReport(exitOrder.id(), synthFillId, remaining, filledPrice != null ? filledPrice : currentPrice, BigDecimal.ZERO);
+                    fillIngestionService.ingest(remReport);
+                    log.info("POSITION_EXIT_REMAINDER_FILL_INGESTED botId={} orderId={} synthFillId={} qty={}",
+                        botId, exitOrder.id(), synthFillId, remaining);
+                  } catch (Exception ex) {
+                    log.debug("Remainder fill ingestion notice: {}", ex.getMessage());
                   }
-
-                  // 1. Authoritative Fill Ingestion -> triggers PositionAccountingService.apply(...)
-                  io.algopilot.fill.FillReport report = new io.algopilot.fill.FillReport(exitOrder.id(), exchangeFillId, filledQty, filledPrice, fee);
-                  fillIngestionService.ingest(report);
-                  log.info("POSITION_EXIT_FILL_INGESTED botId={} orderId={} exchangeFillId={} qty={} price={}",
-                      botId, exitOrder.id(), exchangeFillId, filledQty, filledPrice);
+                }
+              }
 
                   // 2. Synchronize local position directly with broker reality
                   if (positionStore != null) {
@@ -365,10 +384,6 @@ public class PositionMonitorService {
                       log.warn("Post-exit delivery sync notice for order {}: {}", exitOrder.id(), syncEx.getMessage());
                     }
                   }
-                  break;
-                }
-                try { Thread.sleep(250); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
-              }
             } catch (Exception fillEx) {
               log.warn("Exit fill polling/ingestion notice for bot {}: {}", botId, fillEx.getMessage());
             }
