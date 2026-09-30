@@ -117,7 +117,7 @@ public class DecisionPromptBuilder {
     sb.append("- BUY HYPOTHESIS: When Indicators are Warmed Up, Fast EMA > Slow EMA (Bullish Trend), and RSI(14) is between 45 and 70 (healthy upward momentum without being extremely overbought).\n");
     sb.append("- SELL/CLOSE HYPOTHESIS: When an existing long position exists and Fast EMA < Slow EMA (Bearish reversal) OR RSI(14) > 75 (overbought peak exhaustion) OR RSI(14) < 35 (breakdown).\n");
     sb.append("- NO_ACTION: When Indicators are NOT Warmed Up, or EMAs are flat/conflicting, or RSI is outside the entry zone, or risk limits/reconciliation block trading.\n");
-    sb.append("- Sizing and final risk checks are strictly enforced by RiskEngine; propose a realistic quantity or default within position limits.\n\n");
+    sb.append("- Sizing: Set \"quantity\": 1.0 (execution sizing is governed deterministically by DeterministicPositionSizer based on portfolio equity and risk limits).\n\n");
 
     sb.append("=== UNTRUSTED EXTERNAL RESEARCH EVIDENCE ===\n");
     sb.append("[UNTRUSTED_EXTERNAL_DATA = TRUE]\n");
@@ -134,7 +134,7 @@ public class DecisionPromptBuilder {
     }
 
     sb.append("=== DECISION SCHEMA REQUIREMENT ===\n");
-    sb.append("Return valid JSON: {\"decision\":\"BUY|SELL|HOLD|CLOSE|REDUCE|NO_ACTION\",\"symbol\":\"...\",\"confidence\":0.0-1.0,\"quantity\":...,\"stopLoss\":...,\"takeProfit\":...,\"thesis\":\"...\",\"evidenceReferences\":[\"UUID\",...],\"riskFactors\":[...],\"invalidationConditions\":[...]}");
+    sb.append("Return valid JSON: {\"decision\":\"BUY|SELL|HOLD|CLOSE|REDUCE|NO_ACTION\",\"symbol\":\"BTC/USD\",\"confidence\":0.0-1.0,\"quantity\":1.0,\"stopLoss\":<price_below_market>,\"takeProfit\":<price_above_market>,\"thesis\":\"...\",\"evidenceReferences\":[],\"riskFactors\":[...],\"invalidationConditions\":[...]}");
 
     return sb.toString();
   }

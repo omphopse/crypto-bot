@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.algopilot.agent.context.TradingContext;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -159,10 +160,56 @@ public class OllamaLLMDecisionProvider implements LLMDecisionProvider {
 
       TradeAction action = parseTradeAction(decisionJson.path("decision").asText("NO_ACTION"));
       String decisionSymbol = decisionJson.path("symbol").asText(symbol);
+
       BigDecimal confidence = parseBigDecimalSafely(decisionJson, "confidence", new BigDecimal("0.50"));
-      BigDecimal qty = parseBigDecimalSafely(decisionJson, "quantity", BigDecimal.ZERO);
+      if (confidence.compareTo(new BigDecimal("1.0")) > 0 && confidence.compareTo(new BigDecimal("100.0")) <= 0) {
+        confidence = confidence.divide(new BigDecimal("100.0"), 4, RoundingMode.HALF_UP);
+      }
+      if (confidence.compareTo(BigDecimal.ZERO) < 0) {
+        confidence = BigDecimal.ZERO;
+      } else if (confidence.compareTo(BigDecimal.ONE) > 0) {
+        confidence = BigDecimal.ONE;
+      }
+
+      BigDecimal qty = parseBigDecimalSafely(decisionJson, "quantity", null);
+      if (qty == null || qty.compareTo(BigDecimal.ZERO) <= 0) {
+        if (action == TradeAction.BUY || action == TradeAction.SELL || action == TradeAction.REDUCE) {
+          qty = BigDecimal.ONE; // Nominal directional hypothesis quantity; authoritative execution sizing is governed by DeterministicPositionSizer
+        } else {
+          qty = BigDecimal.ZERO;
+        }
+      }
+
       BigDecimal sl = parseBigDecimalSafely(decisionJson, "stopLoss", BigDecimal.ZERO);
       BigDecimal tp = parseBigDecimalSafely(decisionJson, "takeProfit", BigDecimal.ZERO);
+
+      // Normalize relative percentages or inverted stop-loss / take-profit if price is positive
+      if (price.compareTo(BigDecimal.ZERO) > 0) {
+        if (action == TradeAction.BUY) {
+          if (tp.compareTo(BigDecimal.ZERO) > 0 && tp.compareTo(new BigDecimal("1.0")) <= 0) {
+            tp = price.multiply(BigDecimal.ONE.add(tp)).setScale(2, RoundingMode.HALF_UP);
+          } else if (tp.compareTo(price) <= 0 && tp.compareTo(BigDecimal.ZERO) > 0) {
+            tp = price.multiply(new BigDecimal("1.04")).setScale(2, RoundingMode.HALF_UP);
+          }
+          if (sl.abs().compareTo(BigDecimal.ZERO) > 0 && sl.abs().compareTo(new BigDecimal("1.0")) <= 0) {
+            sl = price.multiply(BigDecimal.ONE.subtract(sl.abs())).setScale(2, RoundingMode.HALF_UP);
+          } else if (sl.compareTo(price) >= 0) {
+            sl = price.multiply(new BigDecimal("0.98")).setScale(2, RoundingMode.HALF_UP);
+          }
+        } else if (action == TradeAction.SELL || action == TradeAction.REDUCE) {
+          if (tp.compareTo(BigDecimal.ZERO) > 0 && tp.compareTo(new BigDecimal("1.0")) <= 0) {
+            tp = price.multiply(BigDecimal.ONE.subtract(tp)).setScale(2, RoundingMode.HALF_UP);
+          } else if (tp.compareTo(price) >= 0) {
+            tp = price.multiply(new BigDecimal("0.96")).setScale(2, RoundingMode.HALF_UP);
+          }
+          if (sl.abs().compareTo(BigDecimal.ZERO) > 0 && sl.abs().compareTo(new BigDecimal("1.0")) <= 0) {
+            sl = price.multiply(BigDecimal.ONE.add(sl.abs())).setScale(2, RoundingMode.HALF_UP);
+          } else if (sl.compareTo(price) <= 0 && sl.compareTo(BigDecimal.ZERO) > 0) {
+            sl = price.multiply(new BigDecimal("1.02")).setScale(2, RoundingMode.HALF_UP);
+          }
+        }
+      }
+
       String thesis = decisionJson.path("thesis").asText("Ollama " + model + " multi-factor market analysis.");
 
       List<UUID> evidenceRefs = new ArrayList<>();

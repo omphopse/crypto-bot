@@ -372,4 +372,71 @@ class OllamaLLMDecisionProviderTest {
     // Verify provider strictly adheres to LLMDecisionProvider interface and has no order dispatching methods
     assertThat(provider).isInstanceOf(LLMDecisionProvider.class);
   }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void testOllamaZeroQuantityBuyDecision_normalizesToNominalQuantity() throws IOException, InterruptedException {
+    // Regression test for the 152/328 malformed decision issue where Ollama omitted or set quantity to 0
+    String ollamaResponseBody = """
+        {
+          "model": "gemma3:4b",
+          "message": {
+            "role": "assistant",
+            "content": "{\\"decision\\":\\"BUY\\",\\"symbol\\":\\"BTC/USD\\",\\"confidence\\":0.80,\\"quantity\\":0.0,\\"stopLoss\\":59000.0,\\"takeProfit\\":62000.0,\\"thesis\\":\\"RSI oversold rebound.\\"}"
+          },
+          "done": true
+        }
+        """;
+
+    HttpResponse<String> mockResponse = (HttpResponse<String>) mock(HttpResponse.class);
+    when(mockResponse.statusCode()).thenReturn(200);
+    when(mockResponse.body()).thenReturn(ollamaResponseBody);
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(mockResponse);
+
+    OllamaLLMDecisionProvider provider = new OllamaLLMDecisionProvider(
+        "http://127.0.0.1:11434", "gemma3:4b", 45, promptBuilder, json, httpClient, clock
+    );
+
+    StructuredTradeDecision decision = provider.analyze(context);
+
+    assertThat(decision).isNotNull();
+    assertThat(decision.decision()).isEqualTo(TradeAction.BUY);
+    assertThat(decision.quantity()).isEqualByComparingTo(BigDecimal.ONE);
+    assertThat(decision.validationStatus()).isEqualTo(ValidationStatus.VALIDATED);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void testOllamaPercentageStopLossAndTakeProfit_normalizesCorrectly() throws IOException, InterruptedException {
+    // Regression test for cases where model emits percentage deltas (e.g. tp=0.04, sl=-0.02) and percentage confidence (85)
+    String ollamaResponseBody = """
+        {
+          "model": "gemma3:4b",
+          "message": {
+            "role": "assistant",
+            "content": "{\\"decision\\":\\"BUY\\",\\"symbol\\":\\"BTC/USD\\",\\"confidence\\":85,\\"quantity\\":0.0,\\"stopLoss\\":-0.02,\\"takeProfit\\":0.04,\\"thesis\\":\\"Mean Reversion.\\"}"
+          },
+          "done": true
+        }
+        """;
+
+    HttpResponse<String> mockResponse = (HttpResponse<String>) mock(HttpResponse.class);
+    when(mockResponse.statusCode()).thenReturn(200);
+    when(mockResponse.body()).thenReturn(ollamaResponseBody);
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(mockResponse);
+
+    OllamaLLMDecisionProvider provider = new OllamaLLMDecisionProvider(
+        "http://127.0.0.1:11434", "gemma3:4b", 45, promptBuilder, json, httpClient, clock
+    );
+
+    StructuredTradeDecision decision = provider.analyze(context);
+
+    assertThat(decision).isNotNull();
+    assertThat(decision.decision()).isEqualTo(TradeAction.BUY);
+    assertThat(decision.confidence()).isEqualByComparingTo("0.85");
+    assertThat(decision.quantity()).isEqualByComparingTo(BigDecimal.ONE);
+    assertThat(decision.takeProfit()).isEqualByComparingTo("62400.00");
+    assertThat(decision.stopLoss()).isEqualByComparingTo("58800.00");
+    assertThat(decision.validationStatus()).isEqualTo(ValidationStatus.VALIDATED);
+  }
 }
