@@ -23,7 +23,9 @@ import io.algopilot.order.OrderStore;
 import io.algopilot.portfolio.accounting.PortfolioAccountingService;
 import io.algopilot.portfolio.accounting.PortfolioSummary;
 import io.algopilot.portfolio.accounting.PositionMark;
+import io.algopilot.reconciliation.model.MismatchSeverity;
 import io.algopilot.reconciliation.model.ReconciliationRun;
+import io.algopilot.reconciliation.model.ReconciliationStatus;
 import io.algopilot.reconciliation.persistence.ReconciliationStore;
 import io.algopilot.research.model.ResearchEvidence;
 import io.algopilot.research.service.ResearchStore;
@@ -307,15 +309,29 @@ public class ContextBuilderService {
         isEmergency, false, isEmergency
     );
 
-    // 9. Reconciliation Context
+    // 9. Reconciliation Context (Severity-Aware Gating)
     Optional<ReconciliationRun> reconOpt = reconciliationStore.findLatestRunByBotId(botId.toString());
-    int unresolvedMismatches = reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString());
+    int unresolvedCriticalMismatches = reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString(), MismatchSeverity.CRITICAL);
+    boolean latestRunHasCritical = false;
+    if (reconOpt.isPresent()) {
+      ReconciliationRun r = reconOpt.get();
+      if (r.status() == ReconciliationStatus.MISMATCHED && r.mismatchCount() > 0) {
+        var runMismatches = reconciliationStore.findMismatchesByRunId(r.id());
+        latestRunHasCritical = runMismatches.stream().anyMatch(m -> m.severity() == MismatchSeverity.CRITICAL);
+      }
+    }
+    boolean blocked = unresolvedCriticalMismatches > 0 || latestRunHasCritical;
     ReconciliationContext reconContext;
 
     if (reconOpt.isPresent()) {
       ReconciliationRun r = reconOpt.get();
-      boolean blocked = unresolvedMismatches > 0 || r.mismatchCount() > 0;
-      reconContext = new ReconciliationContext(r.status().name(), r.completedAt() != null ? r.completedAt() : now, unresolvedMismatches, blocked, blocked);
+      reconContext = new ReconciliationContext(
+          r.status().name(),
+          r.completedAt() != null ? r.completedAt() : now,
+          unresolvedCriticalMismatches,
+          blocked,
+          blocked
+      );
     } else {
       reconContext = new ReconciliationContext("MATCHED", now, 0, false, false);
     }

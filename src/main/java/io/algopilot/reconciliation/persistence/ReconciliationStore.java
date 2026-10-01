@@ -23,6 +23,9 @@ public interface ReconciliationStore {
   List<ReconciliationMismatch> findUnresolvedMismatches(int limit);
   int countUnresolvedMismatches(MismatchSeverity severity);
   int countUnresolvedMismatchesByBotId(String botId);
+  default int countUnresolvedMismatchesByBotId(String botId, MismatchSeverity severity) {
+    return countUnresolvedMismatchesByBotId(botId);
+  }
   void updateMismatchResolution(UUID mismatchId, ResolutionState state, Instant resolvedAt);
   void resolveAllUnresolvedMismatchesForBot(String botId, Instant resolvedAt);
 

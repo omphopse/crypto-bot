@@ -146,7 +146,17 @@ public class JdbcReconciliationStore implements ReconciliationStore {
 
   @Override
   public int countUnresolvedMismatchesByBotId(String botId) {
-    Integer count = jdbc.queryForObject("select count(*) from reconciliation_mismatches where bot_id = ? and resolution_state = 'UNRESOLVED'", Integer.class, botId);
+    return countUnresolvedMismatchesByBotId(botId, null);
+  }
+
+  @Override
+  public int countUnresolvedMismatchesByBotId(String botId, MismatchSeverity severity) {
+    Integer count;
+    if (severity == null) {
+      count = jdbc.queryForObject("select count(*) from reconciliation_mismatches where bot_id = ? and resolution_state = 'UNRESOLVED'", Integer.class, botId);
+    } else {
+      count = jdbc.queryForObject("select count(*) from reconciliation_mismatches where bot_id = ? and resolution_state = 'UNRESOLVED' and severity = ?", Integer.class, botId, severity.name());
+    }
     return count == null ? 0 : count;
   }
 

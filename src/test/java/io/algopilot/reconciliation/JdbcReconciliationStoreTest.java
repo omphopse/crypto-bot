@@ -76,4 +76,16 @@ public class JdbcReconciliationStoreTest {
     store.saveRecovery(id, "bot-123", runId, "operator-1", "COMPLETED", "State matched", now);
     verify(jdbc).update(startsWith("insert into reconciliation_recoveries"), eq(id), eq("bot-123"), eq(runId), eq("operator-1"), eq("COMPLETED"), eq("State matched"), eq(java.sql.Timestamp.from(now)));
   }
+
+  @Test
+  void testCountUnresolvedMismatchesByBotId_withSeverity() {
+    when(jdbc.queryForObject(anyString(), eq(Integer.class), eq("bot-123"), eq("CRITICAL"))).thenReturn(2);
+    when(jdbc.queryForObject(anyString(), eq(Integer.class), eq("bot-123"), eq("WARNING"))).thenReturn(1);
+    when(jdbc.queryForObject(anyString(), eq(Integer.class), eq("bot-123"))).thenReturn(3);
+
+    assertEquals(2, store.countUnresolvedMismatchesByBotId("bot-123", MismatchSeverity.CRITICAL));
+    assertEquals(1, store.countUnresolvedMismatchesByBotId("bot-123", MismatchSeverity.WARNING));
+    assertEquals(3, store.countUnresolvedMismatchesByBotId("bot-123", null));
+    assertEquals(3, store.countUnresolvedMismatchesByBotId("bot-123"));
+  }
 }

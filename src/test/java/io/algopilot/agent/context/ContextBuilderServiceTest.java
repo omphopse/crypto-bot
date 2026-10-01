@@ -30,6 +30,7 @@ import io.algopilot.order.OrderStore;
 import io.algopilot.portfolio.accounting.PortfolioAccountingService;
 import io.algopilot.portfolio.accounting.PortfolioSummary;
 import io.algopilot.portfolio.accounting.PositionMark;
+import io.algopilot.reconciliation.model.MismatchSeverity;
 import io.algopilot.reconciliation.model.ReconciliationRun;
 import io.algopilot.reconciliation.model.ReconciliationStatus;
 import io.algopilot.reconciliation.persistence.ReconciliationStore;
@@ -140,7 +141,7 @@ class ContextBuilderServiceTest {
     // 7. Reconciliation
     ReconciliationRun recon = new ReconciliationRun(UUID.randomUUID(), botId.toString(), Broker.ALPACA_PAPER, ExecutionMode.PAPER, ReconciliationStatus.MATCHED, 0, null, now, now, now);
     when(reconciliationStore.findLatestRunByBotId(botId.toString())).thenReturn(Optional.of(recon));
-    when(reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString())).thenReturn(0);
+    when(reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString(), MismatchSeverity.CRITICAL)).thenReturn(0);
 
     // 8. Research Evidence
     ResearchEvidence ev = new ResearchEvidence(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "reuters.com", "BTC", "NEWS", "ETF Inflows continue", now, now, new BigDecimal("0.90"), SecurityStatus.CLEAN, "hash123");
@@ -204,7 +205,7 @@ class ContextBuilderServiceTest {
     // Active reconciliation critical mismatch!
     ReconciliationRun mismatchRecon = new ReconciliationRun(UUID.randomUUID(), botId.toString(), Broker.ALPACA_PAPER, ExecutionMode.PAPER, ReconciliationStatus.MISMATCHED, 2, "Discrepancy", now, now, now);
     when(reconciliationStore.findLatestRunByBotId(botId.toString())).thenReturn(Optional.of(mismatchRecon));
-    when(reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString())).thenReturn(2);
+    when(reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString(), MismatchSeverity.CRITICAL)).thenReturn(2);
 
     TradingContext context = service.buildContext(botId);
 
@@ -212,6 +213,34 @@ class ContextBuilderServiceTest {
     assertThat(context.safety().reconciliationHealthy()).isFalse();
     assertThat(context.safety().executionAllowed()).isFalse();
     assertThat(context.safety().safetyBlockReasons()).contains("RECONCILIATION_MISMATCH_PRESENT");
+  }
+
+  @Test
+  void testReconciliationWarningMismatch_doesNotBlockExecution() {
+    Instant now = clock.instant();
+    MarketObservation obs = MarketObservation.create(
+        UUID.randomUUID(), "BTC/USD", "ALPACA_PAPER", "PAPER",
+        new BigDecimal("60000.00"), new BigDecimal("59990.00"), new BigDecimal("60010.00"),
+        BigDecimal.TEN, new BigDecimal("59900.00"), new BigDecimal("60100.00"),
+        new BigDecimal("59850.00"), new BigDecimal("60000.00"), "1m", now, now, 60_000L
+    );
+    when(marketDataStore.findLatest("BTC/USD")).thenReturn(Optional.of(obs));
+
+    PortfolioSummary summary = new PortfolioSummary(new BigDecimal("100000.00"), new BigDecimal("100000.00"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("100000.00"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, now);
+    when(accountingService.calculateSummary()).thenReturn(summary);
+    when(accountingService.getMarkedPositions()).thenReturn(List.of());
+
+    // Historical warning mismatch, 0 unresolved critical!
+    ReconciliationRun matchRecon = new ReconciliationRun(UUID.randomUUID(), botId.toString(), Broker.ALPACA_PAPER, ExecutionMode.PAPER, ReconciliationStatus.MATCHED, 0, null, now, now, now);
+    when(reconciliationStore.findLatestRunByBotId(botId.toString())).thenReturn(Optional.of(matchRecon));
+    when(reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString(), MismatchSeverity.CRITICAL)).thenReturn(0);
+
+    TradingContext context = service.buildContext(botId);
+
+    assertThat(context.reconciliation().isTradingBlocked()).isFalse();
+    assertThat(context.safety().reconciliationHealthy()).isTrue();
+    assertThat(context.safety().executionAllowed()).isTrue();
+    assertThat(context.safety().safetyBlockReasons()).doesNotContain("RECONCILIATION_MISMATCH_PRESENT");
   }
 
   @Test
