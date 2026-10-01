@@ -309,9 +309,12 @@ public class ContextBuilderService {
         isEmergency, false, isEmergency
     );
 
-    // 9. Reconciliation Context (Severity-Aware Gating)
+    // 9. Reconciliation Context (Severity-Aware & Account-Scoped Gating)
     Optional<ReconciliationRun> reconOpt = reconciliationStore.findLatestRunByBotId(botId.toString());
-    int unresolvedCriticalMismatches = reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString(), MismatchSeverity.CRITICAL);
+    String activeAccountId = reconOpt.map(ReconciliationRun::brokerAccountId).filter(id -> !id.isBlank()).orElse(null);
+    int unresolvedCriticalMismatches = activeAccountId != null
+        ? reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString(), MismatchSeverity.CRITICAL, activeAccountId)
+        : reconciliationStore.countUnresolvedMismatchesByBotId(botId.toString(), MismatchSeverity.CRITICAL);
     boolean latestRunHasCritical = false;
     if (reconOpt.isPresent()) {
       ReconciliationRun r = reconOpt.get();

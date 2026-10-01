@@ -41,7 +41,7 @@ public class JdbcReconciliationStore implements ReconciliationStore {
   @Override
   public ReconciliationRun saveRun(ReconciliationRun run) {
     jdbc.update(
-        "insert into reconciliation_runs (id, bot_id, broker, execution_mode, status, mismatch_count, error_detail, started_at, completed_at, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "insert into reconciliation_runs (id, bot_id, broker, execution_mode, status, mismatch_count, error_detail, started_at, completed_at, created_at, broker_account_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         run.id(),
         run.botId(),
         run.broker().name(),
@@ -51,7 +51,8 @@ public class JdbcReconciliationStore implements ReconciliationStore {
         run.errorDetail(),
         toTimestamp(run.startedAt()),
         toTimestamp(run.completedAt()),
-        toTimestamp(run.createdAt())
+        toTimestamp(run.createdAt()),
+        run.brokerAccountId()
     );
     return run;
   }
@@ -95,7 +96,7 @@ public class JdbcReconciliationStore implements ReconciliationStore {
     for (ReconciliationMismatch m : mismatches) {
       try {
         jdbc.update(
-            "insert into reconciliation_mismatches (id, run_id, bot_id, category, mismatch_type, severity, symbol, local_value, broker_value, resolution_state, resolved_at, created_at) values (?, ?, ?, ?, ?, ?, ?, cast(? as jsonb), cast(? as jsonb), ?, ?, ?)",
+            "insert into reconciliation_mismatches (id, run_id, bot_id, category, mismatch_type, severity, symbol, local_value, broker_value, resolution_state, resolved_at, created_at, broker_account_id) values (?, ?, ?, ?, ?, ?, ?, cast(? as jsonb), cast(? as jsonb), ?, ?, ?, ?)",
             m.id(),
             m.runId(),
             m.botId(),
@@ -107,7 +108,8 @@ public class JdbcReconciliationStore implements ReconciliationStore {
             json.writeValueAsString(m.brokerValue()),
             m.resolutionState().name(),
             toTimestamp(m.resolvedAt()),
-            toTimestamp(m.createdAt())
+            toTimestamp(m.createdAt()),
+            m.brokerAccountId()
         );
       } catch (JsonProcessingException e) {
         throw new IllegalArgumentException("Mismatch payload cannot be serialized", e);
@@ -126,6 +128,17 @@ public class JdbcReconciliationStore implements ReconciliationStore {
       return jdbc.query("select * from reconciliation_mismatches where bot_id = ? order by created_at desc", this::mapMismatch, botId);
     }
     return jdbc.query("select * from reconciliation_mismatches where bot_id = ? and resolution_state = ? order by created_at desc", this::mapMismatch, botId, resolutionState.name());
+  }
+
+  @Override
+  public List<ReconciliationMismatch> findMismatchesByBotId(String botId, ResolutionState resolutionState, String brokerAccountId) {
+    if (brokerAccountId == null) {
+      return findMismatchesByBotId(botId, resolutionState);
+    }
+    if (resolutionState == null) {
+      return jdbc.query("select * from reconciliation_mismatches where bot_id = ? and (broker_account_id is null or broker_account_id = ?) order by created_at desc", this::mapMismatch, botId, brokerAccountId);
+    }
+    return jdbc.query("select * from reconciliation_mismatches where bot_id = ? and resolution_state = ? and (broker_account_id is null or broker_account_id = ?) order by created_at desc", this::mapMismatch, botId, resolutionState.name(), brokerAccountId);
   }
 
   @Override
@@ -161,6 +174,20 @@ public class JdbcReconciliationStore implements ReconciliationStore {
   }
 
   @Override
+  public int countUnresolvedMismatchesByBotId(String botId, MismatchSeverity severity, String brokerAccountId) {
+    if (brokerAccountId == null) {
+      return countUnresolvedMismatchesByBotId(botId, severity);
+    }
+    Integer count;
+    if (severity == null) {
+      count = jdbc.queryForObject("select count(*) from reconciliation_mismatches where bot_id = ? and resolution_state = 'UNRESOLVED' and (broker_account_id is null or broker_account_id = ?)", Integer.class, botId, brokerAccountId);
+    } else {
+      count = jdbc.queryForObject("select count(*) from reconciliation_mismatches where bot_id = ? and resolution_state = 'UNRESOLVED' and severity = ? and (broker_account_id is null or broker_account_id = ?)", Integer.class, botId, severity.name(), brokerAccountId);
+    }
+    return count == null ? 0 : count;
+  }
+
+  @Override
   public void updateMismatchResolution(UUID mismatchId, ResolutionState state, Instant resolvedAt) {
     jdbc.update("update reconciliation_mismatches set resolution_state = ?, resolved_at = ? where id = ?", state.name(), toTimestamp(resolvedAt), mismatchId);
   }
@@ -189,7 +216,8 @@ public class JdbcReconciliationStore implements ReconciliationStore {
         rs.getString("error_detail"),
         rs.getTimestamp("started_at").toInstant(),
         rs.getTimestamp("completed_at") != null ? rs.getTimestamp("completed_at").toInstant() : null,
-        rs.getTimestamp("created_at").toInstant()
+        rs.getTimestamp("created_at").toInstant(),
+        hasColumn(rs, "broker_account_id") ? rs.getString("broker_account_id") : null
     );
   }
 
@@ -208,8 +236,18 @@ public class JdbcReconciliationStore implements ReconciliationStore {
         brokerVal,
         ResolutionState.valueOf(rs.getString("resolution_state")),
         rs.getTimestamp("resolved_at") != null ? rs.getTimestamp("resolved_at").toInstant() : null,
-        rs.getTimestamp("created_at").toInstant()
+        rs.getTimestamp("created_at").toInstant(),
+        hasColumn(rs, "broker_account_id") ? rs.getString("broker_account_id") : null
     );
+  }
+
+  private boolean hasColumn(ResultSet rs, String columnName) {
+    try {
+      rs.findColumn(columnName);
+      return true;
+    } catch (SQLException e) {
+      return false;
+    }
   }
 
   private Map<String, Object> parseMap(String jsonString) {

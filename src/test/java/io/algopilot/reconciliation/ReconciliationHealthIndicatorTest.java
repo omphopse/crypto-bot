@@ -31,7 +31,8 @@ public class ReconciliationHealthIndicatorTest {
   @Test
   void testHealth_noCriticalMismatches_reportsUp() {
     when(store.countUnresolvedMismatches(MismatchSeverity.CRITICAL)).thenReturn(0);
-    when(store.countUnresolvedMismatches(null)).thenReturn(0);
+    when(store.countUnresolvedMismatches(MismatchSeverity.WARNING)).thenReturn(1);
+    when(store.countUnresolvedMismatches(null)).thenReturn(1);
 
     ReconciliationRun matchedRun = new ReconciliationRun(
         UUID.randomUUID(), "bot-1", Broker.ALPACA_PAPER, ExecutionMode.PAPER,
@@ -44,11 +45,14 @@ public class ReconciliationHealthIndicatorTest {
     assertEquals(Status.UP, health.getStatus());
     assertEquals("HEALTHY", health.getDetails().get("reconciliationStatus"));
     assertEquals(0, health.getDetails().get("unresolvedCriticalMismatches"));
+    assertEquals(1, health.getDetails().get("unresolvedWarningMismatches"));
+    assertEquals(1, health.getDetails().get("unresolvedTotalMismatches"));
   }
 
   @Test
   void testHealth_activeCriticalMismatch_reportsDown() {
     when(store.countUnresolvedMismatches(MismatchSeverity.CRITICAL)).thenReturn(2);
+    when(store.countUnresolvedMismatches(MismatchSeverity.WARNING)).thenReturn(0);
     when(store.countUnresolvedMismatches(null)).thenReturn(2);
 
     ReconciliationRun mismatchedRun = new ReconciliationRun(
@@ -62,5 +66,7 @@ public class ReconciliationHealthIndicatorTest {
     assertEquals(Status.DOWN, health.getStatus());
     assertEquals("CRITICAL_MISMATCH_ACTIVE", health.getDetails().get("reconciliationStatus"));
     assertEquals(2, health.getDetails().get("unresolvedCriticalMismatches"));
+    assertEquals(0, health.getDetails().get("unresolvedWarningMismatches"));
+    assertEquals(2, health.getDetails().get("unresolvedTotalMismatches"));
   }
 }

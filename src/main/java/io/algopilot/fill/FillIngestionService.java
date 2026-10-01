@@ -25,7 +25,7 @@ public class FillIngestionService {
     OrderRecord order = orders.findById(report.orderId()).orElseThrow(() -> new FillRejectedException("ORDER_NOT_FOUND"));
     if (!(order.status() == OrderStatus.SUBMITTED || order.status() == OrderStatus.ACKNOWLEDGED || order.status() == OrderStatus.PARTIALLY_FILLED)) throw new FillRejectedException("ORDER_NOT_FILLABLE");
     BigDecimal total = fills.totalQuantityForOrder(order.id()).add(report.quantity()); if (total.compareTo(order.quantity()) > 0) throw new FillRejectedException("FILL_EXCEEDS_ORDER_QUANTITY");
-    Fill fill = fills.save(new Fill(UUID.randomUUID(), order.id(), report.exchangeFillId(), report.quantity(), report.price(), report.fee(), clock.instant()));
+    Fill fill = fills.save(new Fill(UUID.randomUUID(), order.id(), report.exchangeFillId(), report.quantity(), report.price(), report.fee(), clock.instant(), report.brokerAccountId()));
     positions.apply(order, fill.quantity(), fill.price(), fill.fee());
     lifecycle.transition(order.id(), new OrderTransitionRequest(total.compareTo(order.quantity()) == 0 ? OrderStatus.FILLED : OrderStatus.PARTIALLY_FILLED, null, "exchange fill " + fill.exchangeFillId()));
     audit.record("EXECUTION", order.botId(), "FILL_RECORDED", "ORDER", order.id().toString(), Map.of("exchangeFillId", fill.exchangeFillId(), "quantity", fill.quantity(), "price", fill.price()));

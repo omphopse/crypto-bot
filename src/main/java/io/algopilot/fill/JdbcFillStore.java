@@ -19,8 +19,8 @@ public class JdbcFillStore implements FillStore {
   }
 
   @Override public Fill save(Fill fill) {
-    jdbc.update("insert into fills (id, order_id, exchange_fill_id, quantity, price, fee, filled_at) values (?, ?, ?, ?, ?, ?, ?)",
-        fill.id(), fill.orderId(), fill.exchangeFillId(), fill.quantity(), fill.price(), fill.fee(), java.sql.Timestamp.from(fill.filledAt()));
+    jdbc.update("insert into fills (id, order_id, exchange_fill_id, quantity, price, fee, filled_at, broker_account_id) values (?, ?, ?, ?, ?, ?, ?, ?)",
+        fill.id(), fill.orderId(), fill.exchangeFillId(), fill.quantity(), fill.price(), fill.fee(), java.sql.Timestamp.from(fill.filledAt()), fill.brokerAccountId());
     return fill;
   }
 
@@ -37,6 +37,15 @@ public class JdbcFillStore implements FillStore {
     return jdbc.query("select f.* from fills f inner join orders o on f.order_id = o.id where o.bot_id = ? order by f.filled_at desc", this::map, botId);
   }
 
+  @Override public List<Fill> findByBotIdAndBrokerAccountId(String botId, String brokerAccountId) {
+    if (brokerAccountId == null) {
+      return findByBotId(botId);
+    }
+    return jdbc.query(
+        "select f.* from fills f inner join orders o on f.order_id = o.id where o.bot_id = ? and f.broker_account_id = ? order by f.filled_at desc",
+        this::map, botId, brokerAccountId);
+  }
+
   @Override public List<Fill> findAll() {
     return jdbc.query("select * from fills order by filled_at desc", this::map);
   }
@@ -49,7 +58,8 @@ public class JdbcFillStore implements FillStore {
         rs.getBigDecimal("quantity"),
         rs.getBigDecimal("price"),
         rs.getBigDecimal("fee"),
-        rs.getTimestamp("filled_at").toInstant()
+        rs.getTimestamp("filled_at").toInstant(),
+        rs.getString("broker_account_id")
     );
   }
 }

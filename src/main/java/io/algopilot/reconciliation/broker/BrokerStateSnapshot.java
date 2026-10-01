@@ -13,5 +13,12 @@ public record BrokerStateSnapshot(
     List<BrokerOrder> openOrders,
     List<BrokerFill> fills,
     List<BrokerPosition> positions,
-    Instant snapshotTime
-) {}
+    Instant snapshotTime,
+    String brokerAccountId
+) {
+  public BrokerStateSnapshot(Broker broker, ExecutionMode mode, String botId, BrokerAccountBalance balance,
+                             List<BrokerOrder> openOrders, List<BrokerFill> fills, List<BrokerPosition> positions, Instant snapshotTime) {
+    this(broker, mode, botId, balance, openOrders, fills, positions, snapshotTime,
+         balance != null ? balance.brokerAccountId() : null);
+  }
+}

@@ -14,5 +14,11 @@ public record BrokerFill(
     BigDecimal quantity,
     BigDecimal price,
     BigDecimal fee,
-    Instant filledAt
-) {}
+    Instant filledAt,
+    String brokerAccountId
+) {
+  public BrokerFill(String exchangeFillId, String brokerOrderId, String clientOrderId, String botId,
+                    String symbol, Side side, BigDecimal quantity, BigDecimal price, BigDecimal fee, Instant filledAt) {
+    this(exchangeFillId, brokerOrderId, clientOrderId, botId, symbol, side, quantity, price, fee, filledAt, null);
+  }
+}

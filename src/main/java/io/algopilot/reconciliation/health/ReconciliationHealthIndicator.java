@@ -24,6 +24,7 @@ public class ReconciliationHealthIndicator implements HealthIndicator {
   @Override
   public Health health() {
     int unresolvedCritical = store.countUnresolvedMismatches(MismatchSeverity.CRITICAL);
+    int unresolvedWarning = store.countUnresolvedMismatches(MismatchSeverity.WARNING);
     int unresolvedTotal = store.countUnresolvedMismatches(null);
     List<ReconciliationRun> recentRuns = store.findRecentRuns(1);
 
@@ -38,6 +39,7 @@ public class ReconciliationHealthIndicator implements HealthIndicator {
           .withDetail("unresolvedCriticalMismatches", 0);
     }
 
+    builder.withDetail("unresolvedWarningMismatches", unresolvedWarning);
     builder.withDetail("unresolvedTotalMismatches", unresolvedTotal);
 
     if (!recentRuns.isEmpty()) {

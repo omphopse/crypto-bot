@@ -247,7 +247,7 @@ public class AlpacaPaperBuySellLifecycleIntegrationTest {
       };
 
       orderLifecycleService = new OrderLifecycleService(orderStore, orderEventStore, audit);
-      executionGateway = new ExecutionGateway(List.of(alpacaAdapter), botStore, orderStore, orderLifecycleService, audit, reconciliationStore, clock);
+      executionGateway = new ExecutionGateway(List.of(alpacaAdapter), botStore, orderStore, orderLifecycleService, audit, reconciliationStore, alpacaAdapter, clock);
 
       // Test-scoped RiskLimits: 12% maxPositionPercent specifically allows Alpaca's $10 minimum notional on a $100 micro account
       RiskLimits defaults = RiskLimits.defaults();

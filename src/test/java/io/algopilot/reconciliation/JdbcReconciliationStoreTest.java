@@ -43,7 +43,7 @@ public class JdbcReconciliationStoreTest {
         ReconciliationStatus.STARTED, 0, null, Instant.now(), null, Instant.now()
     );
     store.saveRun(run);
-    verify(jdbc).update(startsWith("insert into reconciliation_runs"), eq(run.id()), eq("bot-123"), eq("ALPACA_PAPER"), eq("PAPER"), eq("STARTED"), eq(0), isNull(), eq(java.sql.Timestamp.from(run.startedAt())), isNull(), eq(java.sql.Timestamp.from(run.createdAt())));
+    verify(jdbc).update(startsWith("insert into reconciliation_runs"), eq(run.id()), eq("bot-123"), eq("ALPACA_PAPER"), eq("PAPER"), eq("STARTED"), eq(0), isNull(), eq(java.sql.Timestamp.from(run.startedAt())), isNull(), eq(java.sql.Timestamp.from(run.createdAt())), isNull());
   }
 
   @Test
@@ -58,7 +58,7 @@ public class JdbcReconciliationStoreTest {
     );
 
     store.saveMismatches(List.of(mismatch));
-    verify(jdbc).update(startsWith("insert into reconciliation_mismatches"), eq(mismatch.id()), eq(runId), eq("bot-123"), eq("POSITION_MISMATCH"), eq("POSITION_QUANTITY_MISMATCH"), eq("CRITICAL"), eq("BTC/USD"), anyString(), anyString(), eq("UNRESOLVED"), isNull(), eq(java.sql.Timestamp.from(mismatch.createdAt())));
+    verify(jdbc).update(startsWith("insert into reconciliation_mismatches"), eq(mismatch.id()), eq(runId), eq("bot-123"), eq("POSITION_MISMATCH"), eq("POSITION_QUANTITY_MISMATCH"), eq("CRITICAL"), eq("BTC/USD"), anyString(), anyString(), eq("UNRESOLVED"), isNull(), eq(java.sql.Timestamp.from(mismatch.createdAt())), isNull());
   }
 
   @Test

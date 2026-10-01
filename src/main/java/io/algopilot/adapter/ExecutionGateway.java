@@ -15,6 +15,10 @@ import io.algopilot.order.OrderTransitionRequest;
 import io.algopilot.reconciliation.model.MismatchSeverity;
 import io.algopilot.reconciliation.model.ResolutionState;
 import io.algopilot.reconciliation.persistence.ReconciliationStore;
+import io.algopilot.reconciliation.broker.BrokerPosition;
+import io.algopilot.reconciliation.broker.BrokerStateProvider;
+import io.algopilot.risk.RiskDecisionRequest;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +43,7 @@ public class ExecutionGateway {
   private final OrderLifecycleService lifecycleService;
   private final AuditEventWriter audit;
   private final ReconciliationStore reconciliationStore;
+  private final BrokerStateProvider brokerStateProvider;
   private final Clock clock;
 
   @org.springframework.beans.factory.annotation.Autowired
@@ -49,6 +54,7 @@ public class ExecutionGateway {
       OrderLifecycleService lifecycleService,
       AuditEventWriter audit,
       @org.springframework.lang.Nullable ReconciliationStore reconciliationStore,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) @org.springframework.lang.Nullable BrokerStateProvider brokerStateProvider,
       @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
     this.adapters = adapters;
     this.botStore = botStore;
@@ -56,6 +62,7 @@ public class ExecutionGateway {
     this.lifecycleService = lifecycleService;
     this.audit = audit;
     this.reconciliationStore = reconciliationStore;
+    this.brokerStateProvider = brokerStateProvider;
     this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
@@ -65,8 +72,19 @@ public class ExecutionGateway {
       OrderStore orderStore,
       OrderLifecycleService lifecycleService,
       AuditEventWriter audit,
+      @org.springframework.lang.Nullable ReconciliationStore reconciliationStore,
+      @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
+    this(adapters, botStore, orderStore, lifecycleService, audit, reconciliationStore, null, clock);
+  }
+
+  public ExecutionGateway(
+      List<BrokerOrderAdapter> adapters,
+      BotStore botStore,
+      OrderStore orderStore,
+      OrderLifecycleService lifecycleService,
+      AuditEventWriter audit,
       Clock clock) {
-    this(adapters, botStore, orderStore, lifecycleService, audit, null, clock);
+    this(adapters, botStore, orderStore, lifecycleService, audit, null, null, clock);
   }
 
   public ExecutionGateway(
@@ -75,7 +93,7 @@ public class ExecutionGateway {
       OrderStore orderStore,
       OrderLifecycleService lifecycleService,
       AuditEventWriter audit) {
-    this(adapters, botStore, orderStore, lifecycleService, audit, null, Clock.systemUTC());
+    this(adapters, botStore, orderStore, lifecycleService, audit, null, null, Clock.systemUTC());
   }
 
   @Transactional
@@ -96,14 +114,35 @@ public class ExecutionGateway {
     }
 
     if (bot.status() != BotStatus.RUNNING) {
-      throw new BrokerAdapterException("BOT_NOT_RUNNING_CANNOT_DISPATCH_ORDER:" + bot.status());
+      if (bot.status() == BotStatus.PAUSED && order.side() == RiskDecisionRequest.Side.SELL) {
+        BigDecimal brokerHeld = getBrokerHeldQuantity(bot, order.symbol());
+        if (brokerHeld.compareTo(BigDecimal.ZERO) <= 0) {
+          throw new BrokerAdapterException("BOT_NOT_RUNNING_CANNOT_DISPATCH_ORDER: PAUSED and zero broker position to sell.");
+        }
+        if (order.quantity().compareTo(brokerHeld) > 0) {
+          throw new BrokerAdapterException("BOT_NOT_RUNNING_CANNOT_DISPATCH_ORDER: Sell quantity " + order.quantity() + " exceeds broker held quantity " + brokerHeld);
+        }
+        log.warn("PERMITTING_PAUSED_EXPOSURE_REDUCING_SELL: orderId={} qty={} brokerHeld={}", order.id(), order.quantity(), brokerHeld);
+      } else {
+        throw new BrokerAdapterException("BOT_NOT_RUNNING_CANNOT_DISPATCH_ORDER:" + bot.status());
+      }
     }
 
     if (reconciliationStore != null) {
       var mismatches = reconciliationStore.findMismatchesByBotId(bot.id().toString(), ResolutionState.UNRESOLVED);
       boolean hasCritical = mismatches.stream().anyMatch(m -> m.severity() == MismatchSeverity.CRITICAL);
       if (hasCritical) {
-        throw new BrokerAdapterException("BOT_RECONCILIATION_MISMATCH_BLOCK: Bot has " + mismatches.size() + " unresolved critical reconciliation mismatches.");
+        if (order.side() != RiskDecisionRequest.Side.SELL) {
+          throw new BrokerAdapterException("BOT_RECONCILIATION_MISMATCH_BLOCK: Bot has " + mismatches.size() + " unresolved critical reconciliation mismatches.");
+        }
+        BigDecimal brokerHeld = getBrokerHeldQuantity(bot, order.symbol());
+        if (brokerHeld.compareTo(BigDecimal.ZERO) <= 0) {
+          throw new BrokerAdapterException("BOT_RECONCILIATION_MISMATCH_BLOCK: Bot has unresolved critical reconciliation mismatches and no broker position to sell.");
+        }
+        if (order.quantity().compareTo(brokerHeld) > 0) {
+          throw new BrokerAdapterException("BOT_RECONCILIATION_MISMATCH_BLOCK: Sell quantity " + order.quantity() + " exceeds broker held quantity " + brokerHeld);
+        }
+        log.warn("PERMITTING_EXPOSURE_REDUCING_SELL during critical reconciliation mismatch: orderId={} qty={} brokerHeld={}", order.id(), order.quantity(), brokerHeld);
       }
     }
 
@@ -178,5 +217,35 @@ public class ExecutionGateway {
       }
     }
     throw new BrokerAdapterException("NO_ADAPTER_FOR_BROKER:" + broker + "_" + mode);
+  }
+
+  private BigDecimal getBrokerHeldQuantity(Bot bot, String symbol) {
+    if (brokerStateProvider == null) {
+      log.warn("BrokerStateProvider not configured; cannot verify broker held position safely");
+      throw new BrokerAdapterException("BROKER_STATE_UNAVAILABLE: Cannot verify broker position");
+    }
+    try {
+      List<BrokerPosition> positions = brokerStateProvider.fetchPositions(bot.broker(), bot.executionMode(), bot.id().toString());
+      if (positions == null || positions.isEmpty()) {
+        return BigDecimal.ZERO;
+      }
+      return positions.stream()
+          .filter(p -> symbolMatches(p.symbol(), symbol))
+          .map(BrokerPosition::quantity)
+          .filter(q -> q != null && q.compareTo(BigDecimal.ZERO) > 0)
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
+    } catch (BrokerAdapterException e) {
+      throw e;
+    } catch (Exception e) {
+      log.error("Failed to fetch broker positions for bot {}: {}", bot.id(), e.getMessage(), e);
+      throw new BrokerAdapterException("BROKER_STATE_FETCH_FAILED: " + e.getMessage());
+    }
+  }
+
+  private boolean symbolMatches(String s1, String s2) {
+    if (s1 == null || s2 == null) return false;
+    String norm1 = s1.replace("/", "").replace("-", "").toUpperCase();
+    String norm2 = s2.replace("/", "").replace("-", "").toUpperCase();
+    return norm1.equals(norm2);
   }
 }

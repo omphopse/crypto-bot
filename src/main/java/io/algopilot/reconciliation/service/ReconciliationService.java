@@ -117,9 +117,19 @@ public class ReconciliationService {
     log.info("RECONCILIATION_STARTED for botId={} runId={}", bot.id(), runId);
 
     try {
-      // 1. Collect local state
+      // 1. Fetch broker state via abstraction
+      BrokerStateSnapshot brokerSnapshot = brokerStateProvider.fetchSnapshot(
+          bot.broker(),
+          bot.executionMode(),
+          bot.id().toString()
+      );
+      String activeBrokerAccountId = brokerSnapshot.brokerAccountId();
+
+      // 2. Collect local state (scoped to active broker account if available)
       List<OrderRecord> openOrders = orderStore.findOpenOrdersByBotId(bot.id().toString());
-      List<Fill> fills = fillStore.findByBotId(bot.id().toString());
+      List<Fill> fills = (activeBrokerAccountId != null && !activeBrokerAccountId.isBlank())
+          ? fillStore.findByBotIdAndBrokerAccountId(bot.id().toString(), activeBrokerAccountId)
+          : fillStore.findByBotId(bot.id().toString());
       List<Position> positions = positionStore.findByBotId(bot.id().toString());
 
       BigDecimal calculatedEquity = BigDecimal.ZERO;
@@ -136,13 +146,6 @@ public class ReconciliationService {
           fills,
           positions,
           startTime
-      );
-
-      // 2. Fetch broker state via abstraction
-      BrokerStateSnapshot brokerSnapshot = brokerStateProvider.fetchSnapshot(
-          bot.broker(),
-          bot.executionMode(),
-          bot.id().toString()
       );
 
       // 3. Reconcile deterministically
@@ -166,7 +169,8 @@ public class ReconciliationService {
             null,
             startTime,
             completeTime,
-            startTime
+            startTime,
+            activeBrokerAccountId
         );
         store.updateRun(completedRun);
         audit.record(
@@ -180,8 +184,17 @@ public class ReconciliationService {
         log.info("RECONCILIATION_MATCHED for botId={} runId={}", bot.id(), runId);
         return new ReconciliationResult(completedRun, Collections.emptyList());
       } else {
-        // Save mismatches
-        store.saveMismatches(mismatches);
+        // Save mismatches with broker account provenance
+        List<ReconciliationMismatch> scopedMismatches = mismatches;
+        if (activeBrokerAccountId != null && !activeBrokerAccountId.isBlank()) {
+          scopedMismatches = mismatches.stream()
+              .map(m -> new ReconciliationMismatch(
+                  m.id(), m.runId(), m.botId(), m.category(), m.mismatchType(), m.severity(),
+                  m.symbol(), m.localValue(), m.brokerValue(), m.resolutionState(), m.resolvedAt(), m.createdAt(), activeBrokerAccountId
+              ))
+              .toList();
+        }
+        store.saveMismatches(scopedMismatches);
 
         ReconciliationRun mismatchedRun = new ReconciliationRun(
             runId,
@@ -193,7 +206,8 @@ public class ReconciliationService {
             "Mismatches detected: " + mismatches.size(),
             startTime,
             completeTime,
-            startTime
+            startTime,
+            activeBrokerAccountId
         );
         store.updateRun(mismatchedRun);
 

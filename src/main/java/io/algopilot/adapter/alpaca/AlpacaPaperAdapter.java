@@ -183,8 +183,9 @@ public class AlpacaPaperAdapter implements BrokerOrderAdapter, BrokerStateProvid
       BigDecimal buyingPower = new BigDecimal(node.path("buying_power").asText("0"));
       BigDecimal equity = new BigDecimal(node.path("equity").asText("0"));
       String currency = node.path("currency").asText("USD");
+      String accountId = node.path("account_number").asText(node.path("id").asText(""));
 
-      return new BrokerAccountBalance(currency, cash, buyingPower, equity, clock.instant());
+      return new BrokerAccountBalance(currency, cash, buyingPower, equity, clock.instant(), accountId);
     } catch (Exception e) {
       throw new BrokerAdapterException("ALPACA_FETCH_BALANCE_ERROR: " + e.getMessage(), e);
     }
